@@ -146,3 +146,41 @@ export const getAIAnomalies = (req, res) => {
     ]
   });
 };
+
+export const demoAccounts = [
+  { role: 'Student', email: 'student@demo.edu', path: '/student', name: 'Alex Rivers' },
+  { role: 'Room Lead', email: 'roomlead@demo.edu', path: '/room-lead', name: 'Alex Rivers (Room Lead)' },
+  { role: 'Floor Incharge', email: 'floor@demo.edu', path: '/floor-incharge', name: 'Prof. Sharma' },
+  { role: 'Block Coordinator', email: 'block@demo.edu', path: '/block-coordinator', name: 'Dr. Mukerjee' },
+  { role: 'Mess Incharge', email: 'mess@demo.edu', path: '/mess-incharge', name: 'Chef Sundaram' },
+  { role: 'Principal', email: 'principal@demo.edu', path: '/principal', name: 'Dr. K. S. Rao' },
+  { role: 'KFC Staff', email: 'kfc@demo.edu', path: '/kfc-staff', name: 'KFC Kitchen Staff' },
+  { role: 'Admin', email: 'karthiksuru06@gmail.com', path: '/dashboards', name: 'Karthik Suru' }
+];
+
+export const getDemoUsers = (req, res) => {
+  res.json({ success: true, users: demoAccounts });
+};
+
+export const loginUser = (req, res) => {
+  const { email } = req.body;
+  const cleanEmail = (email || '').trim().toLowerCase();
+  const matched = demoAccounts.find((u) => u.email.toLowerCase() === cleanEmail);
+
+  if (matched) {
+    return res.json({ success: true, user: matched, token: 'demo-jwt-token-campus-os' });
+  }
+
+  // Fallback inferred user
+  return res.json({
+    success: true,
+    user: {
+      role: 'Student',
+      email: cleanEmail,
+      path: '/student',
+      name: cleanEmail.split('@')[0] || 'Campus User'
+    },
+    token: 'demo-jwt-token-campus-os'
+  });
+};
+

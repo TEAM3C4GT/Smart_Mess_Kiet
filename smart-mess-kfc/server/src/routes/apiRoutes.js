@@ -11,10 +11,16 @@ import {
   createKfcOrder,
   updateKfcOrderStatus,
   getAIForecast,
-  getAIAnomalies
+  getAIAnomalies,
+  getDemoUsers,
+  loginUser
 } from '../controllers/apiControllers.js';
 
 const router = express.Router();
+
+// Auth Routes
+router.get('/auth/demo-users', getDemoUsers);
+router.post('/auth/login', loginUser);
 
 // Menu Routes
 router.get('/menu/:date', getMenu);

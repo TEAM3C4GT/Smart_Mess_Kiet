@@ -1,5 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { LoginPage } from './pages/LoginPage';
 import { MainDashboards } from './pages/MainDashboards';
 import { StudentDashboard } from './pages/StudentDashboard';
 import { RoomLeadDashboard } from './pages/RoomLeadDashboard';
@@ -15,7 +16,8 @@ export const App = () => {
     <>
       <ToastContainer />
       <Routes>
-        <Route path="/" element={<MainDashboards />} />
+        <Route path="/" element={<LoginPage />} />
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/dashboards" element={<MainDashboards />} />
         <Route path="/student" element={<StudentDashboard />} />
         <Route path="/room-lead" element={<RoomLeadDashboard />} />
@@ -25,7 +27,7 @@ export const App = () => {
         <Route path="/principal" element={<PrincipalDashboard />} />
         <Route path="/kfc-staff" element={<KfcStaffDashboard />} />
         <Route path="/kfc" element={<KfcStaffDashboard />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </>
   );

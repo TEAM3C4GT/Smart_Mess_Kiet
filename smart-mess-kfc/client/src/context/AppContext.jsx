@@ -2,7 +2,84 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AppContext = createContext();
 
+export const DEMO_USERS = [
+  {
+    title: 'Student',
+    email: 'student@demo.edu',
+    role: 'Student',
+    path: '/student',
+    name: 'Aarav Sharma',
+    badge: 'Room 302 • Block B'
+  },
+  {
+    title: 'Room Lead',
+    email: 'roomlead@demo.edu',
+    role: 'Room Lead',
+    path: '/room-lead',
+    name: 'Alex Rivers (Lead)',
+    badge: 'Lead • Room 302'
+  },
+  {
+    title: 'Floor',
+    email: 'floor@demo.edu',
+    role: 'Floor Incharge',
+    path: '/floor-incharge',
+    name: 'Prof. Sharma',
+    badge: 'Floor 2 Incharge'
+  },
+  {
+    title: 'Block',
+    email: 'block@demo.edu',
+    role: 'Block Coordinator',
+    path: '/block-coordinator',
+    name: 'Dr. Mukerjee',
+    badge: 'Block B Coordinator'
+  },
+  {
+    title: 'Mess',
+    email: 'mess@demo.edu',
+    role: 'Mess Incharge',
+    path: '/mess-incharge',
+    name: 'Chef Sundaram',
+    badge: 'Main Mess Kitchen'
+  },
+  {
+    title: 'Principal',
+    email: 'principal@demo.edu',
+    role: 'Principal',
+    path: '/principal',
+    name: 'Dr. Sunita Rao',
+    badge: 'Executive Command'
+  },
+  {
+    title: 'KFC Staff',
+    email: 'kfc@demo.edu',
+    role: 'KFC Staff',
+    path: '/kfc-staff',
+    name: 'KFC Kitchen Counter',
+    badge: 'Canteen Fulfillment'
+  },
+  {
+    title: 'Admin',
+    email: 'karthiksuru06@gmail.com',
+    role: 'Admin',
+    path: '/dashboards',
+    name: 'Karthik Suru',
+    badge: 'Campus Superadmin'
+  }
+];
+
 export const AppProvider = ({ children }) => {
+  // Auth state
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('smart_mess_current_user');
+      return saved ? JSON.parse(saved) : DEMO_USERS[0];
+    } catch {
+      return DEMO_USERS[0];
+    }
+  });
+
   // Toast notifications
   const [toasts, setToasts] = useState([]);
 
@@ -19,54 +96,235 @@ export const AppProvider = ({ children }) => {
   };
 
   // 1. Student Meal Selection State
+  const [studentMealPlan, setStudentMealPlan] = useState({
+    date: 'Thursday, Sep 17',
+    dateSubtitle: "Toggle meals you'll eat. Locks daily at 21:00.",
+    cutoff: '21:00',
+    streak: 0,
+    selections: {
+      breakfast: false,
+      lunch: true,
+      snacks: true,
+      dinner: true
+    },
+    meals: {
+      breakfast: {
+        title: 'Breakfast',
+        optionsCount: '2 options',
+        items: [
+          {
+            name: 'Masala Dosa & Sambar',
+            tags: 'south • vegetarian',
+            image: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=200&auto=format&fit=crop&q=80'
+          },
+          {
+            name: 'Poha with Chai',
+            tags: 'light • vegetarian',
+            image: 'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?w=200&auto=format&fit=crop&q=80'
+          }
+        ]
+      },
+      lunch: {
+        title: 'Lunch',
+        optionsCount: '3 options',
+        items: [
+          {
+            name: 'Rajma Chawal Thali',
+            tags: 'north • vegetarian • protein',
+            image: 'https://images.unsplash.com/photo-1613292443284-8d10ef9383fe?w=200&auto=format&fit=crop&q=80'
+          },
+          {
+            name: 'Paneer Butter Masala',
+            tags: 'vegetarian • rich',
+            image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=200&auto=format&fit=crop&q=80'
+          },
+          {
+            name: 'Test Dish',
+            tags: 'test',
+            image: ''
+          }
+        ]
+      },
+      snacks: {
+        title: 'Snacks',
+        optionsCount: '1 option',
+        items: [
+          {
+            name: 'Samosa & Chai',
+            tags: 'snack • vegetarian',
+            image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=200&auto=format&fit=crop&q=80'
+          }
+        ]
+      },
+      dinner: {
+        title: 'Dinner',
+        optionsCount: '2 options',
+        items: [
+          {
+            name: 'Roti, Dal, Sabzi',
+            tags: 'healthy • vegetarian',
+            image: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=200&auto=format&fit=crop&q=80'
+          },
+          {
+            name: 'Chicken Curry & Rice',
+            tags: 'non-veg • protein',
+            image: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=200&auto=format&fit=crop&q=80'
+          }
+        ]
+      }
+    }
+  });
+
+  const toggleStudentMeal = (mealKey) => {
+    setStudentMealPlan((prev) => {
+      const updated = {
+        ...prev,
+        selections: {
+          ...prev.selections,
+          [mealKey]: !prev.selections[mealKey]
+        }
+      };
+      return updated;
+    });
+  };
+
+  const confirmStudentMealSelection = () => {
+    addToast('Meal selection confirmed for Thursday, Sep 17!', 'success');
+  };
+
+  // Student Meal History (last 8 days)
+  const [mealHistory, setMealHistory] = useState([
+    { id: '1', date: 'Thu, Sep 17', dateCode: '2026-09-17', breakfast: false, lunch: true, snacks: true, dinner: true },
+    { id: '2', date: 'Tue, Sep 15', dateCode: '2026-09-15', breakfast: false, lunch: true, snacks: true, dinner: true },
+    { id: '3', date: 'Mon, Sep 14', dateCode: '2026-09-14', breakfast: true, lunch: true, snacks: true, dinner: true },
+    { id: '4', date: 'Sun, Sep 13', dateCode: '2026-09-13', breakfast: true, lunch: true, snacks: true, dinner: true },
+    { id: '5', date: 'Sat, Sep 12', dateCode: '2026-09-12', breakfast: true, lunch: true, snacks: true, dinner: true },
+    { id: '6', date: 'Fri, Sep 11', dateCode: '2026-09-11', breakfast: true, lunch: true, snacks: false, dinner: true },
+    { id: '7', date: 'Thu, Sep 10', dateCode: '2026-09-10', breakfast: true, lunch: true, snacks: true, dinner: true },
+    { id: '8', date: 'Wed, Sep 9',  dateCode: '2026-09-09', breakfast: true, lunch: true, snacks: true, dinner: true },
+  ]);
+
+  // Student Notifications / Inbox
+  const [studentNotifications, setStudentNotifications] = useState([]);
+  const markAllNotificationsRead = () => {
+    setStudentNotifications([]);
+    addToast('All notifications marked as read', 'success');
+  };
+
+  // Legacy student selection compatibility
   const [studentSelections, setStudentSelections] = useState({
-    breakfast: 'will_eat',
+    breakfast: 'will_not_eat',
     lunch: 'will_eat',
-    snacks: 'will_not_eat',
+    snacks: 'will_eat',
     dinner: 'will_eat',
   });
   const [studentSubmitted, setStudentSubmitted] = useState(true);
 
   // 2. KFC Menu & Pre-Orders
   const [kfcMenu, setKfcMenu] = useState([
-    { id: 1, name: 'Hot & Crispy Bucket (4 Pcs)', price: 449, category: 'Buckets', image: '🍗', isAvailable: true },
-    { id: 2, name: 'Zinger Burger Duo', price: 299, category: 'Burgers', image: '🍔', isAvailable: true },
-    { id: 3, name: 'Popcorn Chicken (Large)', price: 229, category: 'Snacks', image: '🍿', isAvailable: true },
-    { id: 4, name: 'Peri Peri Fries', price: 119, category: 'Sides', image: '🍟', isAvailable: true },
-    { id: 5, name: 'Choco Lava Cake', price: 99, category: 'Desserts', image: '🍰', isAvailable: true },
-    { id: 6, name: 'Chilled Pepsi 500ml', price: 60, category: 'Beverages', image: '🥤', isAvailable: true }
+    {
+      id: 1,
+      name: 'Zinger Burger',
+      price: 179,
+      category: 'Burgers',
+      imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&auto=format&fit=crop&q=80',
+      image: '🍔',
+      isAvailable: true
+    },
+    {
+      id: 2,
+      name: 'Chicken Popcorn',
+      price: 149,
+      category: 'Snacks',
+      imageUrl: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=500&auto=format&fit=crop&q=80',
+      image: '🍿',
+      isAvailable: true
+    },
+    {
+      id: 3,
+      name: 'Hot Wings (6 pc)',
+      price: 229,
+      category: 'Chicken',
+      imageUrl: 'https://images.unsplash.com/photo-1527477248705-200752240e3a?w=500&auto=format&fit=crop&q=80',
+      image: '🍗',
+      isAvailable: true
+    },
+    {
+      id: 4,
+      name: 'Crispy Tenders (4 pc)',
+      price: 199,
+      category: 'Chicken',
+      imageUrl: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=500&auto=format&fit=crop&q=80',
+      image: '🍗',
+      isAvailable: true
+    },
+    {
+      id: 5,
+      name: 'Zinger Meal Combo',
+      price: 299,
+      category: 'Combos',
+      imageUrl: 'https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=500&auto=format&fit=crop&q=80',
+      image: '🍔',
+      isAvailable: true
+    },
+    {
+      id: 6,
+      name: 'Veg Rice Bowl',
+      price: 149,
+      category: 'Rice Bowls',
+      imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=80',
+      image: '🥗',
+      isAvailable: true
+    },
+    {
+      id: 7,
+      name: 'French Fries',
+      price: 99,
+      category: 'Snacks',
+      imageUrl: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500&auto=format&fit=crop&q=80',
+      image: '🍟',
+      isAvailable: true
+    },
+    {
+      id: 8,
+      name: 'Choco Lava Cake',
+      price: 99,
+      category: 'Desserts',
+      imageUrl: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=500&auto=format&fit=crop&q=80',
+      image: '🍰',
+      isAvailable: true
+    },
+    {
+      id: 9,
+      name: 'Pepsi 500ml',
+      price: 60,
+      category: 'Drinks',
+      imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=500&auto=format&fit=crop&q=80',
+      image: '🥤',
+      isAvailable: true
+    }
   ]);
 
   const [kfcOrders, setKfcOrders] = useState([
     {
-      id: 'ORD-8821',
-      token: 'KFC-302-01',
-      studentName: 'Alex Rivers',
+      id: 'ORD-65006',
+      token: 'KFC65006',
+      studentName: 'Aarav Sharma',
       room: 'Room 302',
-      items: [{ name: 'Zinger Burger Duo', qty: 1, price: 299 }],
-      totalAmount: 299,
+      items: [{ name: 'Hot Wings (6 pc)', qty: 1, price: 229 }],
+      totalAmount: 229,
       orderTime: '06:45 PM',
       status: 'Ready' // Pending, Preparing, Ready, Collected
     },
     {
       id: 'ORD-8819',
-      token: 'KFC-204-03',
+      token: 'KFC20403',
       studentName: 'Rohan Sharma',
       room: 'Room 204',
-      items: [{ name: 'Hot & Crispy Bucket (4 Pcs)', qty: 1, price: 449 }, { name: 'Chilled Pepsi 500ml', qty: 2, price: 120 }],
-      totalAmount: 569,
+      items: [{ name: 'Crispy Tenders (4 pc)', qty: 1, price: 199 }],
+      totalAmount: 199,
       orderTime: '07:10 PM',
       status: 'Preparing'
-    },
-    {
-      id: 'ORD-8815',
-      token: 'KFC-105-02',
-      studentName: 'Sneha Patel',
-      room: 'Room 105',
-      items: [{ name: 'Popcorn Chicken (Large)', qty: 1, price: 229 }],
-      totalAmount: 229,
-      orderTime: '07:25 PM',
-      status: 'Pending'
     }
   ]);
 
@@ -116,7 +374,108 @@ export const AppProvider = ({ children }) => {
     { meal: 'Dinner', selected: 178, predicted: 184, actual: 180, variance: '+2' }
   ]);
 
-  // 7. Principal Executive Datasets
+  // 7. Principal Executive Datasets (Matching Reference Screenshots)
+  const [principalAnalytics, setPrincipalAnalytics] = useState({
+    avgWastage: '0.0%',
+    messRating: '4.2',
+    kfcOrders14d: 2,
+    kfcRevenue: 328,
+    predictedVsActual: [
+      { date: '09-03', actual: 0, predicted: 0 },
+      { date: '09-04', actual: 0, predicted: 0 },
+      { date: '09-05', actual: 0, predicted: 0 },
+      { date: '09-06', actual: 0, predicted: 0 },
+      { date: '09-07', actual: 0, predicted: 0 },
+      { date: '09-08', actual: 0, predicted: 0.05 },
+      { date: '09-09', actual: 0, predicted: 1 },
+      { date: '09-10', actual: 0, predicted: 1 },
+      { date: '09-11', actual: 0, predicted: 1 },
+      { date: '09-12', actual: 0, predicted: 1 },
+      { date: '09-13', actual: 0, predicted: 1 },
+      { date: '09-14', actual: 0, predicted: 1 },
+      { date: '09-15', actual: 0, predicted: 1 },
+      { date: '09-16', actual: 0, predicted: 0 }
+    ],
+    blockRates: [
+      { block: 'Block A', ratio: '0/2', rate: 0 },
+      { block: 'Block B', ratio: '0/4', rate: 0 },
+      { block: 'Block Z', ratio: '0/1', rate: 0 }
+    ],
+    kfcFootfall: [
+      { date: '09-16', count: 2 }
+    ],
+    escalations: []
+  });
+
+  const [principalRollups, setPrincipalRollups] = useState({
+    date: '2026-09-17',
+    rate: 14.3,
+    submitted: 1,
+    total: 7,
+    pending: 6,
+    cutoff: '21:00',
+    flagged: false,
+    mealCounts: {
+      breakfast: 0,
+      lunch: 1,
+      snacks: 1,
+      dinner: 1
+    },
+    pendingStudents: [
+      { id: '2', initial: 'P', name: 'Priya Nair', email: 'student2@demo.edu', room: 'Room 304' },
+      { id: '3', initial: 'R', name: 'Rohan Patel', email: 'student3@demo.edu', room: 'Room 305' },
+      { id: '4', initial: 'I', name: 'Ishita Rao', email: 'student4@demo.edu', room: 'Room 401' },
+      { id: '5', initial: 'K', name: 'Kabir Mehta', email: 'student5@demo.edu', room: 'Room 102' },
+      { id: '6', initial: 'A', name: 'Ananya Iyer', email: 'student6@demo.edu', room: 'Room 103' },
+      { id: '7', initial: 'T', name: 'Test CSV', email: 'testcsv@demo.edu', room: 'Room 999' }
+    ]
+  });
+
+  const togglePrincipalRollupFlag = () => {
+    setPrincipalRollups((prev) => {
+      const next = !prev.flagged;
+      addToast(next ? 'Campus rollup flagged for escalation' : 'Campus rollup unflagged', next ? 'warning' : 'info');
+      return { ...prev, flagged: next };
+    });
+  };
+
+  const remindPendingStudentPrincipal = (studentName) => {
+    addToast(`Reminder sent to ${studentName}`, 'success');
+  };
+
+  const remindAllPendingPrincipal = () => {
+    addToast('Reminders sent to all 6 pending students!', 'success');
+  };
+
+  const [principalMess, setPrincipalMess] = useState({
+    date: '2026-09-17',
+    buffers: {
+      breakfast: '0 ~',
+      lunch: '0 ~',
+      snacks: '0 ~',
+      dinner: '0 ~'
+    },
+    lockedHeadcount: [
+      { block: 'A', students: 2, breakfast: 0, lunch: 0, snacks: 0, dinner: 0 },
+      { block: 'B', students: 4, breakfast: 0, lunch: 1, snacks: 1, dinner: 1 },
+      { block: 'Z', students: 1, breakfast: 0, lunch: 0, snacks: 0, dinner: 0 }
+    ],
+    suggestedCook: [
+      { meal: 'BREAKFAST', name: 'Masala Dosa & Sambar', formula: 'Portion 1 • cook ~0', image: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=200&auto=format&fit=crop&q=80' },
+      { meal: 'BREAKFAST', name: 'Poha with Chai', formula: 'Portion 0.8 • cook ~0', image: 'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?w=200&auto=format&fit=crop&q=80' },
+      { meal: 'DINNER', name: 'Roti, Dal, Sabzi', formula: 'Portion 1.1 • cook ~0', image: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=200&auto=format&fit=crop&q=80' },
+      { meal: 'DINNER', name: 'Chicken Curry & Rice', formula: 'Portion 1.2 • cook ~0', image: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=200&auto=format&fit=crop&q=80' },
+      { meal: 'LUNCH', name: 'Rajma Chawal Thali', formula: 'Portion 1.2 • cook ~0', image: 'https://images.unsplash.com/photo-1613292443284-8d10ef9383fe?w=200&auto=format&fit=crop&q=80' },
+      { meal: 'LUNCH', name: 'Paneer Butter Masala', formula: 'Portion 1 • cook ~0', image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=200&auto=format&fit=crop&q=80' }
+    ]
+  });
+
+  const [principalNotifications, setPrincipalNotifications] = useState([]);
+  const markAllPrincipalNotificationsRead = () => {
+    setPrincipalNotifications([]);
+    addToast('All notifications marked as read', 'success');
+  };
+
   const [principalWastageTrend, setPrincipalWastageTrend] = useState([
     { day: 'Mon', actualKg: 18.2, targetKg: 10.0, savedKg: 1.8 },
     { day: 'Tue', actualKg: 14.5, targetKg: 10.0, savedKg: 3.5 },
@@ -290,12 +649,87 @@ export const AppProvider = ({ children }) => {
     addToast("Tomorrow's menu updated successfully!", 'success');
   };
 
+  const login = (email, password = '') => {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    
+    // Find matching demo user by exact email match
+    let matchedUser = DEMO_USERS.find(
+      (u) => u.email.toLowerCase() === cleanEmail
+    );
+
+    // If not exact match, infer by role keywords in email
+    if (!matchedUser) {
+      if (cleanEmail.includes('student')) {
+        matchedUser = DEMO_USERS.find((u) => u.role === 'Student');
+      } else if (cleanEmail.includes('room')) {
+        matchedUser = DEMO_USERS.find((u) => u.role === 'Room Lead');
+      } else if (cleanEmail.includes('floor')) {
+        matchedUser = DEMO_USERS.find((u) => u.role === 'Floor Incharge');
+      } else if (cleanEmail.includes('block')) {
+        matchedUser = DEMO_USERS.find((u) => u.role === 'Block Coordinator');
+      } else if (cleanEmail.includes('mess') || cleanEmail.includes('kitchen')) {
+        matchedUser = DEMO_USERS.find((u) => u.role === 'Mess Incharge');
+      } else if (cleanEmail.includes('principal') || cleanEmail.includes('director')) {
+        matchedUser = DEMO_USERS.find((u) => u.role === 'Principal');
+      } else if (cleanEmail.includes('kfc') || cleanEmail.includes('staff')) {
+        matchedUser = DEMO_USERS.find((u) => u.role === 'KFC Staff');
+      } else if (cleanEmail.includes('admin') || cleanEmail.includes('karthik')) {
+        matchedUser = DEMO_USERS.find((u) => u.role === 'Admin');
+      } else {
+        // Fallback default user
+        matchedUser = {
+          title: 'Guest User',
+          email: cleanEmail || 'user@campus.edu',
+          role: 'Student',
+          path: '/student',
+          name: cleanEmail.split('@')[0] || 'Campus User',
+          badge: 'Campus Resident'
+        };
+      }
+    }
+
+    const sessionUser = {
+      ...matchedUser,
+      loginTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    setCurrentUser(sessionUser);
+    try {
+      localStorage.setItem('smart_mess_current_user', JSON.stringify(sessionUser));
+    } catch (e) {
+      console.warn('LocalStorage unavailable', e);
+    }
+
+    addToast(`Signed in as ${sessionUser.name} (${sessionUser.role})`, 'success');
+    return sessionUser;
+  };
+
+  const logout = () => {
+    setCurrentUser(null);
+    try {
+      localStorage.removeItem('smart_mess_current_user');
+    } catch (e) {
+      console.warn('LocalStorage error', e);
+    }
+    addToast('Signed out successfully', 'info');
+  };
+
   return (
     <AppContext.Provider
       value={{
+        currentUser,
+        login,
+        logout,
+        demoUsers: DEMO_USERS,
         toasts,
         addToast,
         removeToast,
+        studentMealPlan,
+        toggleStudentMeal,
+        confirmStudentMealSelection,
+        mealHistory,
+        studentNotifications,
+        markAllNotificationsRead,
         studentSelections,
         updateStudentSelection,
         studentSubmitted,
@@ -320,6 +754,14 @@ export const AppProvider = ({ children }) => {
         menu,
         updateMenu,
         headcount,
+        principalAnalytics,
+        principalRollups,
+        togglePrincipalRollupFlag,
+        remindPendingStudentPrincipal,
+        remindAllPendingPrincipal,
+        principalMess,
+        principalNotifications,
+        markAllPrincipalNotificationsRead,
         principalWastageTrend,
         blockPerformance,
         kfcHourlyFootfall,
