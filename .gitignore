@@ -58,6 +58,15 @@ pnpm-debug.log*
 !frontend/src/assets/**/*.png
 screenshot.png
 
+# Command Code & Local Command Reference Files
+COMMANDS.md
+commands.md
+.commandcode/
+.commandcode
+*.commandcode
+commandcode/
+*.commandcode.*
+
 # IDE & Editor Settings
 .vscode/
 .idea/
