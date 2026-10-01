@@ -40,7 +40,9 @@ export const PrincipalDashboard = () => {
     principalNotifications,
     markAllPrincipalNotificationsRead,
     aiAnomalies = [],
-    addToast
+    addToast,
+    nudgeRoomLead,
+    floorRooms = []
   } = useApp();
 
   // Active top navigation tab: 'Analytics' | 'Rollups' | 'Mess' | 'Alerts'
@@ -465,6 +467,141 @@ export const PrincipalDashboard = () => {
                     </button>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* Hostel Room-Wise Compliance & Direct Room Lead Directives */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100 mb-5">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-slate-900 text-sm sm:text-base">
+                      Hostel Room-Wise Compliance & Directives
+                    </h3>
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded">
+                      Live Sync
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Direct communication with Room Leads across Block D & Block E hostels.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-400 font-mono">
+                    8 Registered Rooms (40 Students)
+                  </span>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200/80 text-slate-400 font-mono font-bold uppercase text-[10px] tracking-wider">
+                      <th className="pb-3">Room</th>
+                      <th className="pb-3">Room Lead</th>
+                      <th className="pb-3">Block / Floor</th>
+                      <th className="pb-3">Submissions</th>
+                      <th className="pb-3">Compliance</th>
+                      <th className="pb-3 text-center">Status</th>
+                      <th className="pb-3 text-right">Principal Executive Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {floorRooms.map((room) => {
+                      const isBlockD = room.roomNo.includes('D-');
+                      const floorNum = room.roomNo.includes('10') ? 'Floor 1' : 'Floor 2';
+                      const isComplete = room.pending === 0;
+
+                      return (
+                        <tr key={room.roomNo} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="py-3.5 font-bold text-slate-900 flex items-center gap-2">
+                            <span
+                              className={`w-2 h-2 rounded-full ${
+                                isBlockD ? 'bg-[#1b4d3e]' : 'bg-blue-600'
+                              }`}
+                            ></span>
+                            <span className="font-mono">{room.roomNo}</span>
+                          </td>
+                          <td className="py-3.5 text-slate-800 font-medium">
+                            {room.lead}
+                          </td>
+                          <td className="py-3.5 text-slate-500 text-xs font-mono">
+                            {isBlockD ? 'Block D' : 'Block E'} • {floorNum}
+                          </td>
+                          <td className="py-3.5 text-slate-700 font-semibold font-mono text-xs">
+                            {room.submitted} / {room.members}
+                          </td>
+                          <td className="py-3.5 min-w-[130px]">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-slate-900 min-w-8 text-xs">{room.rate}%</span>
+                              <div className="w-20 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-500 ${
+                                    room.rate === 100
+                                      ? 'bg-[#1b4d3e]'
+                                      : room.rate >= 75
+                                      ? 'bg-emerald-600'
+                                      : 'bg-amber-500'
+                                  }`}
+                                  style={{ width: `${room.rate}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3.5 text-center">
+                            <span
+                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                                isComplete
+                                  ? 'bg-emerald-50 text-[#1b4d3e] border-emerald-200/70'
+                                  : 'bg-amber-50 text-amber-800 border-amber-200/70'
+                              }`}
+                            >
+                              {isComplete ? (
+                                <Check className="w-3 h-3 text-emerald-600" />
+                              ) : (
+                                <AlertTriangle className="w-3 h-3 text-amber-600" />
+                              )}
+                              {isComplete ? 'Complete' : `${room.pending} Pending`}
+                            </span>
+                          </td>
+                          <td className="py-3.5 text-right">
+                            {!isComplete ? (
+                              <button
+                                onClick={() =>
+                                  nudgeRoomLead(
+                                    room.roomNo,
+                                    `Executive Notice from Principal: ${room.pending} pending meal submission(s) in ${room.roomNo}. Ensure 100% compliance before 10:00 PM cutoff.`,
+                                    'Dr. S. K. Sharma (Principal Office)'
+                                  )
+                                }
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1b4d3e] hover:bg-[#163f33] text-white font-bold text-xs cursor-pointer shadow-xs transition-all active:scale-95 ml-auto"
+                                title={`Dispatch executive directive to ${room.lead}`}
+                              >
+                                <Send className="w-3 h-3" />
+                                <span>Directive to {room.lead.split(' ')[0]}</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() =>
+                                  nudgeRoomLead(
+                                    room.roomNo,
+                                    'Principal Office commends 100% room meal compliance ahead of cutoff.',
+                                    'Dr. S. K. Sharma (Principal Office)'
+                                  )
+                                }
+                                className="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-800 font-semibold text-xs ml-auto border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 px-2.5 py-1 rounded-md transition-colors"
+                                title="Commend Room Lead"
+                              >
+                                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>100% Verified ✓</span>
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>

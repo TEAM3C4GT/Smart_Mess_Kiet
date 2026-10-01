@@ -550,6 +550,70 @@ export const AppProvider = ({ children }) => {
       localStorage.setItem('smart_mess_headcount', JSON.stringify(updatedHeadcount));
     } catch (e) {}
 
+    // Two-Way Sync: Update Room Lead room member choices
+    const charKey = mealKey.charAt(0).toLowerCase();
+    setRoomMembers((prev) => {
+      let found = false;
+      const updated = prev.map((m) => {
+        const isMatch = m.name.toLowerCase().includes(studentName.toLowerCase()) ||
+          (studentName === 'Aarav Sharma' && m.id === 4) ||
+          (currentUser?.rollNo && currentUser.rollNo.includes('24b21a43a1') && m.name.toLowerCase().includes('nithin'));
+        if (isMatch && !found) {
+          found = true;
+          return {
+            ...m,
+            choices: { ...m.choices, [charKey]: newStatus ? 'Yes' : 'No' },
+            status: 'Submitted',
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          };
+        }
+        return m;
+      });
+
+      if (found) {
+        try {
+          localStorage.setItem(ROOM_MEMBERS_STORAGE_KEY, JSON.stringify(updated));
+        } catch (e) {}
+        const newReqs = calculateFloorMealReqs(updated);
+        setFloorMealRequirements(newReqs);
+        try {
+          localStorage.setItem(FLOOR_MEAL_REQS_STORAGE_KEY, JSON.stringify(newReqs));
+        } catch (e) {}
+        const submittedCount = updated.filter((m) => m.status === 'Submitted' || m.status === 'On Leave').length;
+        const totalCount = updated.length;
+        const newRate = totalCount > 0 ? Math.round((submittedCount / totalCount) * 100) : 0;
+        setFloorRooms((prevRooms) => {
+          const nextRooms = prevRooms.map((r) => {
+            if (r.roomNo === 'Room D-101') {
+              return {
+                ...r,
+                submitted: submittedCount,
+                pending: Math.max(0, totalCount - submittedCount),
+                rate: newRate,
+                status: newRate >= 80 ? 'High' : newRate >= 60 ? 'Good' : 'Medium'
+              };
+            }
+            return r;
+          });
+          try {
+            localStorage.setItem(FLOOR_ROOMS_STORAGE_KEY, JSON.stringify(nextRooms));
+          } catch (e) {}
+          return nextRooms;
+        });
+        if (broadcastChannelRef.current) {
+          try {
+            broadcastChannelRef.current.postMessage({
+              type: 'ROOM_MEMBER_MEAL_UPDATED',
+              roomNo: 'Room D-101',
+              roomMembers: updated,
+              floorMealRequirements: newReqs
+            });
+          } catch (e) {}
+        }
+      }
+      return updated;
+    });
+
     broadcastMessSync('HEADCOUNT_SYNC', {
       headcount: updatedHeadcount,
       mealKey,
@@ -578,7 +642,70 @@ export const AppProvider = ({ children }) => {
 
   const confirmStudentMealSelection = () => {
     const studentName = currentUser?.name || 'Aarav Sharma';
-    addToast('Meal selection confirmed for Thursday, Sep 17!', 'success');
+    addToast('Meal selection confirmed for tomorrow!', 'success');
+
+    // Two-Way Sync: Update Room Lead room member choices
+    setRoomMembers((prev) => {
+      let found = false;
+      const updated = prev.map((m) => {
+        const isMatch = m.name.toLowerCase().includes(studentName.toLowerCase()) ||
+          (studentName === 'Aarav Sharma' && m.id === 4) ||
+          (currentUser?.rollNo && currentUser.rollNo.includes('24b21a43a1') && m.name.toLowerCase().includes('nithin'));
+        if (isMatch && !found) {
+          found = true;
+          return {
+            ...m,
+            status: 'Submitted',
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          };
+        }
+        return m;
+      });
+
+      if (found) {
+        try {
+          localStorage.setItem(ROOM_MEMBERS_STORAGE_KEY, JSON.stringify(updated));
+        } catch (e) {}
+        const newReqs = calculateFloorMealReqs(updated);
+        setFloorMealRequirements(newReqs);
+        try {
+          localStorage.setItem(FLOOR_MEAL_REQS_STORAGE_KEY, JSON.stringify(newReqs));
+        } catch (e) {}
+        const submittedCount = updated.filter((m) => m.status === 'Submitted' || m.status === 'On Leave').length;
+        const totalCount = updated.length;
+        const newRate = totalCount > 0 ? Math.round((submittedCount / totalCount) * 100) : 0;
+        setFloorRooms((prevRooms) => {
+          const nextRooms = prevRooms.map((r) => {
+            if (r.roomNo === 'Room D-101') {
+              return {
+                ...r,
+                submitted: submittedCount,
+                pending: Math.max(0, totalCount - submittedCount),
+                rate: newRate,
+                status: newRate >= 80 ? 'High' : newRate >= 60 ? 'Good' : 'Medium'
+              };
+            }
+            return r;
+          });
+          try {
+            localStorage.setItem(FLOOR_ROOMS_STORAGE_KEY, JSON.stringify(nextRooms));
+          } catch (e) {}
+          return nextRooms;
+        });
+        if (broadcastChannelRef.current) {
+          try {
+            broadcastChannelRef.current.postMessage({
+              type: 'ROOM_MEMBER_MEAL_UPDATED',
+              roomNo: 'Room D-101',
+              roomMembers: updated,
+              floorMealRequirements: newReqs
+            });
+          } catch (e) {}
+        }
+      }
+      return updated;
+    });
+
     broadcastMessSync('STUDENT_MEAL_CONFIRM', {
       studentName,
       selections: studentMealPlan.selections
@@ -1376,44 +1503,108 @@ export const AppProvider = ({ children }) => {
     escalations: []
   });
 
-  const [principalRollups, setPrincipalRollups] = useState({
-    date: '2026-10-01',
-    rate: 85.0,
-    submitted: 34,
-    total: 40,
-    pending: 6,
-    cutoff: '21:00',
-    flagged: false,
-    mealCounts: {
-      breakfast: 34,
-      lunch: 34,
-      snacks: 30,
-      dinner: 34
-    },
-    pendingStudents: [
+  const [principalFlagged, setPrincipalFlagged] = useState(false);
+  const principalRollups = useMemo(() => {
+    const totalRooms = floorRooms.length || 8;
+    const totalStudents = totalRooms * 5;
+    const submitted = floorRooms.reduce((acc, r) => acc + (r.submitted || 0), 0);
+    const pending = Math.max(0, totalStudents - submitted);
+    const rate = totalStudents > 0 ? parseFloat(((submitted / totalStudents) * 100).toFixed(1)) : 0;
+
+    const d101B = roomMembers.filter((m) => m.status !== 'On Leave' && m.choices?.b === 'Yes').length;
+    const d101L = roomMembers.filter((m) => m.status !== 'On Leave' && m.choices?.l === 'Yes').length;
+    const d101S = roomMembers.filter((m) => m.status !== 'On Leave' && m.choices?.s === 'Yes').length;
+    const d101D = roomMembers.filter((m) => m.status !== 'On Leave' && m.choices?.d === 'Yes').length;
+
+    const otherSubmitted = floorRooms.filter((r) => r.roomNo !== 'Room D-101').reduce((acc, r) => acc + (r.submitted || 0), 0);
+    const breakfast = d101B + Math.round(otherSubmitted * 0.95);
+    const lunch = d101L + Math.round(otherSubmitted * 1.0);
+    const snacks = d101S + Math.round(otherSubmitted * 0.82);
+    const dinner = d101D + Math.round(otherSubmitted * 0.95);
+
+    const d101Pending = roomMembers
+      .filter((m) => m.status === 'Pending')
+      .map((m) => ({
+        id: `D101-${m.id}`,
+        initial: m.name.charAt(0),
+        name: m.name,
+        email: `${m.name.toLowerCase().replace(/[^a-z]/g, '')}@kiet.edu`,
+        room: 'Room D-101 • Block D'
+      }));
+
+    const otherPending = [
       { id: 'D201-5', initial: 'A', name: 'Ananya Gupta', email: 'ananya.gupta@kiet.edu', room: 'Room D-201 • Block D' },
       { id: 'D202-4', initial: 'S', name: 'Shivam Dixit', email: 'shivam.dixit@kiet.edu', room: 'Room D-202 • Block D' },
       { id: 'D202-5', initial: 'K', name: 'Karan Mehra', email: 'karan.mehra@kiet.edu', room: 'Room D-202 • Block D' },
       { id: 'E102-5', initial: 'A', name: 'Aditi Deshmukh', email: 'aditi.deshmukh@kiet.edu', room: 'Room E-102 • Block E' },
       { id: 'E201-5', initial: 'N', name: 'NITHIN (PG)', email: '24b21a43a1@kiet.edu', room: 'Room E-201 • Block E' },
       { id: 'E202-5', initial: 'T', name: 'Tarun Josh', email: 'tarun.josh@kiet.edu', room: 'Room E-202 • Block E' }
-    ]
-  });
+    ];
+
+    return {
+      date: '2026-10-01',
+      rate,
+      submitted,
+      total: totalStudents,
+      pending,
+      cutoff: '22:00',
+      flagged: principalFlagged,
+      mealCounts: {
+        breakfast,
+        lunch,
+        snacks,
+        dinner
+      },
+      pendingStudents: [...d101Pending, ...otherPending.slice(0, Math.max(0, pending - d101Pending.length))]
+    };
+  }, [floorRooms, roomMembers, principalFlagged]);
 
   const togglePrincipalRollupFlag = () => {
-    setPrincipalRollups((prev) => {
-      const next = !prev.flagged;
+    setPrincipalFlagged((prev) => {
+      const next = !prev;
       addToast(next ? 'Campus rollup flagged for escalation' : 'Campus rollup unflagged', next ? 'warning' : 'info');
-      return { ...prev, flagged: next };
+      return next;
     });
   };
 
   const remindPendingStudentPrincipal = (studentName) => {
-    addToast(`Reminder sent to ${studentName}`, 'success');
+    const notice = {
+      id: Date.now(),
+      title: '🏛️ Directive from Principal\'s Office',
+      message: `Principal Dr. Roy has issued an urgent compliance notice for ${studentName || 'student'}. Room Lead must assist with immediate meal verification.`,
+      sender: 'Dr. Roy (Principal)',
+      roomNo: 'Room D-101',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: Date.now(),
+      read: false,
+      type: 'principal'
+    };
+    setRoomLeadNotifications((prev) => {
+      const updated = [notice, ...prev];
+      broadcastNotificationsUpdate(updated, notice);
+      return updated;
+    });
+    addToast(`Principal executive notice dispatched to Room Lead for ${studentName}!`, 'success');
   };
 
   const remindAllPendingPrincipal = () => {
-    addToast('Reminders sent to all 6 pending students!', 'success');
+    const notice = {
+      id: Date.now(),
+      title: '🏛️ Campus-Wide Directive from Principal\'s Office',
+      message: 'Office of the Principal: Mandatory compliance reminder issued for all hostel blocks. All Room Leads must ensure 100% room submissions before tonight\'s 10:00 PM cutoff.',
+      sender: 'Dr. Roy (Principal)',
+      roomNo: 'Room D-101',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: Date.now(),
+      read: false,
+      type: 'principal'
+    };
+    setRoomLeadNotifications((prev) => {
+      const updated = [notice, ...prev];
+      broadcastNotificationsUpdate(updated, notice);
+      return updated;
+    });
+    addToast('Executive Directive dispatched to all Room Leads across campus!', 'success');
   };
 
   const [principalMess, setPrincipalMess] = useState({
@@ -2339,15 +2530,60 @@ export const AppProvider = ({ children }) => {
 
   const sendBlockConsolidatedCount = () => {
     setBlockConsolidatedSent(true);
+    try {
+      localStorage.setItem('smart_mess_block_consolidated_sent', 'true');
+    } catch (e) {}
+
+    const blockNotif = {
+      id: Date.now(),
+      title: '🏢 Block D & E Requisitions Forwarded to Mess',
+      message: 'Block Coordinator has consolidated and forwarded the final Block D & Block E meal requisitions to the Main Mess Kitchen.',
+      sender: 'Nithin (Block Coordinator)',
+      roomNo: 'Room D-101',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: Date.now(),
+      read: false,
+      type: 'block'
+    };
+
+    setRoomLeadNotifications((prev) => {
+      const updated = [blockNotif, ...prev];
+      broadcastNotificationsUpdate(updated, blockNotif);
+      return updated;
+    });
+
     if (broadcastChannelRef.current) {
       try {
         broadcastChannelRef.current.postMessage({
           type: 'BLOCK_CONSOLIDATED_COUNT_SENT',
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          notification: blockNotif
         });
       } catch (e) {}
     }
     addToast('Block-wise meal count sent successfully to Mess Incharge!', 'success');
+  };
+
+  // Nudges a Room Lead directly from Block Coordinator or Principal
+  const nudgeRoomLead = (roomNo = 'Room D-101', reason = 'Cutoff compliance reminder', sender = 'Nithin (Block Coordinator)') => {
+    const isPrincipal = sender.includes('Principal');
+    const notice = {
+      id: Date.now(),
+      title: isPrincipal ? '🏛️ Principal Executive Directive' : `🏢 Block Coordinator Nudge for ${roomNo}`,
+      message: `${sender}: ${reason}. Please ensure all roommates complete their meal choices before 10:00 PM cutoff.`,
+      sender: sender,
+      roomNo: roomNo,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: Date.now(),
+      read: false,
+      type: isPrincipal ? 'principal' : 'block'
+    };
+    setRoomLeadNotifications((prev) => {
+      const updated = [notice, ...prev];
+      broadcastNotificationsUpdate(updated, notice);
+      return updated;
+    });
+    addToast(`Direct alert dispatched to Lead of ${roomNo}!`, 'info');
   };
 
   // Block Coordinator directly nudges a Floor Incharge whose floor has pending meal submissions
@@ -2447,12 +2683,31 @@ export const AppProvider = ({ children }) => {
       return updated;
     });
 
+    const kitchenNotif = {
+      id: Date.now(),
+      title: '🍳 Mess Kitchen Confirmed Cooking Prep',
+      message: `Chef Ramesh (Main Mess Kitchen) has confirmed ${targetFloor || 'Floor 1'} meal requisitions for tomorrow. Kitchen procurement & cooking prep has started!`,
+      sender: 'Chef Ramesh (Mess Incharge)',
+      roomNo: 'Room D-101',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: Date.now(),
+      read: false,
+      type: 'kitchen'
+    };
+
+    setRoomLeadNotifications((prev) => {
+      const updated = [kitchenNotif, ...prev];
+      broadcastNotificationsUpdate(updated, kitchenNotif);
+      return updated;
+    });
+
     if (broadcastChannelRef.current) {
       try {
         broadcastChannelRef.current.postMessage({
           type: 'FLOOR_MEAL_SHEET_CONFIRMED',
           sheetId,
-          floor: targetFloor
+          floor: targetFloor,
+          notification: kitchenNotif
         });
       } catch (e) {}
     }
@@ -2643,6 +2898,7 @@ export const AppProvider = ({ children }) => {
         blockConsolidatedSent,
         sendBlockConsolidatedCount,
         nudgeFloorIncharge,
+        nudgeRoomLead,
         floorInchargeAlerts,
         dismissFloorAlert,
         floorMealSheets,

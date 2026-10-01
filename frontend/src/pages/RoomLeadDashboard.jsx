@@ -42,7 +42,10 @@ import {
   MessageSquare,    // Icon for incharge communications
   CheckCheck,       // Icon for mark all read
   Download,         // Icon for downloading requisition
-  CalendarCheck     // Icon for cutoff schedule
+  CalendarCheck,    // Icon for cutoff schedule
+  CookingPot,       // Icon for kitchen cooking
+  Layers,           // Icon for block consolidation
+  ChefHat           // Icon for mess chef
 } from 'lucide-react';
 
 // Import Recharts components for submission breakdown visualization
@@ -63,7 +66,10 @@ export const RoomLeadDashboard = () => {
     remindStudent,                     // Action to send an in-app reminder to a specific student
     remindAllPendingInRoom,            // Action to remind all pending students in room
     logout,                            // Action to log out user
-    addToast                           // Action to trigger toast notifications
+    addToast,                          // Action to trigger toast notifications
+    menu,                              // Dynamic menu from Mess Incharge
+    floorMealSheets = [],              // Floor meal sheets confirmed by Mess Kitchen
+    blockConsolidatedSent              // Block Coordinator consolidation status
   } = useApp();
 
   const navigate = useNavigate();
@@ -114,10 +120,14 @@ export const RoomLeadDashboard = () => {
   // State: Status filter chip ('All' | 'Submitted' | 'Pending' | 'On Leave')
   const [memberFilter, setMemberFilter] = useState('All');
 
-  // State: Quick reply message input in Incharge Alerts tab
+  // State: Quick reply message input and recipient in Incharge Alerts tab
   const [quickReplyText, setQuickReplyText] = useState('');
+  const [replyTarget, setReplyTarget] = useState('Floor Incharge (Prof. Sharma)');
 
-  // Unread notification count from Floor Incharge
+  // Dynamic Kitchen Confirmation check from Mess Incharge
+  const isKitchenConfirmed = floorMealSheets.some((s) => s.floor?.includes('Floor 1') && s.status === 'Confirmed by Kitchen');
+
+  // Unread notification count from Incharges
   const unreadNotifCount = roomLeadNotifications.filter((n) => !n.read).length;
 
   // Effect: Calculates dynamic countdown timer to tonight's 10:00 PM mess cutoff
@@ -169,39 +179,39 @@ export const RoomLeadDashboard = () => {
     { name: 'Pending', value: pendingCount, color: '#64748b' }
   ];
 
-  // Aggregated meal totals across all roommates for tomorrow
+  // Aggregated meal totals across all roommates for tomorrow (Dynamically linked to Mess Incharge Menu)
   const mealSummary = useMemo(() => {
     return [
       {
         meal: 'Breakfast',
         icon: Sun,
         timing: '07:30 - 09:30 AM',
-        menuItem: 'Masala Dosa / Poha with Chai',
+        menuItem: menu?.breakfast || 'Masala Dosa / Poha with Chai',
         count: roomMembers.filter((m) => m.choices?.b === 'Yes').length
       },
       {
         meal: 'Lunch',
         icon: Utensils,
         timing: '12:30 - 02:30 PM',
-        menuItem: 'Rajma Chawal Thali & Paneer',
+        menuItem: menu?.lunch || 'Rajma Chawal Thali & Paneer',
         count: roomMembers.filter((m) => m.choices?.l === 'Yes').length
       },
       {
         meal: 'Snacks',
         icon: Coffee,
         timing: '05:00 - 06:00 PM',
-        menuItem: 'Samosa & Hot Chai',
+        menuItem: menu?.snacks || 'Samosa & Hot Chai',
         count: roomMembers.filter((m) => m.choices?.s === 'Yes').length
       },
       {
         meal: 'Dinner',
         icon: Moon,
         timing: '07:30 - 09:30 PM',
-        menuItem: 'Roti, Dal, Rice & Chicken/Paneer',
+        menuItem: menu?.dinner || 'Roti, Dal, Rice & Chicken/Paneer',
         count: roomMembers.filter((m) => m.choices?.d === 'Yes').length
       }
     ];
-  }, [roomMembers]);
+  }, [roomMembers, menu]);
 
   // Filtered Room Members based on search query and status filter chip
   const filteredRoomMembers = useMemo(() => {
@@ -269,11 +279,11 @@ export const RoomLeadDashboard = () => {
     addToast('Room reminder message copied to clipboard! Paste it into your Room WhatsApp group.', 'success');
   };
 
-  // Handler: Sends quick confirmation reply to Floor Incharge
+  // Handler: Sends quick confirmation reply to Incharges (Floor, Block, Principal, Mess)
   const handleSendQuickReply = (e) => {
     e.preventDefault();
     if (!quickReplyText.trim()) return;
-    addToast(`Reply dispatched to Prof. Sharma (Floor 2 Incharge): "${quickReplyText}"`, 'success');
+    addToast(`Direct reply dispatched to ${replyTarget}: "${quickReplyText}"`, 'success');
     setQuickReplyText('');
   };
 
@@ -1179,80 +1189,128 @@ export const RoomLeadDashboard = () => {
                       </p>
                     </div>
                   ) : (
-                    roomLeadNotifications.map((notif) => (
-                      <div
-                        key={notif.id}
-                        className={`p-4 rounded-2xl border transition-all ${
-                          !notif.read
-                            ? darkMode
-                              ? 'bg-slate-800/80 border-slate-700 shadow-xs'
-                              : 'bg-slate-100 border-slate-300 shadow-xs'
-                            : darkMode
-                            ? 'bg-slate-800/40 border-slate-700/80 text-slate-300'
-                            : 'bg-white border-slate-200 text-slate-800'
-                        }`}
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                          <div className="flex items-center gap-2">
-                            {!notif.read && (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950">
-                                Action Needed
+                    roomLeadNotifications.map((notif) => {
+                      const isPrincipal = notif.type === 'principal' || notif.sender?.includes('Principal');
+                      const isBlock = notif.type === 'block' || notif.sender?.includes('Block');
+                      const isKitchen = notif.type === 'kitchen' || notif.sender?.includes('Mess') || notif.sender?.includes('Chef');
+
+                      return (
+                        <div
+                          key={notif.id}
+                          className={`p-4 rounded-2xl border transition-all ${
+                            isPrincipal
+                              ? darkMode
+                                ? 'bg-amber-950/30 border-amber-800/80 shadow-xs'
+                                : 'bg-amber-50/90 border-amber-300/90 shadow-xs'
+                              : !notif.read
+                              ? darkMode
+                                ? 'bg-slate-800/80 border-slate-700 shadow-xs'
+                                : 'bg-slate-100 border-slate-300 shadow-xs'
+                              : darkMode
+                              ? 'bg-slate-800/40 border-slate-700/80 text-slate-300'
+                              : 'bg-white border-slate-200 text-slate-800'
+                          }`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {isPrincipal && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500 text-slate-950 border border-amber-400">
+                                  🏛️ Principal Directive
+                                </span>
+                              )}
+                              {isBlock && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white border border-emerald-500">
+                                  🏢 Block Coordinator
+                                </span>
+                              )}
+                              {isKitchen && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-orange-600 text-white border border-orange-500">
+                                  🍳 Mess Kitchen
+                                </span>
+                              )}
+                              {!isPrincipal && !isBlock && !isKitchen && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950">
+                                  👨‍🏫 Floor Incharge
+                                </span>
+                              )}
+                              {!notif.read && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-600 text-white">
+                                  Unread
+                                </span>
+                              )}
+                              <span className="font-bold text-sm text-slate-900 dark:text-white">
+                                {notif.title}
                               </span>
-                            )}
-                            <span className="font-bold text-sm text-slate-900 dark:text-white">
-                              {notif.title}
+                            </div>
+                            <span className="text-[11px] font-mono text-slate-400">
+                              Received: {notif.time}
                             </span>
                           </div>
-                          <span className="text-[11px] font-mono text-slate-400">
-                            Received: {notif.time}
-                          </span>
-                        </div>
 
-                        <p className={`text-xs leading-relaxed ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                          {notif.message}
-                        </p>
+                          <p className={`text-xs leading-relaxed ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                            {notif.message}
+                          </p>
 
-                        <div className={`mt-3 pt-2.5 border-t flex flex-wrap items-center justify-between gap-2 text-xs ${
-                          darkMode ? 'border-slate-700/60' : 'border-slate-200/80'
-                        }`}>
-                          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-[11px]">
-                            <span>Dispatched by: <strong className="text-slate-800 dark:text-slate-200">{notif.sender || 'Prof. Sharma'}</strong></span>
-                            <span>•</span>
-                            <span>Target: <strong>Room D-101</strong></span>
-                          </div>
+                          <div className={`mt-3 pt-2.5 border-t flex flex-wrap items-center justify-between gap-2 text-xs ${
+                            darkMode ? 'border-slate-700/60' : 'border-slate-200/80'
+                          }`}>
+                            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-[11px]">
+                              <span>Dispatched by: <strong className="text-slate-800 dark:text-slate-200">{notif.sender || 'Prof. Sharma'}</strong></span>
+                              <span>•</span>
+                              <span>Target: <strong>Room D-101</strong></span>
+                            </div>
 
-                          <div className="flex items-center gap-2">
-                            {!notif.read ? (
-                              <button
-                                type="button"
-                                onClick={() => markRoomLeadNotificationRead(notif.id)}
-                                className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white text-white font-bold px-3 py-1 rounded-xl text-xs flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
-                              >
-                                <Check className="w-3.5 h-3.5" />
-                                <span>Acknowledge Notice</span>
-                              </button>
-                            ) : (
-                              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
-                                Acknowledged by Lead
-                              </span>
-                            )}
+                            <div className="flex items-center gap-2">
+                              {!notif.read ? (
+                                <button
+                                  type="button"
+                                  onClick={() => markRoomLeadNotificationRead(notif.id)}
+                                  className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white text-white font-bold px-3 py-1 rounded-xl text-xs flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                  <span>Acknowledge Notice</span>
+                                </button>
+                              ) : (
+                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
+                                  Acknowledged by Lead
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
 
-                {/* Quick Reply to Incharge Box */}
+                {/* Quick Reply to Incharge Box with Target Selector */}
                 <form onSubmit={handleSendQuickReply} className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800">
-                  <label className="block text-xs font-bold mb-1.5 text-slate-700 dark:text-slate-300">
-                    Send Direct Update / Reply to Floor 2 Incharge
-                  </label>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                      Send Direct Response / Communication
+                    </label>
+                    <div className="flex items-center gap-2 text-xs font-semibold">
+                      <span className="text-slate-500 text-[11px]">Recipient:</span>
+                      <select
+                        value={replyTarget}
+                        onChange={(e) => setReplyTarget(e.target.value)}
+                        className={`text-xs px-2.5 py-1 rounded-lg border font-semibold focus:outline-none cursor-pointer ${
+                          darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-200 text-slate-800'
+                        }`}
+                      >
+                        <option value="Floor Incharge (Prof. Sharma)">Floor Incharge (Prof. Sharma)</option>
+                        <option value="Block Coordinator (Nithin)">Block Coordinator (Nithin)</option>
+                        <option value="Principal's Office (Dr. Roy)">Principal's Office (Dr. Roy)</option>
+                        <option value="Mess Kitchen (Chef Ramesh)">Mess Kitchen (Chef Ramesh)</option>
+                      </select>
+                    </div>
+                  </div>
+
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      placeholder="e.g. Verified with all roommates, 5/5 orders confirmed for tomorrow!"
+                      placeholder={`e.g. Verified with Room D-101 members, requirements locked!`}
                       value={quickReplyText}
                       onChange={(e) => setQuickReplyText(e.target.value)}
                       className={`flex-1 p-2.5 rounded-xl border text-xs focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white ${
@@ -1264,7 +1322,7 @@ export const RoomLeadDashboard = () => {
                       className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
                     >
                       <Send className="w-3.5 h-3.5" />
-                      <span>Send Update</span>
+                      <span>Send Reply</span>
                     </button>
                   </div>
                 </form>
@@ -1289,17 +1347,68 @@ export const RoomLeadDashboard = () => {
                     </p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => addToast('Room D-101 culinary requisition slip exported!', 'success')}
-                    className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Download Requisition Slip</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => addToast('Room D-101 culinary requisition slip exported!', 'success')}
+                      className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Download Slip</span>
+                    </button>
+                  </div>
                 </div>
 
-                {/* 4 Detailed Meal Cards */}
+                {/* Two-Way System Status Bar (Mess Kitchen & Block Consolidation Status) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                  <div className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 ${
+                    isKitchenConfirmed
+                      ? 'bg-emerald-50/80 border-emerald-200 text-emerald-900 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-200'
+                      : 'bg-amber-50/80 border-amber-200 text-amber-900 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-200'
+                  }`}>
+                    <div className="flex items-center gap-2.5">
+                      <CookingPot className="w-5 h-5 shrink-0" />
+                      <div>
+                        <span className="text-xs font-bold block">
+                          {isKitchenConfirmed ? 'Kitchen Cooking Confirmed' : 'Requisition In Queue'}
+                        </span>
+                        <span className="text-[11px] opacity-80 block">
+                          {isKitchenConfirmed
+                            ? 'Chef Ramesh verified Floor 1 meal requisitions for prep.'
+                            : 'Floor headcount sheet transmitted to Mess Kitchen.'}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border bg-white/70 dark:bg-slate-900/70">
+                      {isKitchenConfirmed ? 'Confirmed' : 'Pending'}
+                    </span>
+                  </div>
+
+                  <div className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 ${
+                    blockConsolidatedSent
+                      ? 'bg-emerald-50/80 border-emerald-200 text-emerald-900 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-200'
+                      : 'bg-slate-50 border-slate-200 text-slate-700 dark:bg-slate-800/40 dark:border-slate-700 dark:text-slate-300'
+                  }`}>
+                    <div className="flex items-center gap-2.5">
+                      <Layers className="w-5 h-5 shrink-0" />
+                      <div>
+                        <span className="text-xs font-bold block">
+                          {blockConsolidatedSent ? 'Block D & E Forwarded' : 'Block Consolidation Active'}
+                        </span>
+                        <span className="text-[11px] opacity-80 block">
+                          {blockConsolidatedSent
+                            ? 'Block Coordinator verified and forwarded final counts to Mess.'
+                            : 'Consolidation window active until 10:00 PM cutoff.'}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border bg-white/70 dark:bg-slate-900/70">
+                      {blockConsolidatedSent ? 'Forwarded' : 'In Progress'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 4 Detailed Meal Cards with Live Mess Menu Dishes */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
                   {mealSummary.map((item) => {
                     const Icon = item.icon;
@@ -1339,8 +1448,41 @@ export const RoomLeadDashboard = () => {
                   })}
                 </div>
 
-                {/* Dietary & Allergies Advisory Box */}
+                {/* Live Mess Incharge Published Menu Strip */}
                 <div className={`mt-6 p-4 rounded-2xl border ${
+                  darkMode ? 'bg-slate-800/30 border-slate-700 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-700'
+                }`}>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <h4 className="font-bold text-xs uppercase tracking-wider flex items-center gap-1.5">
+                      <ChefHat className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      Mess Incharge Published Dishes for Tomorrow
+                    </h4>
+                    <span className="text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full dark:bg-emerald-950/60 dark:text-emerald-300">
+                      Live Kitchen Sync
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs mt-2">
+                    <div className="p-2.5 rounded-xl border bg-white/60 dark:bg-slate-900/60">
+                      <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block mb-0.5">Breakfast</span>
+                      <strong className="block text-slate-800 dark:text-slate-200">{menu?.breakfast || 'Masala Dosa / Poha with Chai'}</strong>
+                    </div>
+                    <div className="p-2.5 rounded-xl border bg-white/60 dark:bg-slate-900/60">
+                      <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block mb-0.5">Lunch</span>
+                      <strong className="block text-slate-800 dark:text-slate-200">{menu?.lunch || 'Rajma Chawal Thali & Paneer'}</strong>
+                    </div>
+                    <div className="p-2.5 rounded-xl border bg-white/60 dark:bg-slate-900/60">
+                      <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block mb-0.5">Snacks</span>
+                      <strong className="block text-slate-800 dark:text-slate-200">{menu?.snacks || 'Samosa & Hot Chai'}</strong>
+                    </div>
+                    <div className="p-2.5 rounded-xl border bg-white/60 dark:bg-slate-900/60">
+                      <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block mb-0.5">Dinner</span>
+                      <strong className="block text-slate-800 dark:text-slate-200">{menu?.dinner || 'Roti, Dal, Rice & Chicken/Paneer'}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dietary & Allergies Advisory Box */}
+                <div className={`mt-4 p-4 rounded-2xl border ${
                   darkMode ? 'bg-slate-800/30 border-slate-700 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-700'
                 }`}>
                   <h4 className="font-bold text-xs uppercase tracking-wider mb-1 flex items-center gap-1.5">
@@ -1348,7 +1490,7 @@ export const RoomLeadDashboard = () => {
                     Special Dietary Notes for Room D-101
                   </h4>
                   <p className="text-xs leading-relaxed">
-                    Room D-101 includes 1 student fasting/observing late dinner (Priya Sundaram) and 1 proxy assisted order. The hostel mess head chef receives this consolidated count automatically at the 10:00 PM cutoff.
+                    Room D-101 includes 1 student fasting/observing late dinner (Priya Sundaram) and assisted orders. The hostel mess head chef receives this consolidated count automatically at the 10:00 PM cutoff.
                   </p>
                 </div>
               </div>
