@@ -640,8 +640,12 @@ export const AppProvider = ({ children }) => {
     );
   };
 
-  const confirmStudentMealSelection = () => {
-    const studentName = currentUser?.name || 'Aarav Sharma';
+  const confirmStudentMealSelection = (customDietaryNote = '') => {
+    const studentName = currentUser?.name || 'NITHIN';
+    const rollNo = currentUser?.rollNo || '24B21A43A1';
+    const room = (currentUser?.badge ? currentUser.badge.split('•')[0].trim() : 'Room D-101') || 'Room D-101';
+    const note = (customDietaryNote && customDietaryNote.trim()) ? customDietaryNote.trim() : 'Standard Student Dining';
+
     addToast('Meal selection confirmed for tomorrow!', 'success');
 
     // Two-Way Sync: Update Room Lead room member choices
@@ -706,9 +710,60 @@ export const AppProvider = ({ children }) => {
       return updated;
     });
 
+    // 2. Add / Update in studentDiningRequests for Mess Incharge
+    const newRequest = {
+      id: `REQ-${Date.now()}`,
+      studentName,
+      rollNo,
+      roomNo: room,
+      block: room.includes('D-') ? 'Block D' : 'Block E',
+      meals: { ...studentMealPlan.selections },
+      dietaryNote: note,
+      status: 'Confirmed',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      acknowledged: false
+    };
+
+    setStudentDiningRequests((prev) => {
+      const filtered = prev.filter((r) => r.rollNo !== rollNo && r.studentName.toLowerCase() !== studentName.toLowerCase());
+      const updated = [newRequest, ...filtered];
+      try {
+        localStorage.setItem('smart_mess_student_dining_requests_v1', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+
+    if (broadcastChannelRef.current) {
+      try {
+        broadcastChannelRef.current.postMessage({
+          type: 'STUDENT_DINING_REQUEST_UPDATED',
+          request: newRequest
+        });
+      } catch (e) {}
+    }
+
+    // 3. Notify student themselves
+    const confirmedMealsStr = Object.entries(studentMealPlan.selections)
+      .filter(([, v]) => v)
+      .map(([k]) => k.charAt(0).toUpperCase() + k.slice(1))
+      .join(', ');
+
+    const selfNotif = {
+      id: Date.now(),
+      title: '✓ Meal Selections Confirmed for Tomorrow',
+      message: `Your meal choices (${confirmedMealsStr || 'None selected'}) with dietary note: "${note}" were submitted to Chef Ramesh in the Main Kitchen.`,
+      sender: 'Smart Mess System',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: Date.now(),
+      read: false,
+      type: 'mess'
+    };
+    addStudentNotification(selfNotif);
+
     broadcastMessSync('STUDENT_MEAL_CONFIRM', {
       studentName,
-      selections: studentMealPlan.selections
+      selections: studentMealPlan.selections,
+      dietaryNote: note
     });
     fetch('/api/selections', {
       method: 'POST',
@@ -717,6 +772,7 @@ export const AppProvider = ({ children }) => {
         studentName,
         confirmed: true,
         selections: studentMealPlan.selections,
+        dietaryNote: note,
         date: studentMealPlan.date
       })
     }).catch(() => {});
@@ -742,6 +798,18 @@ export const AppProvider = ({ children }) => {
     });
 
     broadcastMessSync('MESS_MENU_SYNC', { menu: newMenu, meals: updatedMeals });
+
+    const menuNotif = {
+      id: Date.now(),
+      title: "👨‍🍳 Tomorrow's Mess Menu Published",
+      message: `Chef Ramesh published tomorrow's menu: ${Object.values(newMenu).filter(Boolean).join(' • ')}. Confirm meal choices before 10:00 PM cutoff.`,
+      sender: 'Chef Ramesh (Mess Incharge)',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: Date.now(),
+      read: false,
+      type: 'mess'
+    };
+    addStudentNotification(menuNotif);
 
     fetch('/api/menu', {
       method: 'POST',
@@ -896,11 +964,195 @@ export const AppProvider = ({ children }) => {
     { id: '8', date: 'Wed, Sep 9',  dateCode: '2026-09-09', breakfast: true, lunch: true, snacks: true, dinner: true },
   ]);
 
-  // Student Notifications / Inbox
-  const [studentNotifications, setStudentNotifications] = useState([]);
+  // Student Notifications / Inbox (Persisted & Synced across tabs)
+  const INITIAL_STUDENT_NOTIFICATIONS = [
+    {
+      id: 1,
+      title: '👨‍🍳 Mess Menu Published for Tomorrow',
+      message: "Chef Ramesh updated tomorrow's menu: Masala Dosa, Paneer Butter Masala, Sambar & Gulab Jamun. Cutoff 10:00 PM tonight.",
+      sender: 'Chef Ramesh (Mess Incharge)',
+      time: '08:30 PM',
+      timestamp: Date.now() - 3600000,
+      read: false,
+      type: 'mess'
+    },
+    {
+      id: 2,
+      title: '🍳 Kitchen Cooking Prep Confirmed',
+      message: 'Floor 1 & Block D dining requisitions verified and confirmed by Main Kitchen. Cooking prep initiated.',
+      sender: 'Chef Ramesh (Mess Incharge)',
+      time: '09:00 PM',
+      timestamp: Date.now() - 1800000,
+      read: false,
+      type: 'kitchen'
+    },
+    {
+      id: 3,
+      title: '🍗 KFC Counter Pickup Notification',
+      message: 'Your express counter token #KFC-D101-84 has been completed and collected at Counter 1.',
+      sender: 'KFC Express Counter',
+      time: '10:45 AM',
+      timestamp: Date.now() - 28800000,
+      read: true,
+      type: 'kfc'
+    }
+  ];
+
+  const [studentNotifications, setStudentNotifications] = useState(() => {
+    try {
+      const saved = localStorage.getItem('smart_mess_student_notifications_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return INITIAL_STUDENT_NOTIFICATIONS;
+  });
+
+  const addStudentNotification = (notif) => {
+    setStudentNotifications((prev) => {
+      const updated = [notif, ...prev];
+      try {
+        localStorage.setItem('smart_mess_student_notifications_v1', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    if (broadcastChannelRef.current) {
+      try {
+        broadcastChannelRef.current.postMessage({
+          type: 'STUDENT_NOTIFICATION_ADDED',
+          notification: notif
+        });
+      } catch (e) {}
+    }
+  };
+
   const markAllNotificationsRead = () => {
-    setStudentNotifications([]);
+    setStudentNotifications((prev) => {
+      const updated = prev.map((n) => ({ ...n, read: true }));
+      try {
+        localStorage.setItem('smart_mess_student_notifications_v1', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
     addToast('All notifications marked as read', 'success');
+  };
+
+  const clearAllStudentNotifications = () => {
+    setStudentNotifications([]);
+    try {
+      localStorage.setItem('smart_mess_student_notifications_v1', JSON.stringify([]));
+    } catch (e) {}
+    addToast('Student inbox cleared', 'info');
+  };
+
+  // Student Dining Requests & Special Dietary Requisitions (Persisted & Synced across tabs)
+  const INITIAL_STUDENT_DINING_REQUESTS = [
+    {
+      id: 'REQ-01',
+      studentName: 'NITHIN',
+      rollNo: '24B21A43A1',
+      roomNo: 'Room D-101',
+      block: 'Block D',
+      meals: { breakfast: true, lunch: true, snacks: true, dinner: true },
+      dietaryNote: 'Regular Dining • No Onion/Garlic on Dinner',
+      status: 'Confirmed',
+      time: '09:15 PM',
+      acknowledged: true
+    },
+    {
+      id: 'REQ-02',
+      studentName: 'Alex Rivers',
+      rollNo: '23B21A4201',
+      roomNo: 'Room D-101 (Lead)',
+      block: 'Block D',
+      meals: { breakfast: true, lunch: true, snacks: false, dinner: true },
+      dietaryNote: 'High Protein / Extra curd preferred',
+      status: 'Confirmed',
+      time: '08:45 PM',
+      acknowledged: true
+    },
+    {
+      id: 'REQ-03',
+      studentName: 'VISALYA',
+      rollNo: '24B21A43A2',
+      roomNo: 'Room D-101',
+      block: 'Block D',
+      meals: { breakfast: true, lunch: true, snacks: true, dinner: true },
+      dietaryNote: 'Standard Veg Meal',
+      status: 'Confirmed',
+      time: '09:05 PM',
+      acknowledged: false
+    },
+    {
+      id: 'REQ-04',
+      studentName: 'Abhishek Tiwari',
+      rollNo: '23B21A4202',
+      roomNo: 'Room D-102 (Lead)',
+      block: 'Block D',
+      meals: { breakfast: true, lunch: true, snacks: true, dinner: true },
+      dietaryNote: 'Jain Meal Requested (Strict Veg)',
+      status: 'Confirmed',
+      time: '07:30 PM',
+      acknowledged: true
+    },
+    {
+      id: 'REQ-05',
+      studentName: 'Prashant Singh',
+      rollNo: '23B21A4203',
+      roomNo: 'Room D-201 (Lead)',
+      block: 'Block D',
+      meals: { breakfast: true, lunch: true, snacks: false, dinner: true },
+      dietaryNote: 'Late dining requisition (Lab class until 8:45 PM)',
+      status: 'Confirmed',
+      time: '06:50 PM',
+      acknowledged: false
+    }
+  ];
+
+  const [studentDiningRequests, setStudentDiningRequests] = useState(() => {
+    try {
+      const saved = localStorage.getItem('smart_mess_student_dining_requests_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return INITIAL_STUDENT_DINING_REQUESTS;
+  });
+
+  const acknowledgeStudentDiningRequest = (reqId) => {
+    setStudentDiningRequests((prev) => {
+      const updated = prev.map((r) => (r.id === reqId ? { ...r, acknowledged: true } : r));
+      try {
+        localStorage.setItem('smart_mess_student_dining_requests_v1', JSON.stringify(updated));
+      } catch (e) {}
+      const target = updated.find((r) => r.id === reqId);
+      if (target) {
+        const notif = {
+          id: Date.now(),
+          title: '👨‍🍳 Mess Kitchen Requisition Acknowledged',
+          message: `Chef Ramesh acknowledged your meal choices & dietary request ("${target.dietaryNote || 'Standard'}"). Kitchen is preparing accordingly.`,
+          sender: 'Chef Ramesh (Mess Incharge)',
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          timestamp: Date.now(),
+          read: false,
+          type: 'mess'
+        };
+        addStudentNotification(notif);
+      }
+      return updated;
+    });
+
+    if (broadcastChannelRef.current) {
+      try {
+        broadcastChannelRef.current.postMessage({
+          type: 'STUDENT_DINING_REQUEST_ACKNOWLEDGED',
+          reqId
+        });
+      } catch (e) {}
+    }
+    addToast('Student meal requisition acknowledged for kitchen preparation!', 'success');
   };
 
   // Legacy student selection compatibility
@@ -1883,11 +2135,31 @@ export const AppProvider = ({ children }) => {
   };
 
   const updateKfcOrderStatus = async (orderId, newStatus) => {
+    let orderToken = orderId;
     setKfcOrders((prev) =>
-      prev.map((ord) => (ord.id === orderId || ord.token === orderId ? { ...ord, status: newStatus } : ord))
+      prev.map((ord) => {
+        if (ord.id === orderId || ord.token === orderId) {
+          orderToken = ord.token;
+          return { ...ord, status: newStatus };
+        }
+        return ord;
+      })
     );
     broadcastKfcOrderStatus(orderId, newStatus);
-    addToast(`Order ${orderId} updated to ${newStatus}`, 'info');
+    broadcastKfcOrderStatus(orderToken, newStatus);
+    addToast(`Order ${orderToken} updated to ${newStatus}`, 'info');
+
+    const kfcNotif = {
+      id: Date.now(),
+      title: `🍗 KFC Order Update: ${newStatus}`,
+      message: `Your Order #${orderToken} is now ${newStatus.toUpperCase()}!${newStatus === 'Ready' ? ' Hot and ready! Please proceed to Counter 1 for pickup.' : newStatus === 'Collected' ? ' Order collected. Enjoy your meal!' : ''}`,
+      sender: 'KFC Express Counter',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: Date.now(),
+      read: false,
+      type: 'kfc'
+    };
+    addStudentNotification(kfcNotif);
 
     try {
       await fetch(`/api/kfc/orders/${orderId}/status`, {
@@ -1918,6 +2190,19 @@ export const AppProvider = ({ children }) => {
     if (nextStatus) {
       broadcastKfcOrderStatus(orderId, nextStatus);
       broadcastKfcOrderStatus(targetToken, nextStatus);
+
+      const kfcNotif = {
+        id: Date.now(),
+        title: `🍗 KFC Order Update: ${nextStatus}`,
+        message: `Your Order #${targetToken} is now ${nextStatus.toUpperCase()}!${nextStatus === 'Ready' ? ' Hot and ready! Please proceed to Counter 1 for pickup.' : nextStatus === 'Collected' ? ' Order collected. Enjoy your meal!' : ''}`,
+        sender: 'KFC Express Counter',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        timestamp: Date.now(),
+        read: false,
+        type: 'kfc'
+      };
+      addStudentNotification(kfcNotif);
+
       addToast(`Order ${targetToken} status updated to ${nextStatus}`, 'success');
       try {
         await fetch(`/api/kfc/orders/${orderId}/status`, {
@@ -2324,6 +2609,23 @@ export const AppProvider = ({ children }) => {
             }
             playNotificationChime();
             addToast(`Live Update: Room ${data.roomNo || 'D-101'} meal requirements updated by Room Lead!`, 'info');
+          } else if (data.type === 'STUDENT_DINING_REQUEST_UPDATED') {
+            if (data.request) {
+              setStudentDiningRequests((prev) => [data.request, ...prev.filter((r) => r.id !== data.request.id && r.rollNo !== data.request.rollNo)]);
+              playNotificationChime();
+              addToast(`🍴 New Meal Requisition from ${data.request.studentName} (${data.request.roomNo}): ${data.request.dietaryNote}`, 'info');
+            }
+          } else if (data.type === 'STUDENT_DINING_REQUEST_ACKNOWLEDGED') {
+            if (data.reqId) {
+              setStudentDiningRequests((prev) =>
+                prev.map((r) => (r.id === data.reqId ? { ...r, acknowledged: true } : r))
+              );
+            }
+          } else if (data.type === 'STUDENT_NOTIFICATION_ADDED') {
+            if (data.notification) {
+              setStudentNotifications((prev) => [data.notification, ...prev.filter((n) => n.id !== data.notification.id)]);
+              playNotificationChime();
+            }
           }
         };
       } catch (err) {
@@ -2387,6 +2689,16 @@ export const AppProvider = ({ children }) => {
         } catch (err) {
           console.error('Failed parsing storage floor meal sheets update', err);
         }
+      } else if (e.key === 'smart_mess_student_notifications_v1' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) setStudentNotifications(parsed);
+        } catch (err) {}
+      } else if (e.key === 'smart_mess_student_dining_requests_v1' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) setStudentDiningRequests(parsed);
+        } catch (err) {}
       }
     };
 
@@ -2701,6 +3013,18 @@ export const AppProvider = ({ children }) => {
       return updated;
     });
 
+    const studentCookNotif = {
+      id: Date.now() + 1,
+      title: '🍳 Kitchen Cooking Prep Confirmed',
+      message: `Chef Ramesh (Main Mess Kitchen) confirmed cooking preparation for ${targetFloor || 'Hostel Block D & E'}. Tomorrow's meals will be served on schedule.`,
+      sender: 'Chef Ramesh (Mess Incharge)',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: Date.now(),
+      read: false,
+      type: 'kitchen'
+    };
+    addStudentNotification(studentCookNotif);
+
     if (broadcastChannelRef.current) {
       try {
         broadcastChannelRef.current.postMessage({
@@ -2858,6 +3182,10 @@ export const AppProvider = ({ children }) => {
         mealHistory,
         studentNotifications,
         markAllNotificationsRead,
+        clearAllStudentNotifications,
+        addStudentNotification,
+        studentDiningRequests,
+        acknowledgeStudentDiningRequest,
         studentSelections,
         updateStudentSelection,
         studentSubmitted,

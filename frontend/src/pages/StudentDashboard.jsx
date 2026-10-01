@@ -38,14 +38,21 @@ export const StudentDashboard = () => {
     mealHistory,
     studentNotifications,
     markAllNotificationsRead,
+    clearAllStudentNotifications,
     kfcMenu,
     kfcOrders,
     placeKfcOrder,
-    addToast
+    addToast,
+    floorMealSheets = []
   } = useApp();
 
   // Active top navigation tab: 'My Meals' | 'History' | 'KFC' | 'Alerts'
   const [activeTab, setActiveTab] = useState('My Meals');
+
+  // Dietary requirement selector state
+  const [dietaryOption, setDietaryOption] = useState('Standard Student Dining');
+  const [customDietaryInput, setCustomDietaryInput] = useState('');
+  const [showCustomDietary, setShowCustomDietary] = useState(false);
 
   // KFC Store State
   const [selectedKfcCategory, setSelectedKfcCategory] = useState('All');
@@ -400,6 +407,39 @@ export const StudentDashboard = () => {
               </div>
             </div>
 
+            {/* Mess Kitchen Preparation & Confirmation Status Strip */}
+            <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-white border border-emerald-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-start sm:items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-[#1b4d3e] text-white flex items-center justify-center shrink-0 shadow-xs text-xl">
+                  👨‍🍳
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-slate-900 text-sm sm:text-base">
+                      Chef Ramesh • Main Mess Kitchen
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100/70 border border-emerald-300/70 px-2.5 py-0.5 rounded-full">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+                      {floorMealSheets.some((s) => s.status === 'Confirmed by Kitchen')
+                        ? 'Kitchen Cooking Confirmed'
+                        : 'Menu Published & Active'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 mt-0.5 font-medium">
+                    {floorMealSheets.some((s) => s.status === 'Confirmed by Kitchen')
+                      ? "Floor requisitions verified. Batch cooking underway according to student opt-in counts."
+                      : "Tomorrow's dishes finalized by Mess Incharge. Meal choices open until 10:00 PM tonight."}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-start md:self-auto shrink-0 font-mono text-xs text-slate-500">
+                <span className="bg-white/80 border border-slate-200/80 px-2.5 py-1.5 rounded-xl font-bold text-slate-700">
+                  🍽️ Live Menu Sync Active
+                </span>
+              </div>
+            </div>
+
             {/* 2x2 Grid of Meal Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {['breakfast', 'lunch', 'snacks', 'dinner'].map((mealKey) => {
@@ -485,23 +525,86 @@ export const StudentDashboard = () => {
               })}
             </div>
 
-            {/* Bottom Bar: Selection Summary & Confirmation */}
-            <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-bold text-slate-900">
-                  {selectedMealsCount} {selectedMealsCount === 1 ? 'meal' : 'meals'} selected
-                </p>
-                <p className="text-xs text-slate-400 font-medium mt-0.5">
-                  All caught up
-                </p>
+            {/* Bottom Bar: Selection Summary, Dietary Requisition & Confirmation */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-100">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-base font-bold text-slate-900">
+                      {selectedMealsCount} {selectedMealsCount === 1 ? 'meal' : 'meals'} selected for tomorrow
+                    </p>
+                    <span className="text-[10px] font-mono font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                      Direct Kitchen Requisition
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 font-medium mt-0.5">
+                    Your preferences will be transmitted directly to Chef Ramesh in the Main Mess Kitchen
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const finalNote = showCustomDietary && customDietaryInput.trim() ? customDietaryInput.trim() : dietaryOption;
+                    confirmStudentMealSelection(finalNote);
+                  }}
+                  className="bg-[#1b4d3e] hover:bg-[#163f33] text-white text-xs sm:text-sm font-bold px-6 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer self-stretch sm:self-auto text-center active:scale-95 flex items-center justify-center gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                  <span>Confirm Selection to Kitchen</span>
+                </button>
               </div>
 
-              <button
-                onClick={confirmStudentMealSelection}
-                className="bg-[#1b4d3e] hover:bg-[#163f33] text-white text-xs sm:text-sm font-bold px-6 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer self-stretch sm:self-auto text-center"
-              >
-                Confirm Selection
-              </button>
+              {/* Special Dietary / Allergy Request Selector */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-slate-700">
+                    Special Dietary Note / Allergy Request to Mess Incharge:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomDietary(!showCustomDietary)}
+                    className="text-[11px] font-mono text-[#1b4d3e] hover:underline font-bold cursor-pointer"
+                  >
+                    {showCustomDietary ? '← Pick standard options' : '+ Type custom note'}
+                  </button>
+                </div>
+
+                {!showCustomDietary ? (
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      'Standard Student Dining',
+                      'Jain Meal (Strict Veg, No Onion/Garlic)',
+                      'High Protein / Extra Curd',
+                      'Egg / Food Allergy Notice',
+                      'Late Dining (Lab / Project Work)'
+                    ].map((opt) => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => setDietaryOption(opt)}
+                        className={`text-xs px-3 py-1.5 rounded-xl font-medium border transition-all cursor-pointer ${
+                          dietaryOption === opt
+                            ? 'bg-[#1b4d3e] text-white border-[#1b4d3e] font-bold shadow-xs'
+                            : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder="e.g., Strict Jain meal, egg allergy, late dinner pick up at 9:30 PM..."
+                      value={customDietaryInput}
+                      onChange={(e) => setCustomDietaryInput(e.target.value)}
+                      className="flex-1 text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 font-medium"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -1766,12 +1869,95 @@ export const StudentDashboard = () => {
               </button>
             </div>
 
-            {/* Empty Inbox Container */}
-            <div className="bg-white rounded-2xl border border-slate-200/90 py-16 px-6 text-center shadow-xs">
-              <p className="text-sm font-medium text-slate-400">
-                No notifications yet.
-              </p>
-            </div>
+            {/* Notifications List */}
+            {studentNotifications.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-slate-200/90 py-16 px-6 text-center shadow-xs">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#1b4d3e] flex items-center justify-center mx-auto mb-3 text-2xl">
+                  📬
+                </div>
+                <h4 className="font-bold text-slate-800 text-sm">Inbox is completely clear!</h4>
+                <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                  No pending notices. You will receive real-time updates when Chef Ramesh publishes menus or when your KFC order is ready.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {studentNotifications.map((notif) => {
+                  const isMess = notif.type === 'mess' || notif.type === 'kitchen';
+                  const isKfc = notif.type === 'kfc';
+                  const isPrincipal = notif.type === 'principal';
+
+                  return (
+                    <div
+                      key={notif.id}
+                      className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+                        !notif.read
+                          ? 'bg-white border-emerald-300/80 shadow-xs'
+                          : 'bg-slate-50/70 border-slate-200/80 opacity-90'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3.5">
+                          <div
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-lg shadow-2xs ${
+                              isMess
+                                ? 'bg-emerald-50 border border-emerald-200 text-[#1b4d3e]'
+                                : isKfc
+                                ? 'bg-amber-50 border border-amber-200 text-amber-700'
+                                : isPrincipal
+                                ? 'bg-indigo-50 border border-indigo-200 text-indigo-700'
+                                : 'bg-blue-50 border border-blue-200 text-blue-700'
+                            }`}
+                          >
+                            {isMess ? '👨‍🍳' : isKfc ? '🍗' : isPrincipal ? '🏛️' : '🏢'}
+                          </div>
+
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <h4 className="font-bold text-slate-900 text-sm sm:text-base leading-tight">
+                                {notif.title}
+                              </h4>
+                              {!notif.read && (
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-pulse"></span>
+                              )}
+                              <span
+                                className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                                  isMess
+                                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                    : isKfc
+                                    ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                                    : isPrincipal
+                                    ? 'bg-indigo-50 text-indigo-800 border border-indigo-200'
+                                    : 'bg-blue-50 text-blue-800 border border-blue-200'
+                                }`}
+                              >
+                                {isMess
+                                  ? 'Mess Kitchen'
+                                  : isKfc
+                                  ? 'KFC Express'
+                                  : isPrincipal
+                                  ? 'Principal Office'
+                                  : 'Room & Floor Lead'}
+                              </span>
+                            </div>
+
+                            <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
+                              {notif.message}
+                            </p>
+
+                            <div className="flex items-center gap-3 mt-2.5 text-[11px] font-mono text-slate-400">
+                              <span>From: {notif.sender || 'Mess Incharge'}</span>
+                              <span>•</span>
+                              <span>{notif.time || 'Just now'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Pagination Controls */}
             <div className="flex items-center justify-between pt-4 border-t border-slate-100 text-xs text-slate-500 font-medium">

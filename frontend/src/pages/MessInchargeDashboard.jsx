@@ -33,7 +33,9 @@ export const MessInchargeDashboard = () => {
     blockConsolidatedSent,
     addToast,
     floorMealSheets = [],
-    confirmFloorMealSheetInKitchen
+    confirmFloorMealSheetInKitchen,
+    studentDiningRequests = [],
+    acknowledgeStudentDiningRequest
   } = useApp();
 
   // Menu edit state
@@ -321,6 +323,125 @@ export const MessInchargeDashboard = () => {
                         >
                           <CookingPot className="w-3.5 h-3.5" />
                           Confirm & Prep Cooking
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Student Live Meal Confirmations & Dietary Requisitions */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-slate-900 text-base sm:text-lg">
+                  Student Live Meal Confirmations & Dietary Requisitions
+                </h3>
+                <span className="text-[10px] font-mono text-[#1b4d3e] bg-emerald-50 px-2 py-0.5 rounded-full font-semibold border border-emerald-200">
+                  Direct Student Feed • Live Sync
+                </span>
+              </div>
+              <p className="text-xs text-slate-500">
+                Real-time student meal opt-ins, allergy notices, and special dietary requests from hostel portals
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1 rounded-lg">
+                {studentDiningRequests.length} Students Logged
+              </span>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs sm:text-sm">
+              <thead>
+                <tr className="border-b border-slate-200/80 text-slate-400 font-mono font-bold uppercase text-[10px] tracking-wider">
+                  <th className="pb-3">Student & Roll No</th>
+                  <th className="pb-3">Room & Block</th>
+                  <th className="pb-3">Meals Selected</th>
+                  <th className="pb-3">Dietary / Allergy Requisition</th>
+                  <th className="pb-3">Time</th>
+                  <th className="pb-3 text-right">Kitchen Acknowledged</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {studentDiningRequests.map((req) => (
+                  <tr key={req.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3.5">
+                      <div className="font-bold text-slate-900 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-[#1b4d3e]"></span>
+                        <span>{req.studentName}</span>
+                      </div>
+                      <span className="text-[11px] font-mono text-slate-400 block pl-4">
+                        {req.rollNo}
+                      </span>
+                    </td>
+                    <td className="py-3.5 font-mono text-slate-700 text-xs font-medium">
+                      {req.roomNo} <span className="text-slate-400">• {req.block}</span>
+                    </td>
+                    <td className="py-3.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {req.meals?.breakfast && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                            🌅 B
+                          </span>
+                        )}
+                        {req.meals?.lunch && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            ☀️ L
+                          </span>
+                        )}
+                        {req.meals?.snacks && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-teal-50 text-teal-800 border border-teal-200">
+                            🍪 S
+                          </span>
+                        )}
+                        {req.meals?.dinner && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200">
+                            🌙 D
+                          </span>
+                        )}
+                        {!req.meals?.breakfast && !req.meals?.lunch && !req.meals?.snacks && !req.meals?.dinner && (
+                          <span className="text-xs text-slate-400 italic">No meals</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-3.5">
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold ${
+                        (req.dietaryNote || '').toLowerCase().includes('jain') || (req.dietaryNote || '').toLowerCase().includes('strict')
+                          ? 'bg-purple-50 text-purple-900 border border-purple-200'
+                          : (req.dietaryNote || '').toLowerCase().includes('allergy')
+                          ? 'bg-rose-50 text-rose-900 border border-rose-200'
+                          : (req.dietaryNote || '').toLowerCase().includes('protein')
+                          ? 'bg-blue-50 text-blue-900 border border-blue-200'
+                          : (req.dietaryNote || '').toLowerCase().includes('late')
+                          ? 'bg-amber-50 text-amber-900 border border-amber-200'
+                          : 'bg-slate-50 text-slate-700 border border-slate-200'
+                      }`}>
+                        {req.dietaryNote || 'Standard Student Dining'}
+                      </span>
+                    </td>
+                    <td className="py-3.5 font-mono text-slate-500 text-xs">
+                      {req.time}
+                    </td>
+                    <td className="py-3.5 text-right">
+                      {req.acknowledged ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200/80 ml-auto">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          Kitchen Prepping
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => acknowledgeStudentDiningRequest(req.id)}
+                          className="px-3 py-1.5 rounded-xl bg-[#1b4d3e] hover:bg-[#143d31] text-white font-bold text-xs shadow-xs cursor-pointer active:scale-95 transition-all inline-flex items-center gap-1.5 ml-auto"
+                          title="Acknowledge student dietary request and notify student"
+                        >
+                          <ChefHat className="w-3.5 h-3.5" />
+                          Acknowledge & Prep
                         </button>
                       )}
                     </td>
