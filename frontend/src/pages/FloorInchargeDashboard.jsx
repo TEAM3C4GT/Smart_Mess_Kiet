@@ -57,8 +57,8 @@ import {
 
 // Main Floor Incharge Dashboard functional component
 export const FloorInchargeDashboard = () => {
-  // State: Tracks currently selected navigation tab (defaults to 'Dashboard')
-  const [activeTab, setActiveTab] = useState('Dashboard');
+  // State: Tracks currently selected navigation tab (defaults to 'Room & Floor Monitoring')
+  const [activeTab, setActiveTab] = useState('Room & Floor Monitoring');
 
   // State: Stores user input text from the search input box
   const [searchTerm, setSearchTerm] = useState('');
@@ -89,6 +89,7 @@ export const FloorInchargeDashboard = () => {
     currentUser,              // Currently authenticated user object (Prof. Sharma)
     logout,                   // Action to log out user
     floorRooms = [],          // Array of rooms located on Floor with stats
+    roomMembers = [],         // Real-time room members from Room Lead
     floorMealRequirements,    // Meal count breakdowns (Breakfast, Lunch, etc.)
     remindRoomLead,           // Action to send an instant reminder notification to a room lead
     flagRoom,                 // Action to toggle the disciplinary/escalation flag on a room
@@ -173,13 +174,35 @@ export const FloorInchargeDashboard = () => {
   // Filter out rooms that have less than 60% meal participation or are explicitly flagged
   const lowParticipationRooms = scopedRooms.filter((r) => r.rate < 60 || r.flagged);
 
-  // Meal requirements for the floor (calculated from scopedRooms)
-  const mealReqs = {
-    breakfast: { selected: submittedStudents, total: totalStudents || 10, percentage: participationPercentage },
-    lunch: { selected: submittedStudents, total: totalStudents || 10, percentage: participationPercentage },
-    snacks: { selected: Math.round(submittedStudents * 0.8), total: totalStudents || 10, percentage: Math.round(participationPercentage * 0.8) },
-    dinner: { selected: submittedStudents, total: totalStudents || 10, percentage: participationPercentage }
-  };
+  // Dynamic meal requirements for the floor (calculated from live roomMembers and scoped rooms)
+  const mealReqs = useMemo(() => {
+    if (activeFloorScope === 'floor-d1' || (!activeFloorScope && floorConfig.prefix === 'D-1')) {
+      const d101B = roomMembers.filter(m => m.status !== 'On Leave' && m.choices?.b === 'Yes').length;
+      const d101L = roomMembers.filter(m => m.status !== 'On Leave' && m.choices?.l === 'Yes').length;
+      const d101S = roomMembers.filter(m => m.status !== 'On Leave' && m.choices?.s === 'Yes').length;
+      const d101D = roomMembers.filter(m => m.status !== 'On Leave' && m.choices?.d === 'Yes').length;
+
+      // Room D-102 baseline
+      const bCount = Math.min(totalStudents, d101B + 5);
+      const lCount = Math.min(totalStudents, d101L + 5);
+      const sCount = Math.min(totalStudents, d101S + 4);
+      const dCount = Math.min(totalStudents, d101D + 5);
+
+      return {
+        breakfast: { selected: bCount, total: totalStudents || 10, percentage: totalStudents > 0 ? Math.round((bCount / totalStudents) * 100) : 0 },
+        lunch: { selected: lCount, total: totalStudents || 10, percentage: totalStudents > 0 ? Math.round((lCount / totalStudents) * 100) : 0 },
+        snacks: { selected: sCount, total: totalStudents || 10, percentage: totalStudents > 0 ? Math.round((sCount / totalStudents) * 100) : 0 },
+        dinner: { selected: dCount, total: totalStudents || 10, percentage: totalStudents > 0 ? Math.round((dCount / totalStudents) * 100) : 0 }
+      };
+    }
+
+    return {
+      breakfast: { selected: submittedStudents, total: totalStudents || 10, percentage: participationPercentage },
+      lunch: { selected: submittedStudents, total: totalStudents || 10, percentage: participationPercentage },
+      snacks: { selected: Math.round(submittedStudents * 0.8), total: totalStudents || 10, percentage: Math.round(participationPercentage * 0.8) },
+      dinner: { selected: submittedStudents, total: totalStudents || 10, percentage: participationPercentage }
+    };
+  }, [activeFloorScope, floorConfig.prefix, roomMembers, submittedStudents, totalStudents, participationPercentage]);
 
   // Computed: Total number of meals booked for tomorrow across all 4 dining sessions
   const totalMealsBooked =
@@ -188,9 +211,8 @@ export const FloorInchargeDashboard = () => {
     (mealReqs.snacks?.selected || 0) +
     (mealReqs.dinner?.selected || 0);
 
-  // Sidebar navigation items: Combined Room Monitoring & Floor Overview
+  // Sidebar navigation items: Unified Room & Floor Monitoring (Dashboard merged into primary view)
   const sidebarItems = [
-    { name: 'Dashboard', icon: LayoutDashboard },              // Main KPI overview
     { name: 'Room & Floor Monitoring', icon: Users },          // Combined Room leads, monitoring & floor overview
     { name: 'Meal Requirement', icon: Utensils },              // Breakfast, Lunch, Snacks, Dinner counts
     { name: 'Low Participation', icon: AlertTriangle },        // Rooms below compliance threshold
@@ -282,8 +304,8 @@ export const FloorInchargeDashboard = () => {
         {/* 3. Main Dashboard Content Area */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
 
-          {/* Main Dashboard Hero Banner & 4 Primary KPI Metric Cards - Displayed ONLY on Main Dashboard */}
-          {activeTab === 'Dashboard' ? (
+          {/* Main Dashboard Hero Banner & 4 Primary KPI Metric Cards - Displayed on Room & Floor Monitoring */}
+          {activeTab === 'Room & Floor Monitoring' || activeTab === 'Room Monitoring' || activeTab === 'Floor Overview' || activeTab === 'Dashboard' ? (
             <>
               {/* Live Alert Banner from Block Coordinator */}
               {floorInchargeAlerts.length > 0 && (
@@ -585,9 +607,9 @@ export const FloorInchargeDashboard = () => {
             >
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-              <span>Hostel Block D</span>
+              <span>{assignedBlock}</span>
               <span>•</span>
-              <span>Floor Incharge</span>
+              <span>{assignedFloor}</span>
               <span>/</span>
               <span className="text-slate-900 dark:text-white font-bold">{activeTab}</span>
             </div>
@@ -598,13 +620,13 @@ export const FloorInchargeDashboard = () => {
 
           <div className="flex items-center gap-2.5">
             <button
-              onClick={() => setActiveTab('Dashboard')}
+              onClick={() => setActiveTab('Room & Floor Monitoring')}
               className={`px-3.5 py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${darkMode
                   ? 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700'
                   : 'bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-200/80'
                 }`}
             >
-              ← Back to Main Dashboard
+              ← Back to Room & Floor Monitoring
             </button>
             <button
               onClick={() => setDarkMode((prev) => !prev)}
@@ -621,7 +643,7 @@ export const FloorInchargeDashboard = () => {
           )}
 
       {/* MAIN SECTION: SMART ROOM MEAL SUBMISSIONS & MONITORING KEYCARDS (Combined Room & Floor Monitoring) */}
-      {(activeTab === 'Dashboard' || activeTab === 'Room & Floor Monitoring' || activeTab === 'Room Monitoring' || activeTab === 'Floor Overview') && (
+      {(activeTab === 'Room & Floor Monitoring' || activeTab === 'Room Monitoring' || activeTab === 'Floor Overview' || activeTab === 'Dashboard') && (
         <section
           className={`p-6 rounded-3xl border shadow-sm transition-all duration-300 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'
             }`}
@@ -633,10 +655,10 @@ export const FloorInchargeDashboard = () => {
             <div>
               <h2 className="text-lg font-black tracking-tight flex items-center gap-2">
                 <Users className="w-5 h-5 text-slate-700 dark:text-slate-300" />
-                Floor 2 Room Meal Submissions
+                {floorConfig.label} Room Meal Submissions
               </h2>
               <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                Real-time meal booking progress and student compliance status for all 8 rooms.
+                Real-time meal booking progress and student compliance status for all {scopedRooms.length} rooms.
               </p>
             </div>
 
@@ -650,7 +672,7 @@ export const FloorInchargeDashboard = () => {
               >
                 {/* Map through filter tabs dynamically */}
                 {[
-                  { id: 'all', label: `All (${floorRooms.length})` },
+                  { id: 'all', label: `All (${scopedRooms.length})` },
                   { id: 'completed', label: `Completed (${completedRoomsCount})` },
                   { id: 'pending', label: `Pending (${pendingRoomsCount})` },
                   { id: 'low', label: `Low Rate (${lowParticipationRooms.length})` }
@@ -824,9 +846,8 @@ export const FloorInchargeDashboard = () => {
       )}
 
       {/* MEAL REQUIREMENT SECTION - Culinary Bento Cards */}
-      {/* MEAL REQUIREMENT SECTION - Culinary Bento Cards */}
-      {/* Render if user is on 'Dashboard' or 'Meal Requirement' tab */}
-      {(activeTab === 'Dashboard' || activeTab === 'Meal Requirement') && (
+      {/* Render if user is on 'Meal Requirement' tab */}
+      {activeTab === 'Meal Requirement' && (
         <section
           className={`p-6 rounded-3xl border shadow-sm transition-all duration-300 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'
             }`}
@@ -836,15 +857,15 @@ export const FloorInchargeDashboard = () => {
             <div>
               <h3 className="text-lg font-black tracking-tight flex items-center gap-2">
                 <Utensils className="w-5 h-5 text-slate-700 dark:text-slate-300" />
-                Tomorrow's Floor Meal Requirements (Hostel Block D)
+                Tomorrow's Floor Meal Requirements ({floorConfig.label})
               </h3>
               <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                Consolidated meal bookings for Floor students sent directly to the Main Mess Kitchen for cooking preparation.
+                Consolidated meal bookings for {floorConfig.label} students sent directly to the Main Mess Kitchen for cooking preparation.
               </p>
             </div>
             
             <div className="flex items-center gap-2.5 flex-wrap">
-              {floorMealSheets.some((s) => s.floor.includes('Floor 1') && s.status === 'Confirmed by Kitchen') ? (
+              {floorMealSheets.some((s) => s.floor.includes(floorConfig.prefix || 'Floor 1') && s.status === 'Confirmed by Kitchen') ? (
                 <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200/80 flex items-center gap-1.5 shadow-2xs">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                   Kitchen Confirmed for Cooking
@@ -852,7 +873,7 @@ export const FloorInchargeDashboard = () => {
               ) : (
                 <button
                   type="button"
-                  onClick={() => sendFloorMealSheetToMess('Floor 1 (Block D)', mealReqs)}
+                  onClick={() => sendFloorMealSheetToMess(floorConfig.label, mealReqs)}
                   className="px-3.5 py-1.5 rounded-xl bg-[#1b4d3e] hover:bg-[#143d31] text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all"
                 >
                   <Send className="w-3.5 h-3.5 text-white" />
@@ -1033,8 +1054,8 @@ export const FloorInchargeDashboard = () => {
       )}
 
       {/* ROOM MONITORING MATRIX TABLE */}
-      {/* Render if activeTab is 'Dashboard' or 'Room & Floor Monitoring' */}
-      {(activeTab === 'Dashboard' || activeTab === 'Room & Floor Monitoring' || activeTab === 'Room Monitoring' || activeTab === 'Floor Overview') && (
+      {/* Render if activeTab is 'Room & Floor Monitoring' */}
+      {(activeTab === 'Room & Floor Monitoring' || activeTab === 'Room Monitoring' || activeTab === 'Floor Overview' || activeTab === 'Dashboard') && (
         <section
           className={`p-6 rounded-3xl border shadow-sm transition-all duration-300 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'
             }`}
@@ -1044,7 +1065,7 @@ export const FloorInchargeDashboard = () => {
             <div>
               <h3 className="text-lg font-black tracking-tight flex items-center gap-2">
                 <Users className="w-5 h-5 text-slate-700 dark:text-slate-300" />
-                Complete Floor 2 Room Monitoring Matrix
+                Complete {floorConfig.label} Room Monitoring Matrix
               </h3>
               <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 Real-time meal booking and submission audit for all assigned rooms.
@@ -1053,7 +1074,7 @@ export const FloorInchargeDashboard = () => {
             {/* Total rooms count badge */}
             <div className="flex items-center gap-2">
               <span className={`text-xs font-bold px-3 py-1.5 rounded-xl border ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-600'}`}>
-                {floorRooms.length} Total Rooms
+                {scopedRooms.length} Total Rooms
               </span>
             </div>
           </div>
@@ -1078,7 +1099,7 @@ export const FloorInchargeDashboard = () => {
               </thead>
               {/* Table Body rows */}
               <tbody className={`divide-y ${darkMode ? 'divide-slate-800' : 'divide-slate-100'}`}>
-                {floorRooms.map((room) => {
+                {scopedRooms.map((room) => {
                   // Low rate check (<60%)
                   const isLow = room.rate < 60;
                   // All submitted check
@@ -1182,8 +1203,8 @@ export const FloorInchargeDashboard = () => {
       )}
 
       {/* SUBMISSION RATE CHART & ANALYTICS */}
-      {/* Render if activeTab is 'Dashboard' or 'Room & Floor Monitoring' */}
-      {(activeTab === 'Dashboard' || activeTab === 'Room & Floor Monitoring' || activeTab === 'Floor Overview') && (
+      {/* Render if activeTab is 'Room & Floor Monitoring' */}
+      {(activeTab === 'Room & Floor Monitoring' || activeTab === 'Room Monitoring' || activeTab === 'Floor Overview' || activeTab === 'Dashboard') && (
         <section
           className={`p-6 rounded-3xl border shadow-sm transition-all duration-300 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'
             }`}
@@ -1196,7 +1217,7 @@ export const FloorInchargeDashboard = () => {
                 Room Meal Participation Analytics (%)
               </h3>
               <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                Submission rate comparison across all 8 rooms on Floor 2.
+                Submission rate comparison across all {scopedRooms.length} rooms on {floorConfig.label}.
               </p>
             </div>
 
@@ -1226,7 +1247,7 @@ export const FloorInchargeDashboard = () => {
           {/* Dynamic SVG Bar Chart rendered with Recharts */}
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={floorRooms} margin={{ top: 20, right: 15, left: -10, bottom: 5 }}>
+              <BarChart data={scopedRooms} margin={{ top: 20, right: 15, left: -10, bottom: 5 }}>
                 {/* Horizontal background gridlines */}
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={darkMode ? '#1e293b' : '#f1f5f9'} />
                 {/* X-Axis: Room numbers */}
@@ -1295,7 +1316,7 @@ export const FloorInchargeDashboard = () => {
                 />
                 {/* The bar elements with dynamic cell colors based on participation rate (Dark Monochrome High-Contrast Theme) */}
                 <Bar dataKey="rate" barSize={34} radius={[8, 8, 2, 2]}>
-                  {floorRooms.map((entry, index) => {
+                  {scopedRooms.map((entry, index) => {
                     const barColor = entry.rate >= 75 ? (darkMode ? '#f8fafc' : '#0f172a') : '#64748b';
                     return <Cell key={`cell-${index}`} fill={barColor} />;
                   })}

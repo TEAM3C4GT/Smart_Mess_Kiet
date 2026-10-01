@@ -1040,20 +1040,31 @@ export const AppProvider = ({ children }) => {
 
   const [kfcOrders, setKfcOrders] = useState([]);
 
-  // 3. Room Lead Data (Room D-101, Block D)
-  const [roomMembers, setRoomMembers] = useState([
-    { id: 1, name: 'Alex Rivers (You)', status: 'Submitted', time: '08:30 AM', choices: { b: 'Yes', l: 'Yes', s: 'No', d: 'Yes' } },
-    { id: 2, name: 'NITHIN', status: 'Submitted', time: '09:15 AM', choices: { b: 'Yes', l: 'Yes', s: 'Yes', d: 'Yes' } },
-    { id: 3, name: 'VISALYA', status: 'Submitted', time: '10:05 AM', choices: { b: 'Yes', l: 'Yes', s: 'No', d: 'Yes' } },
-    { id: 4, name: 'Rahul Verma', status: 'Submitted', time: '11:40 AM', choices: { b: 'No', l: 'Yes', s: 'No', d: 'Yes' } },
-    { id: 5, name: 'Priya Sundaram', status: 'Submitted', time: '02:10 PM', choices: { b: 'Yes', l: 'Yes', s: 'Yes', d: 'No' } }
-  ]);
-
   // Cross-Tab Synchronization Constants
   const NOTIFICATIONS_STORAGE_KEY = 'smart_mess_room_lead_notifications_v3';
   const FLOOR_ROOMS_STORAGE_KEY = 'smart_mess_floor_rooms_v3';
   const FLOOR_ALERTS_STORAGE_KEY = 'smart_mess_floor_alerts_v1';
   const FLOOR_MEAL_SHEETS_STORAGE_KEY = 'smart_mess_floor_meal_sheets_v1';
+  const ROOM_MEMBERS_STORAGE_KEY = 'smart_mess_room_members_v1';
+  const FLOOR_MEAL_REQS_STORAGE_KEY = 'smart_mess_floor_meal_reqs_v1';
+
+  // 3. Room Lead Data (Room D-101, Block D) (Persisted & Synced across tabs)
+  const [roomMembers, setRoomMembers] = useState(() => {
+    try {
+      const saved = localStorage.getItem(ROOM_MEMBERS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return [
+      { id: 1, name: 'Alex Rivers (You)', status: 'Submitted', time: '08:30 AM', choices: { b: 'Yes', l: 'Yes', s: 'No', d: 'Yes' } },
+      { id: 2, name: 'NITHIN', status: 'Submitted', time: '09:15 AM', choices: { b: 'Yes', l: 'Yes', s: 'Yes', d: 'Yes' } },
+      { id: 3, name: 'VISALYA', status: 'Submitted', time: '10:05 AM', choices: { b: 'Yes', l: 'Yes', s: 'No', d: 'Yes' } },
+      { id: 4, name: 'Rahul Verma', status: 'Submitted', time: '11:40 AM', choices: { b: 'No', l: 'Yes', s: 'No', d: 'Yes' } },
+      { id: 5, name: 'Priya Sundaram', status: 'Submitted', time: '02:10 PM', choices: { b: 'Yes', l: 'Yes', s: 'Yes', d: 'No' } }
+    ];
+  });
   const INITIAL_ROOM_LEAD_NOTIFICATIONS = [
     {
       id: 1,
@@ -1260,14 +1271,46 @@ export const AppProvider = ({ children }) => {
     addToast(`Attendance submitted for ${roomNo}: ${presentCount}/${totalCount} Present`, 'success');
   };
 
-  const [floorMealRequirements, setFloorMealRequirements] = useState({
-    floorName: 'Floor 1',
-    blockName: 'Hostel Block D',
-    breakfast: { selected: 10, total: 10, percentage: 100 },
-    lunch: { selected: 10, total: 10, percentage: 100 },
-    snacks: { selected: 8, total: 10, percentage: 80 },
-    dinner: { selected: 10, total: 10, percentage: 100 }
+  const [floorMealRequirements, setFloorMealRequirements] = useState(() => {
+    try {
+      const saved = localStorage.getItem(FLOOR_MEAL_REQS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.breakfast) return parsed;
+      }
+    } catch (e) {}
+    return {
+      floorName: 'Floor 1',
+      blockName: 'Hostel Block D',
+      breakfast: { selected: 9, total: 10, percentage: 90 },
+      lunch: { selected: 10, total: 10, percentage: 100 },
+      snacks: { selected: 6, total: 10, percentage: 60 },
+      dinner: { selected: 9, total: 10, percentage: 90 }
+    };
   });
+
+  const calculateFloorMealReqs = (currentRoomMembers) => {
+    const d101B = currentRoomMembers.filter(m => m.status !== 'On Leave' && m.choices?.b === 'Yes').length;
+    const d101L = currentRoomMembers.filter(m => m.status !== 'On Leave' && m.choices?.l === 'Yes').length;
+    const d101S = currentRoomMembers.filter(m => m.status !== 'On Leave' && m.choices?.s === 'Yes').length;
+    const d101D = currentRoomMembers.filter(m => m.status !== 'On Leave' && m.choices?.d === 'Yes').length;
+
+    // Room D-102 (5 students: 5 Breakfast, 5 Lunch, 4 Snacks, 5 Dinner)
+    const totalStudents = 10;
+    const totalB = Math.min(totalStudents, d101B + 5);
+    const totalL = Math.min(totalStudents, d101L + 5);
+    const totalS = Math.min(totalStudents, d101S + 4);
+    const totalD = Math.min(totalStudents, d101D + 5);
+
+    return {
+      floorName: 'Floor 1',
+      blockName: 'Hostel Block D',
+      breakfast: { selected: totalB, total: totalStudents, percentage: Math.round((totalB / totalStudents) * 100) },
+      lunch: { selected: totalL, total: totalStudents, percentage: Math.round((totalL / totalStudents) * 100) },
+      snacks: { selected: totalS, total: totalStudents, percentage: Math.round((totalS / totalStudents) * 100) },
+      dinner: { selected: totalD, total: totalStudents, percentage: Math.round((totalD / totalStudents) * 100) }
+    };
+  };
 
   // 5. Block Coordinator Data (Block D & Block E) - Dynamically aggregated from live floorRooms
   const blockData = useMemo(() => {
@@ -1511,6 +1554,9 @@ export const AppProvider = ({ children }) => {
           setFloorRooms((prevRooms) => {
             const merged = data.rooms.map((dbRoom) => {
               const localRoom = prevRooms.find((r) => r.roomNo === dbRoom.roomNo);
+              if (localRoom && localRoom.roomNo === 'Room D-101' && localRoom.submitted !== undefined) {
+                return { ...dbRoom, submitted: localRoom.submitted, pending: localRoom.pending, rate: localRoom.rate };
+              }
               if (localRoom && localRoom.submitted > dbRoom.submitted) {
                 return localRoom;
               }
@@ -1841,8 +1887,12 @@ export const AppProvider = ({ children }) => {
   };
 
   const updateRoomMemberMeal = (memberId, choices, status = 'Submitted', note = '') => {
+    let updatedMembers = [];
+    let updatedRooms = [];
+    let updatedMealReqs = null;
+
     setRoomMembers((prev) => {
-      const updated = prev.map((m) => {
+      updatedMembers = prev.map((m) => {
         if (m.id === memberId) {
           return {
             ...m,
@@ -1856,28 +1906,64 @@ export const AppProvider = ({ children }) => {
         }
         return m;
       });
-      const submittedCount = updated.filter((m) => m.status === 'Submitted' || m.status === 'On Leave').length;
-      setFloorRooms((fPrev) =>
-        fPrev.map((r) => {
+
+      try {
+        localStorage.setItem(ROOM_MEMBERS_STORAGE_KEY, JSON.stringify(updatedMembers));
+      } catch (e) {}
+
+      const submittedCount = updatedMembers.filter((m) => m.status === 'Submitted' || m.status === 'On Leave').length;
+
+      setFloorRooms((fPrev) => {
+        updatedRooms = fPrev.map((r) => {
           if (r.roomNo === 'Room D-101') {
             return {
               ...r,
               submitted: submittedCount,
-              pending: updated.length - submittedCount,
-              rate: Math.round((submittedCount / updated.length) * 100),
+              pending: Math.max(0, updatedMembers.length - submittedCount),
+              rate: Math.round((submittedCount / updatedMembers.length) * 100),
             };
           }
           return r;
-        })
-      );
-      return updated;
+        });
+
+        try {
+          localStorage.setItem(FLOOR_ROOMS_STORAGE_KEY, JSON.stringify(updatedRooms));
+        } catch (e) {}
+
+        updatedMealReqs = calculateFloorMealReqs(updatedMembers);
+        setFloorMealRequirements(updatedMealReqs);
+        try {
+          localStorage.setItem(FLOOR_MEAL_REQS_STORAGE_KEY, JSON.stringify(updatedMealReqs));
+        } catch (e) {}
+
+        if (broadcastChannelRef.current) {
+          try {
+            broadcastChannelRef.current.postMessage({
+              type: 'ROOM_MEMBER_MEAL_UPDATED',
+              roomNo: 'Room D-101',
+              roomMembers: updatedMembers,
+              floorRooms: updatedRooms,
+              floorMealRequirements: updatedMealReqs
+            });
+          } catch (e) {}
+        }
+
+        return updatedRooms;
+      });
+
+      return updatedMembers;
     });
-    addToast('Roommate meal preferences recorded successfully!', 'success');
+
+    addToast('Roommate meal preferences recorded and updated in Floor Monitoring!', 'success');
   };
 
   const markMemberOnLeave = (memberId) => {
+    let updatedMembers = [];
+    let updatedRooms = [];
+    let updatedMealReqs = null;
+
     setRoomMembers((prev) => {
-      const updated = prev.map((m) => {
+      updatedMembers = prev.map((m) => {
         if (m.id === memberId) {
           return {
             ...m,
@@ -1889,13 +1975,55 @@ export const AppProvider = ({ children }) => {
         }
         return m;
       });
-      const submittedCount = updated.filter((m) => m.status === 'Submitted' || m.status === 'On Leave').length;
-      setFloorRooms((fPrev) =>
-        fPrev.map((r) => (r.roomNo === 'Room D-101' ? { ...r, submitted: submittedCount, pending: updated.length - submittedCount, rate: Math.round((submittedCount / updated.length) * 100) } : r))
-      );
-      return updated;
+
+      try {
+        localStorage.setItem(ROOM_MEMBERS_STORAGE_KEY, JSON.stringify(updatedMembers));
+      } catch (e) {}
+
+      const submittedCount = updatedMembers.filter((m) => m.status === 'Submitted' || m.status === 'On Leave').length;
+
+      setFloorRooms((fPrev) => {
+        updatedRooms = fPrev.map((r) => {
+          if (r.roomNo === 'Room D-101') {
+            return {
+              ...r,
+              submitted: submittedCount,
+              pending: Math.max(0, updatedMembers.length - submittedCount),
+              rate: Math.round((submittedCount / updatedMembers.length) * 100),
+            };
+          }
+          return r;
+        });
+
+        try {
+          localStorage.setItem(FLOOR_ROOMS_STORAGE_KEY, JSON.stringify(updatedRooms));
+        } catch (e) {}
+
+        updatedMealReqs = calculateFloorMealReqs(updatedMembers);
+        setFloorMealRequirements(updatedMealReqs);
+        try {
+          localStorage.setItem(FLOOR_MEAL_REQS_STORAGE_KEY, JSON.stringify(updatedMealReqs));
+        } catch (e) {}
+
+        if (broadcastChannelRef.current) {
+          try {
+            broadcastChannelRef.current.postMessage({
+              type: 'ROOM_MEMBER_MEAL_UPDATED',
+              roomNo: 'Room D-101',
+              roomMembers: updatedMembers,
+              floorRooms: updatedRooms,
+              floorMealRequirements: updatedMealReqs
+            });
+          } catch (e) {}
+        }
+
+        return updatedRooms;
+      });
+
+      return updatedMembers;
     });
-    addToast('Roommate marked on leave (meals excluded for tomorrow).', 'info');
+
+    addToast('Roommate marked on leave (meals excluded from Floor Monitoring).', 'info');
   };
 
   // -------------------------------------------------------------
@@ -1993,6 +2121,18 @@ export const AppProvider = ({ children }) => {
             );
             playNotificationChime();
             addToast(`🍳 Mess Kitchen confirmed meal sheet for ${data.floor || 'your floor'}! Preparation underway.`, 'success');
+          } else if (data.type === 'ROOM_MEMBER_MEAL_UPDATED') {
+            if (Array.isArray(data.roomMembers)) {
+              setRoomMembers(data.roomMembers);
+            }
+            if (Array.isArray(data.floorRooms)) {
+              setFloorRooms(data.floorRooms);
+            }
+            if (data.floorMealRequirements) {
+              setFloorMealRequirements(data.floorMealRequirements);
+            }
+            playNotificationChime();
+            addToast(`Live Update: Room ${data.roomNo || 'D-101'} meal requirements updated by Room Lead!`, 'info');
           }
         };
       } catch (err) {
@@ -2019,6 +2159,24 @@ export const AppProvider = ({ children }) => {
           }
         } catch (err) {
           console.error('Failed parsing storage floor rooms update', err);
+        }
+      } else if (e.key === ROOM_MEMBERS_STORAGE_KEY && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) {
+            setRoomMembers(parsed);
+          }
+        } catch (err) {
+          console.error('Failed parsing storage room members update', err);
+        }
+      } else if (e.key === FLOOR_MEAL_REQS_STORAGE_KEY && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed && parsed.breakfast) {
+            setFloorMealRequirements(parsed);
+          }
+        } catch (err) {
+          console.error('Failed parsing storage floor meal reqs update', err);
         }
       } else if (e.key === FLOOR_ALERTS_STORAGE_KEY && e.newValue) {
         try {
@@ -2301,7 +2459,6 @@ export const AppProvider = ({ children }) => {
 
     addToast(`Floor meal sheet for ${targetFloor || 'Floor'} confirmed for kitchen preparation!`, 'success');
   };
-
 
   const login = (identifier, password = '') => {
     const cleanId = (identifier || '').trim();
