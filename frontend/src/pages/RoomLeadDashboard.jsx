@@ -231,7 +231,7 @@ export const RoomLeadDashboard = () => {
   // Handler: Opens assisted meal booking / editing modal for a roommate
   const handleOpenEditModal = (member) => {
     if (!isEditingWindowActive) {
-      addToast('Editing window is closed for kitchen prep. Request an emergency extension.', 'warning');
+      addToast('Editing window is closed for kitchen prep.', 'warning');
       return;
     }
     setEditingMember(member);
@@ -451,6 +451,7 @@ export const RoomLeadDashboard = () => {
                       </span>
                     )}
                   </div>
+              
 
                   <div className="flex items-center gap-1.5 font-mono font-bold">
                     <span className={`px-2 py-0.5 rounded-md border ${
@@ -1396,17 +1397,6 @@ export const RoomLeadDashboard = () => {
                   <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                     Tonight at 10:00 PM • Kitchen order lock for Hostel Block D
                   </p>
-
-                  <div className="mt-4 flex justify-center">
-                    <button
-                      type="button"
-                      onClick={handleGrantEmergencyExtension}
-                      className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
-                    >
-                      <Clock className="w-3.5 h-3.5 text-slate-300 dark:text-slate-700" />
-                      <span>Request 15-Minute Emergency Extension</span>
-                    </button>
-                  </div>
                 </div>
 
                 {/* Timeline Milestones */}
