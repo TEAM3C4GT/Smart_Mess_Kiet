@@ -1,0 +1,74 @@
+# ==============================================================================
+# Smart Mess & KFC System - Git Ignore Configuration
+# ==============================================================================
+
+# Archify & Architecture Modeling (Local Interactive Specs)
+archify/
+architecture_diagram.html
+architecture_model.json
+*.archify
+*.drawio
+
+# Node.js Dependencies
+node_modules/
+*/node_modules/
+frontend/node_modules/
+backend/node_modules/
+backend/ai-service/node_modules/
+package-lock.json
+!frontend/package-lock.json
+!backend/package-lock.json
+
+# Production Build Outputs
+dist/
+*/dist/
+frontend/dist/
+build/
+*/build/
+out/
+.vite/
+frontend/.vite/
+
+# Environment Variables & Secrets
+.env
+.env.local
+.env.*.local
+*.env
+*.env.*
+frontend/.env
+backend/.env
+
+# Temporary Files, Scratchpads & Runtime Logs
+*.log
+logs/
+*.tmp
+*.temp
+scratch/
+*/scratch/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Browser Testing Artifacts & Recordings
+*.webm
+*.webp
+*.png
+!frontend/public/**/*.png
+!frontend/src/assets/**/*.png
+screenshot.png
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
