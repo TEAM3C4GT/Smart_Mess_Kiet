@@ -2,13 +2,6 @@
 # Smart Mess & KFC System - Git Ignore Configuration
 # ==============================================================================
 
-# Archify & Architecture Modeling (Local Interactive Specs)
-archify/
-architecture_diagram.html
-architecture_model.json
-*.archify
-*.drawio
-
 # Node.js Dependencies
 node_modules/
 */node_modules/
@@ -28,6 +21,22 @@ build/
 out/
 .vite/
 frontend/.vite/
+
+# Python Virtual Environments, Bytecode & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+backend/ai-service/__pycache__/
+backend/ai-service/.venv/
+backend/ai-service/venv/
 
 # Environment Variables & Secrets
 .env
@@ -59,8 +68,6 @@ pnpm-debug.log*
 screenshot.png
 
 # Command Code & Local Command Reference Files
-COMMANDS.md
-commands.md
 .commandcode/
 .commandcode
 *.commandcode

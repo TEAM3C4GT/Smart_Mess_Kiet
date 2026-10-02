@@ -16,6 +16,8 @@ import {
   updateKfcMenu,
   deleteKfcMenuItem,
   getAIForecast,
+  getAIHistoricalData,
+  simulateAIForecast,
   getAIAnomalies,
   getDemoUsers,
   loginUser,
@@ -80,6 +82,8 @@ router.patch('/kfc/orders/:id/status', updateKfcOrderStatus);
 
 // AI Forecasting & Anomalies
 router.get('/ai/forecast/:scope/:date', getAIForecast);
+router.get('/ai/historical', getAIHistoricalData);
+router.post('/ai/simulate', simulateAIForecast);
 router.get('/ai/anomalies', getAIAnomalies);
 
 export default router;

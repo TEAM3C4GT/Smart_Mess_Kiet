@@ -11,23 +11,92 @@ import { MessInchargeDashboard } from './pages/MessInchargeDashboard';
 import { PrincipalDashboard } from './pages/PrincipalDashboard';
 import { KfcStaffDashboard } from './pages/KfcStaffDashboard';
 import { ToastContainer } from './components/ToastContainer';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 export const App = () => {
   return (
     <>
       <ToastContainer />
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/dashboards" element={<MainDashboards />} />
-        <Route path="/student" element={<StudentDashboard />} />
-        <Route path="/room-lead" element={<RoomLeadDashboard />} />
-        <Route path="/floor-incharge" element={<FloorInchargeDashboard />} />
-        <Route path="/block-coordinator" element={<BlockCoordinatorDashboard />} />
-        <Route path="/mess-incharge" element={<MessInchargeDashboard />} />
-        <Route path="/principal" element={<PrincipalDashboard />} />
-        <Route path="/kfc-staff" element={<KfcStaffDashboard />} />
-        <Route path="/kfc" element={<KfcStaffDashboard />} />
+
+        {/* Protected Dashboard Routes */}
+        <Route
+          path="/dashboards"
+          element={
+            <ProtectedRoute allowedRoles={['Admin']}>
+              <MainDashboards />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student"
+          element={
+            <ProtectedRoute allowedRoles={['Student', 'Room Lead', 'Admin']}>
+              <StudentDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/room-lead"
+          element={
+            <ProtectedRoute allowedRoles={['Room Lead', 'Admin']}>
+              <RoomLeadDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/floor-incharge"
+          element={
+            <ProtectedRoute allowedRoles={['Floor Incharge', 'Admin']}>
+              <FloorInchargeDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/block-coordinator"
+          element={
+            <ProtectedRoute allowedRoles={['Block Coordinator', 'Admin']}>
+              <BlockCoordinatorDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/mess-incharge"
+          element={
+            <ProtectedRoute allowedRoles={['Mess Incharge', 'Admin']}>
+              <MessInchargeDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/principal"
+          element={
+            <ProtectedRoute allowedRoles={['Principal', 'Admin']}>
+              <PrincipalDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/kfc-staff"
+          element={
+            <ProtectedRoute allowedRoles={['KFC Staff', 'Admin']}>
+              <KfcStaffDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/kfc"
+          element={
+            <ProtectedRoute allowedRoles={['KFC Staff', 'Admin']}>
+              <KfcStaffDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Fallback */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </>

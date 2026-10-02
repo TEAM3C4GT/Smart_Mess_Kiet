@@ -1910,33 +1910,147 @@ export const AppProvider = ({ children }) => {
     { time: '09:00 PM', orders: 12, revenue: 1490 }
   ]);
 
+  // -------------------------------------------------------------
+  // AI PREDICTIVE INTELLIGENCE & HISTORICAL HEADCOUNT FORECASTING
+  // -------------------------------------------------------------
+  const [selectedAiMeal, setSelectedAiMeal] = useState('Lunch');
+  const [aiScenario, setAiScenario] = useState('standard');
+  const [aiLoading, setAiLoading] = useState(false);
+
+  // Default initial AI forecast with rich past-data values
+  const [aiForecast, setAiForecast] = useState(() => {
+    return {
+      meal: 'Lunch',
+      dayOfWeek: 'Thu',
+      scenario: 'standard',
+      selectedCount: 185,
+      predictedCount: 192,
+      confidence: 94.6,
+      confidenceInterval: { min: 188, max: 196 },
+      bufferPortions: 8,
+      prepTarget: 200,
+      historicalTurnoutRatio: 1.038,
+      wma: 191,
+      kitchenBatch: {
+        rawRiceKg: 32.0,
+        dalLiters: 28.0,
+        vegPaneerKg: 32.0,
+        rotisPcs: 600,
+        oilSpicesKg: 4.4,
+        bufferKg: 2.2,
+        prepTarget: 200,
+        bufferPortions: 8
+      },
+      wastageMetrics: {
+        staticWasteKg: 10.1,
+        aiWasteKg: 4.6,
+        wasteSavedKg: 5.5,
+        costSavedRs: 990,
+        wasteReductionPct: 54
+      },
+      pastTrend: [
+        { date: '2026-09-24', day: 'Thu', selected: 185, actual: 192, predicted: 190, variance: 7, accuracy: 97.9, wastageKg: 8.6, event: 'Smart Prep Benchmark' },
+        { date: '2026-09-25', day: 'Fri', selected: 184, actual: 191, predicted: 189, variance: 7, accuracy: 97.9, wastageKg: 7.9, event: 'Regular Academic Day' },
+        { date: '2026-09-26', day: 'Sat', selected: 160, actual: 156, predicted: 158, variance: -4, accuracy: 97.5, wastageKg: 6.5, event: 'Weekend Outing' },
+        { date: '2026-09-27', day: 'Sun', selected: 175, actual: 181, predicted: 179, variance: 6, accuracy: 97.8, wastageKg: 5.9, event: 'Biryani Special' },
+        { date: '2026-09-28', day: 'Mon', selected: 187, actual: 193, predicted: 191, variance: 6, accuracy: 97.9, wastageKg: 5.6, event: 'Optimal AI Batch Prep' },
+        { date: '2026-09-29', day: 'Tue', selected: 188, actual: 194, predicted: 192, variance: 6, accuracy: 97.9, wastageKg: 5.2, event: 'Optimal AI Batch Prep' },
+        { date: '2026-09-30', day: 'Wed', selected: 189, actual: 196, predicted: 194, variance: 7, accuracy: 97.9, wastageKg: 4.9, event: 'Paneer Butter Masala Peak' }
+      ]
+    };
+  });
+
+  const fetchAIForecast = async (meal = selectedAiMeal, date = '2026-10-01', scenario = aiScenario, customSelected = null) => {
+    setAiLoading(true);
+    try {
+      const queryParams = new URLSearchParams({
+        meal,
+        scenario,
+        ...(customSelected ? { customSelected: String(customSelected) } : {})
+      });
+      const res = await fetch(`/api/ai/forecast/mess/${date}?${queryParams.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setAiForecast(data);
+          // Sync headcount table
+          setHeadcount((prev) =>
+            prev.map((h) =>
+              h.meal.toLowerCase() === meal.toLowerCase()
+                ? {
+                    ...h,
+                    selected: data.selectedCount,
+                    predicted: data.predictedCount,
+                    variance: (data.predictedCount - data.selectedCount) >= 0
+                      ? `+${data.predictedCount - data.selectedCount}`
+                      : `${data.predictedCount - data.selectedCount}`
+                  }
+                : h
+            )
+          );
+          return data;
+        }
+      }
+    } catch (err) {
+      console.warn('AI Forecast fetch fallback:', err);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const runAiSimulation = async (scenario, overrideSelected = null) => {
+    setAiScenario(scenario);
+    return await fetchAIForecast(selectedAiMeal, '2026-10-01', scenario, overrideSelected);
+  };
+
   const [aiAnomalies, setAiAnomalies] = useState([
     {
       id: 1,
-      title: 'Low Participation Anomaly',
-      scope: 'Hostel Block D • Floor 2 (Room D-202)',
-      desc: 'Room submission rate is 60% (3/5 students). Automated escalation to Floor Incharge triggered.',
-      severity: 'high',
+      title: 'Thursday Lunch Turnout Surge Forecast',
+      scope: 'Main Mess Kitchen • Lunch Shift',
+      desc: 'Historical 14-day analysis indicates Thursday Lunch turnout averages +4.2% over portal selections due to 3rd-year engineering lab schedules. Recommended: Prepare +8 buffer portions.',
+      severity: 'medium',
+      metricDifference: '+7.4 meals vs selections',
       time: '12m ago',
-      status: 'Active'
+      status: 'Active',
+      actionRequired: 'Apply Kitchen Buffer Margin',
+      mitigation: 'Add +3.5 kg rice and +2.5 kg dal to Lunch prep'
     },
     {
       id: 2,
-      title: 'KFC Demand Surge Forecast',
-      scope: 'Evening Snacks Shift • Food Court',
-      desc: 'Zinger Burger Duo orders forecasted +28% over 7-day average. Kitchen prep notice sent.',
-      severity: 'medium',
-      time: '35m ago',
-      status: 'Active'
+      title: 'Room D-202 Participation Lag',
+      scope: 'Hostel Block D • Floor 2 (Room D-202)',
+      desc: 'Room D-202 submission rate is 60% (3/5 students). 2 students have not opted in before the 10:00 PM cutoff. Automated nudge dispatched.',
+      severity: 'high',
+      metricDifference: '-40% vs Floor Target',
+      time: '25m ago',
+      status: 'Active',
+      actionRequired: 'Follow up with Room Lead',
+      mitigation: 'Automated nudge dispatched to Room Lead & Floor Incharge'
     },
     {
       id: 3,
-      title: 'Institutional Wastage Milestone',
-      scope: 'Campus Kitchen Hub',
-      desc: 'Daily food waste decreased to 6.2 kg, beating the 10 kg target for 3 consecutive days.',
+      title: 'KFC Express Evening Rush Alert',
+      scope: 'Canteen Food Court • 04:30 PM - 06:00 PM',
+      desc: 'Zinger Burger Duo & Chicken Popcorn orders predicted to surge by +28% based on previous Thursday evening footfall.',
+      severity: 'medium',
+      metricDifference: '+28% Order Volume',
+      time: '35m ago',
+      status: 'Active',
+      actionRequired: 'Pre-marinate chicken stock',
+      mitigation: 'Pre-batch 15 extra fryer portions'
+    },
+    {
+      id: 4,
+      title: 'Zero Waste Milestone - International Wing',
+      scope: 'Block E International Kitchen Wing',
+      desc: 'Daily unconsumed plate wastage dropped by 32% (from 18.2kg Mon down to 4.8kg today) after adopting AI-guided portioning.',
       severity: 'low',
+      metricDifference: '-32% Plate Waste',
       time: '1h ago',
-      status: 'Resolved'
+      status: 'Resolved',
+      actionRequired: 'Maintain AI Batching',
+      mitigation: 'Benchmark adopted campus-wide'
     }
   ]);
 
@@ -3251,6 +3365,15 @@ export const AppProvider = ({ children }) => {
         kfcHourlyFootfall,
         aiAnomalies,
         resolveAnomaly,
+        selectedAiMeal,
+        setSelectedAiMeal,
+        aiScenario,
+        setAiScenario,
+        aiLoading,
+        aiForecast,
+        setAiForecast,
+        fetchAIForecast,
+        runAiSimulation,
         users,
         addUser,
         updateUser,

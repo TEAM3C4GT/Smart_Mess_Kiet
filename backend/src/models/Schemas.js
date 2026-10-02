@@ -108,8 +108,14 @@ const BlockPerformanceSchema = new mongoose.Schema({
 
 const AttendanceSchema = new mongoose.Schema({
   date: { type: String, required: true },
+  day: String,
   meal: { type: String, required: true },
-  actualCount: Number
+  selectedCount: Number,
+  actualCount: Number,
+  predictedCount: Number,
+  wastageKg: Number,
+  accuracy: Number,
+  event: String
 }, { timestamps: true });
 
 const AggregationSchema = new mongoose.Schema({
