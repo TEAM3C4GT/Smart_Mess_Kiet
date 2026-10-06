@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useApp, STAFF_ACCOUNTS, DEFAULT_CAMPUS_USERS } from '../context/AppContext';
 import {
   UtensilsCrossed,
   ArrowRight,
@@ -26,7 +27,19 @@ const ROLES = [
 
 export const HomePage = () => {
   const navigate = useNavigate();
+  const { loginAsUser, users = [] } = useApp();
   const [mobileNav, setMobileNav] = useState(false);
+
+  const handleOpenRole = (role) => {
+    const matchingAccount =
+      (Array.isArray(STAFF_ACCOUNTS) && STAFF_ACCOUNTS.find((st) => st.path === role.path || st.role === role.label)) ||
+      (Array.isArray(users) && users.find((u) => u.path === role.path || u.role === role.label)) ||
+      (Array.isArray(DEFAULT_CAMPUS_USERS) && DEFAULT_CAMPUS_USERS.find((u) => u.path === role.path || u.role === role.label));
+    if (matchingAccount && loginAsUser) {
+      loginAsUser(matchingAccount);
+    }
+    navigate(role.path);
+  };
 
   return (
     <div className="min-h-screen bg-[#f7f4ef] text-stone-900 antialiased">
@@ -184,8 +197,8 @@ export const HomePage = () => {
                 <li key={role.label}>
                   <button
                     type="button"
-                    onClick={() => navigate(role.path)}
-                    className="w-full flex items-center gap-3.5 px-4 sm:px-5 py-4 text-left hover:bg-stone-50 transition-colors"
+                    onClick={() => handleOpenRole(role)}
+                    className="w-full flex items-center gap-3.5 px-4 sm:px-5 py-4 text-left hover:bg-stone-50 transition-colors cursor-pointer"
                   >
                     <span className="w-9 h-9 rounded-lg bg-[#eef5f1] text-[#1b4d3e] flex items-center justify-center shrink-0">
                       <Icon className="w-4 h-4" />

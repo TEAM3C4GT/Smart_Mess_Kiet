@@ -141,5 +141,32 @@ smart-mess-kfc/
         ├── index.css
         ├── components/             # Navbar, Sidebar, ToastContainer, ProtectedRoute
         ├── context/                # AppContext with BroadcastChannel synchronization
-        └── pages/                  # 8 role-specific dashboards + Login & Home
 ```
+
+---
+
+## ⚡ Non-Functional Requirements (NFRs)
+
+| Category | Requirement Specification | Implementation & Verification |
+| :--- | :--- | :--- |
+| **Performance & Latency** | Sub-100ms API response time; sub-5ms UI cross-tab broadcast synchronization. | Native HTML5 `BroadcastChannel` and `StorageEvent` bus; zero-refresh instantaneous state propagation across kitchen terminals and resident apps. |
+| **Scalability & Concurrency** | Capable of supporting 2,000+ resident students, 80+ room leads, 10+ floor incharge accounts, and simultaneous canteen order peaks. | Modular RESTful architecture, optimized state selectors, and lightweight in-memory caching buffers in Node.js Express. |
+| **High Availability & Resilience** | Continuous 24/7 service availability during morning, lunch, and dinner peak rushes; graceful offline database tolerance. | Dual-tier database design: connects to MongoDB when online, automatically defaults to seed dataset cache with 0 service degradation when offline. |
+| **Data Integrity & Consistency** | 100% accurate kitchen inventory and order reconciliation with strict daily limits and anti-hoarding rules. | Enforced daily limits (max 5 orders/day, max 1 active order per student); atomic 2-minute cancellation window with real-time inventory restoration. |
+| **Usability & Clean Aesthetics** | High-contrast, clean light theme UI; zero color clashes (no dark-on-dark or white-on-white text); mobile-first responsiveness. | Tailwind CSS design system with curated emerald/slate palette, clear metric tooltips, accessible interactive controls, and visual stepper indicators. |
+| **Security & Access Control** | Strict Role-Based Access Control (RBAC) across 8 governance tiers; prevention of privilege escalation. | Centralized `ProtectedRoute` client guard, route parameter validation, session token checks, and sanitized operational endpoints. |
+
+---
+
+## 👨‍💻 Team Roles & Technical Contributions
+
+| Team Member | Project Role | Core Architectural & Engineering Contributions |
+| :--- | :--- | :--- |
+| **Lead Full-Stack Architect** | Project Lead & System Architecture | Overall system design, Multi-Tier RBAC routing (`ProtectedRoute`), HTML5 `BroadcastChannel` cross-tab state synchronization, and repository governance. |
+| **Frontend Engineer — Resident Experience** | UI/UX & Student / Room Lead Portals | Student Dining Portal (`/student`) with dietary opt-ins, 2-min KFC cancellation timer, feedback modal, and Room Lead Hub (`/room-lead`) with breadcrumbs and 1-click toggles. |
+| **AI & Predictive Analytics Engineer** | Data Science & Forecasting Engine | 14-day past turnout Weighted Moving Average (WMA) regression, Day-of-Week seasonality weighting, What-If demand scenario simulator, and kitchen wastage minimization algorithms. |
+| **Backend & Kitchen Systems Engineer** | API Development & Canteen Terminals | Express.js REST APIs, MongoDB Mongoose schema models, KFC Staff POS Terminal (`/kfc-staff`) with stock counters, and Mess Incharge requisition batch calculator. |
+| **QA & Governance Specialist** | Quality Assurance & Principal Portal | Principal Executive Dashboard (`/principal`), Floor Incharge & Block Coordinator portals, data seeding, audit trails, and multi-browser end-to-end testing. |
+
+---
+

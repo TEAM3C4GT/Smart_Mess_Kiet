@@ -123,11 +123,88 @@ export const dummyStaffUsers = [
   },
   {
     id: 'USR-ST02',
-    name: 'Nithin (Room Lead)',
+    name: 'Alex Rivers (Room Lead D-101)',
     email: 'nithin.roomlead@gmail.com',
     role: 'Room Lead',
     path: '/room-lead',
     badge: 'Lead • Room D-101 • Block D',
+    status: 'Active',
+    lastActive: 'Active now',
+    password: '123456789'
+  },
+  {
+    id: 'USR-ST02A',
+    name: 'Abhishek Tiwari (Room Lead D-102)',
+    email: 'abhishek.lead@kiet.edu',
+    role: 'Room Lead',
+    path: '/room-lead',
+    badge: 'Lead • Room D-102 • Block D',
+    status: 'Active',
+    lastActive: 'Active now',
+    password: '123456789'
+  },
+  {
+    id: 'USR-ST02B',
+    name: 'Prashant Singh (Room Lead D-201)',
+    email: 'prashant.lead@kiet.edu',
+    role: 'Room Lead',
+    path: '/room-lead',
+    badge: 'Lead • Room D-201 • Block D',
+    status: 'Active',
+    lastActive: 'Active now',
+    password: '123456789'
+  },
+  {
+    id: 'USR-ST02C',
+    name: 'Vaibhav Goyal (Room Lead D-202)',
+    email: 'vaibhav.lead@kiet.edu',
+    role: 'Room Lead',
+    path: '/room-lead',
+    badge: 'Lead • Room D-202 • Block D',
+    status: 'Active',
+    lastActive: 'Active now',
+    password: '123456789'
+  },
+  {
+    id: 'USR-ST02D',
+    name: 'SRIRAM (Room Lead E-101)',
+    email: 'sriram.lead@kiet.edu',
+    role: 'Room Lead',
+    path: '/room-lead',
+    badge: 'Lead • Room E-101 • Block E',
+    status: 'Active',
+    lastActive: 'Active now',
+    password: '123456789'
+  },
+  {
+    id: 'USR-ST02E',
+    name: 'Aaditya Nair (Room Lead E-102)',
+    email: 'aaditya.lead@kiet.edu',
+    role: 'Room Lead',
+    path: '/room-lead',
+    badge: 'Lead • Room E-102 • Block E',
+    status: 'Active',
+    lastActive: 'Active now',
+    password: '123456789'
+  },
+  {
+    id: 'USR-ST02F',
+    name: 'Kavya Madhavan (Room Lead E-201)',
+    email: 'kavya.lead@kiet.edu',
+    role: 'Room Lead',
+    path: '/room-lead',
+    badge: 'Lead • Room E-201 • Block E',
+    status: 'Active',
+    lastActive: 'Active now',
+    password: '123456789'
+  },
+  {
+    id: 'USR-ST02G',
+    name: 'Pooja Hegde (Room Lead E-202)',
+    email: 'pooja.lead@kiet.edu',
+    role: 'Room Lead',
+    path: '/room-lead',
+    badge: 'Lead • Room E-202 • Block E',
     status: 'Active',
     lastActive: 'Active now',
     password: '123456789'
@@ -255,7 +332,7 @@ export const dummyStaffUsers = [
   }
 ];
 
-// Unified users array: 40 Students + 9 Staff = 49 Campus Users
+// Unified users array: 40 Students + 16 Staff/Leads = 56 Campus Users
 export const dummyUsers = [
   ...studentUsers,
   ...dummyStaffUsers
@@ -867,7 +944,7 @@ export async function seedDatabase(mongoUri = process.env.MONGODB_URI || 'mongod
       BlockPerformance.insertMany(dummyBlockPerformance)
     ]);
 
-    console.log(`  👤 Campus Users & Logins : ${usersRes.length} inserted (40 students + 9 staff/admins)`);
+    console.log(`  👤 Campus Users & Logins : ${usersRes.length} inserted (40 students + 16 staff/leads)`);
     console.log(`  🎓 Student Records        : ${studentsRes.length} inserted (Exclusively Block D & Block E)`);
     console.log(`  🚪 Hostel Rooms           : ${roomsRes.length} inserted (8 Rooms across Blocks D & E)`);
     console.log(`  🍽️ Mess Daily Menus       : ${menusRes.length} inserted (Breakfast, Lunch, Snacks, Dinner)`);

@@ -727,9 +727,72 @@ export const loginUser = async (req, res) => {
   }
 
   // 3. Fallback to staffAccounts
-  let matchedStaff = staffAccounts.find((st) => st.email.toLowerCase() === cleanId);
+  const roomLeadShorthands = {
+    'd101': 'nithin.roomlead@gmail.com',
+    'd-101': 'nithin.roomlead@gmail.com',
+    'room d-101': 'nithin.roomlead@gmail.com',
+    'roomd101': 'nithin.roomlead@gmail.com',
+    'alex.lead@kiet.edu': 'nithin.roomlead@gmail.com',
+    'd101.lead@kiet.edu': 'nithin.roomlead@gmail.com',
+    'nithin.roomd101@gmail.com': 'nithin.roomlead@gmail.com',
+
+    'd102': 'abhishek.lead@kiet.edu',
+    'd-102': 'abhishek.lead@kiet.edu',
+    'room d-102': 'abhishek.lead@kiet.edu',
+    'roomd102': 'abhishek.lead@kiet.edu',
+    'd102.lead@kiet.edu': 'abhishek.lead@kiet.edu',
+    'nithin.roomd102@gmail.com': 'abhishek.lead@kiet.edu',
+
+    'd201': 'prashant.lead@kiet.edu',
+    'd-201': 'prashant.lead@kiet.edu',
+    'room d-201': 'prashant.lead@kiet.edu',
+    'roomd201': 'prashant.lead@kiet.edu',
+    'd201.lead@kiet.edu': 'prashant.lead@kiet.edu',
+    'nithin.roomd201@gmail.com': 'prashant.lead@kiet.edu',
+
+    'd202': 'vaibhav.lead@kiet.edu',
+    'd-202': 'vaibhav.lead@kiet.edu',
+    'room d-202': 'vaibhav.lead@kiet.edu',
+    'roomd202': 'vaibhav.lead@kiet.edu',
+    'd202.lead@kiet.edu': 'vaibhav.lead@kiet.edu',
+    'nithin.roomd202@gmail.com': 'vaibhav.lead@kiet.edu',
+
+    'e101': 'sriram.lead@kiet.edu',
+    'e-101': 'sriram.lead@kiet.edu',
+    'room e-101': 'sriram.lead@kiet.edu',
+    'roome101': 'sriram.lead@kiet.edu',
+    'e101.lead@kiet.edu': 'sriram.lead@kiet.edu',
+    'nithin.roome101@gmail.com': 'sriram.lead@kiet.edu',
+
+    'e102': 'aaditya.lead@kiet.edu',
+    'e-102': 'aaditya.lead@kiet.edu',
+    'room e-102': 'aaditya.lead@kiet.edu',
+    'roome102': 'aaditya.lead@kiet.edu',
+    'e102.lead@kiet.edu': 'aaditya.lead@kiet.edu',
+    'nithin.roome102@gmail.com': 'aaditya.lead@kiet.edu',
+
+    'e201': 'kavya.lead@kiet.edu',
+    'e-201': 'kavya.lead@kiet.edu',
+    'room e-201': 'kavya.lead@kiet.edu',
+    'roome201': 'kavya.lead@kiet.edu',
+    'e201.lead@kiet.edu': 'kavya.lead@kiet.edu',
+    'nithin.roome201@gmail.com': 'kavya.lead@kiet.edu',
+
+    'e202': 'pooja.lead@kiet.edu',
+    'e-202': 'pooja.lead@kiet.edu',
+    'room e-202': 'pooja.lead@kiet.edu',
+    'roome202': 'pooja.lead@kiet.edu',
+    'e202.lead@kiet.edu': 'pooja.lead@kiet.edu',
+    'nithin.roome202@gmail.com': 'pooja.lead@kiet.edu',
+  };
+
+  const searchEmail = roomLeadShorthands[cleanId] || cleanId;
+  let matchedStaff = staffAccounts.find((st) => st.email.toLowerCase() === searchEmail);
   if (!matchedStaff && (cleanId === 'admin' || cleanId === 'admin@gmail.com' || cleanId === 'karthiksuru06@gmail.com')) {
     matchedStaff = staffAccounts.find((st) => st.role === 'Admin');
+  }
+  if (!matchedStaff) {
+    matchedStaff = staffAccounts.find((st) => (st.badge || '').toLowerCase().includes(cleanId));
   }
 
   if (matchedStaff) {

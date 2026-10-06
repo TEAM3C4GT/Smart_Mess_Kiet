@@ -29,18 +29,38 @@ export const Sidebar = ({
     }`}>
       {/* Top Navigation Items */}
       <div className="flex lg:flex-col gap-1 overflow-x-auto pb-2 lg:pb-0 scrollbar-none">
-        {items.map((item) => {
+        {items.map((item, idx) => {
+          if (item.isHeader) {
+            return (
+              <div
+                key={item.header || idx}
+                className="pt-3 pb-1 px-3 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-slate-800/80 mt-2 first:mt-0 first:border-0 select-none"
+              >
+                {item.header}
+              </div>
+            );
+          }
+          const itemId = item.id || item.name || item.label;
+          const itemLabel = item.label || item.name || item.id;
           const Icon = item.icon;
-          const isActive = activeTab === item.name;
+          const isActive =
+            activeTab === itemId || activeTab === itemLabel || activeTab === item.name;
+
+          const hasBadge =
+            item.badge !== undefined &&
+            item.badge !== null &&
+            item.badge !== '' &&
+            item.badge !== 0;
+
           return (
             <button
-              key={item.name}
-              onClick={() => onTabChange(item.name)}
+              key={itemId}
+              onClick={() => onTabChange(itemId)}
               className={`flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all whitespace-nowrap text-left cursor-pointer ${
                 isActive
                   ? darkMode
                     ? 'bg-slate-800 text-white border border-slate-700 shadow-xs font-semibold'
-                    : 'bg-slate-900 text-white shadow-xs font-semibold'
+                    : 'bg-[#1b4d3e] text-white shadow-xs font-semibold'
                   : darkMode
                   ? 'text-slate-400 hover:text-white hover:bg-slate-800'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
@@ -54,14 +74,18 @@ export const Sidebar = ({
                     }`}
                   />
                 )}
-                <span>{item.name}</span>
+                <span>{itemLabel}</span>
               </div>
-              {item.badge !== undefined && item.badge > 0 && (
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-                  isActive
-                    ? 'bg-white/20 text-white'
-                    : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700'
-                }`}>
+              {hasBadge && (
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                    isActive
+                      ? 'bg-white/20 text-white'
+                      : item.badgeColor
+                      ? `${item.badgeColor} text-white`
+                      : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700'
+                  }`}
+                >
                   {item.badge}
                 </span>
               )}

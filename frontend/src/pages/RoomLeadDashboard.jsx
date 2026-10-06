@@ -9,7 +9,7 @@ import { Navbar } from '../components/Navbar';
 import { Sidebar } from '../components/Sidebar';
 
 // Import application context to access global state and action handlers
-import { useApp } from '../context/AppContext';
+import { useApp, STUDENT_ROSTER } from '../context/AppContext';
 
 // Import icons from lucide-react for buttons, tabs, status indicators, and alerts
 import {
@@ -51,11 +51,24 @@ import {
 // Import Recharts components for submission breakdown visualization
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
+// Comprehensive room allocation hierarchy definitions (1B -> 2F -> Rooms)
+const AVAILABLE_ROOMS_HIERARCHY = [
+  { block: 'Block D', floor: 'Floor 1', roomNo: 'Room D-101', wing: 'Senior Wing', label: 'Block D • Floor 1 • Room D-101' },
+  { block: 'Block D', floor: 'Floor 1', roomNo: 'Room D-102', wing: 'Senior Wing', label: 'Block D • Floor 1 • Room D-102' },
+  { block: 'Block D', floor: 'Floor 2', roomNo: 'Room D-201', wing: 'Senior Wing', label: 'Block D • Floor 2 • Room D-201' },
+  { block: 'Block D', floor: 'Floor 2', roomNo: 'Room D-202', wing: 'Senior Wing', label: 'Block D • Floor 2 • Room D-202' },
+  { block: 'Block E', floor: 'Floor 1', roomNo: 'Room E-101', wing: 'International/PG', label: 'Block E • Floor 1 • Room E-101' },
+  { block: 'Block E', floor: 'Floor 1', roomNo: 'Room E-102', wing: 'International/PG', label: 'Block E • Floor 1 • Room E-102' },
+  { block: 'Block E', floor: 'Floor 2', roomNo: 'Room E-201', wing: 'International/PG', label: 'Block E • Floor 2 • Room E-201' },
+  { block: 'Block E', floor: 'Floor 2', roomNo: 'Room E-202', wing: 'International/PG', label: 'Block E • Floor 2 • Room E-202' }
+];
+
 // Main Room Lead Dashboard functional component
 export const RoomLeadDashboard = () => {
   // Extract room lead state and action handlers from AppContext
   const {
-    roomMembers = [],                  // Array of roommates in Room D-101
+    currentUser,
+    roomMembers: contextRoomMembers = [], // Array of roommates in Room D-101
     roomLeadNotifications = [],        // Real notifications received from Floor Incharge
     markRoomLeadNotificationRead,      // Marks a single notification as read
     markAllRoomLeadNotificationsRead,  // Marks all notifications as read
@@ -79,10 +92,59 @@ export const RoomLeadDashboard = () => {
     navigate('/login');
   };
 
+  // State: Dynamic Room Allocation & Hierarchy (1B -> 2F -> Rooms)
+  const defaultRoom = useMemo(() => {
+    const text = `${currentUser?.badge || ''} ${currentUser?.room || ''} ${currentUser?.name || ''} ${currentUser?.email || ''}`;
+    const found = AVAILABLE_ROOMS_HIERARCHY.find((r) => 
+      text.toLowerCase().includes(r.roomNo.toLowerCase()) || 
+      text.toLowerCase().includes(r.roomNo.replace('Room ', '').toLowerCase()) ||
+      text.toLowerCase().includes(r.roomNo.replace('Room ', '').replace('-', '').toLowerCase())
+    );
+    return found ? found.roomNo : 'Room D-101';
+  }, [currentUser]);
+
+  const [selectedRoomNo, setSelectedRoomNo] = useState(defaultRoom);
+
+  // Synchronize active room when user session changes
+  useEffect(() => {
+    if (defaultRoom) {
+      setSelectedRoomNo(defaultRoom);
+    }
+  }, [defaultRoom]);
+
+  const activeRoomHierarchy = useMemo(() => {
+    return AVAILABLE_ROOMS_HIERARCHY.find((r) => r.roomNo === selectedRoomNo) || AVAILABLE_ROOMS_HIERARCHY[0];
+  }, [selectedRoomNo]);
+
+  // Dynamic Room Members (Uses live context state for Room D-101, or scoped STUDENT_ROSTER for other rooms)
+  const roomMembers = useMemo(() => {
+    if (selectedRoomNo === 'Room D-101') {
+      return contextRoomMembers;
+    }
+    const roster = STUDENT_ROSTER.filter((s) => s.room.includes(selectedRoomNo));
+    if (roster.length > 0) {
+      return roster.map((s, idx) => ({
+        id: idx + 1,
+        name: s.name + (idx === 0 ? ' (Lead)' : ''),
+        status: idx < 4 ? 'Submitted' : 'Pending',
+        time: idx < 4 ? '09:30 AM' : 'Awaiting',
+        choices: {
+          b: idx === 3 ? 'No' : 'Yes',
+          l: 'Yes',
+          s: idx === 2 ? 'No' : 'Yes',
+          d: 'Yes'
+        },
+        rollNo: s.rollNo,
+        note: idx === 3 ? 'Observing fast / Late dinner' : ''
+      }));
+    }
+    return contextRoomMembers;
+  }, [selectedRoomNo, contextRoomMembers]);
+
   // State: Currently active tab in the Room Lead Portal
   const [activeTab, setActiveTab] = useState('Dashboard');
 
-  // State: Dark mode toggle
+  // State: Theme dark mode support (defaults to false for crisp clean campus design)
   const [darkMode, setDarkMode] = useState(false);
 
   // State: Controls visibility of Floor Incharge Notifications modal/drawer
@@ -96,6 +158,9 @@ export const RoomLeadDashboard = () => {
 
   // State: Modal for assisted/proxy meal submission or editing on behalf of a roommate
   const [editingMember, setEditingMember] = useState(null);
+
+  // State: Modal for Quick Mark Home Leave (Checklist #13)
+  const [showQuickLeaveModal, setShowQuickLeaveModal] = useState(false);
 
   // State: Temporary meal form choices for assisted booking modal
   const [assistedChoices, setAssistedChoices] = useState({
@@ -130,6 +195,29 @@ export const RoomLeadDashboard = () => {
   // Unread notification count from Incharges
   const unreadNotifCount = roomLeadNotifications.filter((n) => !n.read).length;
 
+  // Handler: Quick toggle meal choice (Checklist #12)
+  const handleToggleQuickMeal = (member, mealKey) => {
+    if (!isEditingWindowActive) {
+      addToast('Editing window is closed for kitchen prep.', 'warning');
+      return;
+    }
+    if (member.status === 'On Leave') {
+      addToast(`${member.name} is on official leave. Restore them first to edit meals.`, 'warning');
+      return;
+    }
+    const currentVal = member.choices?.[mealKey] === 'Yes' ? 'Yes' : 'No';
+    const nextVal = currentVal === 'Yes' ? 'No' : 'Yes';
+    const nextChoices = { ...member.choices, [mealKey]: nextVal };
+    updateRoomMemberMeal(member.id, nextChoices, 'Submitted', member.note);
+    const mealLabel = mealKey === 'b' ? 'Breakfast' : mealKey === 'l' ? 'Lunch' : mealKey === 's' ? 'Snacks' : 'Dinner';
+    addToast(`${member.name}'s ${mealLabel} set to ${nextVal === 'Yes' ? 'Eat' : 'Skip'}`, 'info');
+  };
+
+  // Handler: Restore member from Home Leave (Checklist #13)
+  const handleRestoreFromLeave = (member) => {
+    updateRoomMemberMeal(member.id, { b: 'Yes', l: 'Yes', s: 'Yes', d: 'Yes' }, 'Submitted', 'Returned to hostel');
+    addToast(`${member.name} marked Present and restored to active mess roster!`, 'success');
+  };
   // Effect: Calculates dynamic countdown timer to tonight's 10:00 PM mess cutoff
   useEffect(() => {
     const calculateTimeLeft = () => {
@@ -158,14 +246,6 @@ export const RoomLeadDashboard = () => {
     return () => clearInterval(interval);
   }, [extensionMinutes]);
 
-  // Effect: Syncs document body background with dark mode
-  useEffect(() => {
-    document.body.style.backgroundColor = darkMode ? '#0f172a' : '#f8fafc';
-    return () => {
-      document.body.style.backgroundColor = '#f8fafc';
-    };
-  }, [darkMode]);
-
   // Computed Room Metrics
   const totalMembers = roomMembers.length || 5;
   const submittedCount = roomMembers.filter((m) => m.status === 'Submitted' || m.status === 'On Leave').length;
@@ -173,9 +253,9 @@ export const RoomLeadDashboard = () => {
   const isAllSubmitted = pendingCount === 0;
   const submissionRate = totalMembers > 0 ? Math.round((submittedCount / totalMembers) * 100) : 0;
 
-  // High-contrast KIET Palette: Slate-900 / White for Complete, Slate-500 for Pending
+  // High-contrast KIET Palette: Slate-900 for Complete, Slate-500 for Pending
   const pieData = [
-    { name: 'Submitted', value: submittedCount, color: darkMode ? '#f8fafc' : '#0f172a' },
+    { name: 'Submitted', value: submittedCount, color: '#0f172a' },
     { name: 'Pending', value: pendingCount, color: '#64748b' }
   ];
 
@@ -271,7 +351,7 @@ export const RoomLeadDashboard = () => {
   };
 
   // Pre-formatted room reminder message text for WhatsApp or SMS
-  const broadcastText = `📢 *HOSTEL BLOCK D • ROOM D-101 NOTICE*\nHey roommates! Tomorrow's Mess Meal Cutoff is TONIGHT at *10:00 PM*.\nCurrently, *${pendingCount} member(s)* are still pending submission.\nPlease open the SmartMess app and confirm your Breakfast, Lunch, Snacks, and Dinner orders now so our room roster is 100% verified! 👍`;
+  const broadcastText = `📢 *HOSTEL ${activeRoomHierarchy.block.toUpperCase()} • ${activeRoomHierarchy.roomNo.toUpperCase()} NOTICE*\nHey roommates! Tomorrow's Mess Meal Cutoff is TONIGHT at *10:00 PM*.\nCurrently, *${pendingCount} member(s)* are still pending submission.\nPlease open the SmartMess app and confirm your Breakfast, Lunch, Snacks, and Dinner orders now so our room roster is 100% verified! 👍`;
 
   // Handler: Copies pre-formatted broadcast message to clipboard
   const handleCopyBroadcast = () => {
@@ -288,17 +368,14 @@ export const RoomLeadDashboard = () => {
   };
 
   return (
-    // Top-level container with theme-reactive styling
-    <div className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${
-      darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50/80 text-slate-900'
-    }`}>
+    // Top-level container with clean unified styling
+    <div className="min-h-screen flex flex-col font-sans bg-slate-50/80 text-slate-900">
       {/* 1. Shared Universal Navigation Bar */}
       <Navbar
         currentRole="Room Lead"
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        darkMode={darkMode}
-        onToggleDarkMode={() => setDarkMode((prev) => !prev)}
+        tabs={sidebarItems}
       />
 
       {/* 2. Main Flex Layout: Sidebar on Left, Content on Right */}
@@ -309,7 +386,6 @@ export const RoomLeadDashboard = () => {
           items={sidebarItems}
           activeTab={activeTab}
           onTabChange={setActiveTab}
-          darkMode={darkMode}
           onLogout={handleSignOut}
         />
 
@@ -321,38 +397,50 @@ export const RoomLeadDashboard = () => {
             <>
               {/* ROOM LEAD HERO HEADER */}
               <div
-                className={`p-6 sm:p-7 rounded-3xl border shadow-sm transition-all duration-300 relative overflow-hidden ${
-                  darkMode
-                    ? 'bg-gradient-to-br from-slate-900 via-slate-850 to-slate-900 border-slate-800'
-                    : 'bg-gradient-to-br from-white via-slate-50/50 to-white border-slate-200/90'
-                }`}
+                className="p-6 sm:p-7 rounded-3xl border border-slate-200/90 bg-gradient-to-br from-white via-slate-50/50 to-white shadow-sm transition-all duration-300 relative overflow-hidden"
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
                   {/* Left Column: Room & Lead Information */}
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className={`text-xs font-bold px-3 py-1 rounded-full border flex items-center gap-1.5 ${
-                        darkMode ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-slate-100 text-slate-700 border-slate-200'
-                      }`}>
-                        <ShieldCheck className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" />
+                      <span className="text-xs font-bold px-3 py-1 rounded-full border bg-slate-100 text-slate-800 border-slate-200 flex items-center gap-1.5 shadow-xs">
+                        <ShieldCheck className="w-3.5 h-3.5 text-slate-700" />
                         Room Lead Portal
                       </span>
-                      <span className={`text-xs font-medium px-3 py-1 rounded-full border ${
-                        darkMode ? 'bg-slate-800/80 text-slate-300 border-slate-700' : 'bg-slate-100/80 text-slate-600 border-slate-200'
-                      }`}>
-                        Hostel Block D • Floor 1
-                      </span>
-                      <span className={`text-xs flex items-center gap-1 font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                        <Utensils className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" /> Tomorrow's Meal Planning
-                      </span>
+
+                      {/* Dynamic Room Allocation Hierarchy Badge: 1B -> 2F -> Rooms (Checklist #11) */}
+                      <div className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full border bg-emerald-50 border-emerald-200 text-emerald-900 shadow-xs">
+                        <span>🏛️ {activeRoomHierarchy.block} (1B)</span>
+                        <span className="text-emerald-400">→</span>
+                        <span>🏢 {activeRoomHierarchy.floor} (2F)</span>
+                        <span className="text-emerald-400">→</span>
+                        <span className="font-bold underline">🚪 {activeRoomHierarchy.roomNo}</span>
+                      </div>
+
+                      {/* Quick Interactive Room Switcher (Checklist #11) */}
+                      <div className="flex items-center gap-1.5 text-xs ml-1">
+                        <span className="text-slate-500 font-medium">Room Assignment:</span>
+                        <select
+                          value={selectedRoomNo}
+                          onChange={(e) => setSelectedRoomNo(e.target.value)}
+                          className="text-xs px-2.5 py-1 rounded-xl border border-slate-300 bg-white font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 cursor-pointer shadow-xs"
+                          title="Switch room allocation hierarchy (1B -> 2F -> Rooms)"
+                        >
+                          {AVAILABLE_ROOMS_HIERARCHY.map((r) => (
+                            <option key={r.roomNo} value={r.roomNo}>
+                              {r.label} ({r.wing})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
 
-                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
-                      Room D-101 Care & Compliance Hub
+                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+                      {activeRoomHierarchy.roomNo} Care & Compliance Hub
                     </h1>
 
-                    <p className={`text-xs sm:text-sm max-w-2xl ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                      Verify that all 5 roommates have submitted their daily food requirements for tomorrow, assist with proxy orders during the active editing window, and review reminders from Floor Incharge.
+                    <p className="text-xs sm:text-sm max-w-2xl text-slate-600">
+                      Verify that all {totalMembers} roommates have submitted their daily food requirements for tomorrow, assist with proxy orders during the active editing window, and review reminders from Floor Incharge.
                     </p>
                   </div>
 
@@ -363,17 +451,13 @@ export const RoomLeadDashboard = () => {
                     <button
                       type="button"
                       onClick={() => setActiveTab('Incharge Alerts')}
-                      className={`p-2.5 rounded-2xl border text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm ${
-                        darkMode
-                          ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
-                          : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-                      }`}
+                      className="p-2.5 rounded-2xl border bg-white border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
                       title="Floor Incharge Notifications"
                     >
-                      <Bell className={`w-4 h-4 ${unreadNotifCount > 0 ? 'text-slate-900 dark:text-white animate-bounce' : 'text-slate-500 dark:text-slate-400'}`} />
+                      <Bell className={`w-4 h-4 ${unreadNotifCount > 0 ? 'text-slate-900 animate-bounce' : 'text-slate-500'}`} />
                       <span className="hidden sm:inline">Incharge Alerts</span>
                       {unreadNotifCount > 0 && (
-                        <span className="ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-black bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950">
+                        <span className="ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-black bg-slate-900 text-white">
                           {unreadNotifCount}
                         </span>
                       )}
@@ -383,13 +467,9 @@ export const RoomLeadDashboard = () => {
                     <button
                       type="button"
                       onClick={() => setShowBroadcastModal(true)}
-                      className={`text-xs font-bold px-4 py-2.5 rounded-2xl border flex items-center gap-2 transition-all cursor-pointer shadow-sm ${
-                        darkMode
-                          ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
-                          : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
-                      }`}
+                      className="text-xs font-bold px-4 py-2.5 rounded-2xl border bg-white hover:bg-slate-50 text-slate-700 border-slate-200 flex items-center gap-2 transition-all cursor-pointer shadow-xs"
                     >
-                      <Share2 className="w-4 h-4 text-slate-700 dark:text-slate-300" />
+                      <Share2 className="w-4 h-4 text-slate-700" />
                       <span>Room Broadcast</span>
                     </button>
 
@@ -398,35 +478,21 @@ export const RoomLeadDashboard = () => {
                       <button
                         type="button"
                         onClick={remindAllPendingInRoom}
-                        className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white active:scale-95 text-white font-bold px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 transition-all cursor-pointer shadow-sm"
+                        className="bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-bold px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 transition-all cursor-pointer shadow-xs"
                       >
-                        <Send className="w-4 h-4 text-slate-300 dark:text-slate-700" />
+                        <Send className="w-4 h-4 text-slate-300" />
                         <span>Remind Pending ({pendingCount})</span>
                       </button>
                     ) : (
                       <button
                         type="button"
                         onClick={submitRoomRosterToFloorIncharge}
-                        className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white active:scale-95 text-white font-bold px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 transition-all cursor-pointer shadow-sm"
+                        className="bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-bold px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 transition-all cursor-pointer shadow-xs"
                       >
-                        <CheckCircle2 className="w-4 h-4 text-slate-300 dark:text-slate-700" />
+                        <CheckCircle2 className="w-4 h-4 text-slate-300" />
                         <span>Signoff to Floor Incharge</span>
                       </button>
                     )}
-
-                    {/* Theme Toggle Button */}
-                    <button
-                      type="button"
-                      onClick={() => setDarkMode((prev) => !prev)}
-                      className={`p-2.5 rounded-2xl border text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm ${
-                        darkMode
-                          ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700'
-                          : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-                      }`}
-                      title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-                    >
-                      {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                    </button>
                   </div>
                 </div>
 
@@ -833,18 +899,24 @@ export const RoomLeadDashboard = () => {
           {/* TAB 2: ROOM MEMBERS & FOOD SUBMISSIONS MANAGER */}
           {activeTab === 'Room Members' && (
             <section
-              className={`p-6 rounded-3xl border shadow-sm transition-all duration-300 ${
-                darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'
-              }`}
+              className="p-6 rounded-3xl border border-slate-200/90 bg-white shadow-sm transition-all duration-300"
             >
-              {/* Header with Title and Search/Filters */}
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
+              {/* Header with Title and Search/Filters/Leave Actions */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-100">
                 <div>
-                  <h2 className="text-lg font-black tracking-tight flex items-center gap-2">
-                    <Users className="w-5 h-5 text-slate-700 dark:text-slate-300" />
-                    Room D-101 Members & Tomorrow's Food Requirements
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                      🏛️ {activeRoomHierarchy.block} (1B) → 🏢 {activeRoomHierarchy.floor} (2F) → 🚪 {activeRoomHierarchy.roomNo}
+                    </span>
+                    <span className="text-[11px] font-semibold text-slate-500">
+                      Lead: {currentUser?.name || 'Alex Rivers'}
+                    </span>
+                  </div>
+                  <h2 className="text-lg font-black tracking-tight flex items-center gap-2 text-slate-900">
+                    <Users className="w-5 h-5 text-slate-700" />
+                    {activeRoomHierarchy.roomNo} Members & Tomorrow's Food Requirements
                   </h2>
-                  <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <p className="text-xs mt-0.5 text-slate-500">
                     View each roommate's breakfast, lunch, snacks, and dinner selections. Assist or edit during the active window.
                   </p>
                 </div>
@@ -858,9 +930,7 @@ export const RoomLeadDashboard = () => {
                       placeholder="Search member..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className={`pl-8 pr-3 py-1.5 rounded-xl border text-xs focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white ${
-                        darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
-                      }`}
+                      className="pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-slate-900"
                     />
                   </div>
 
@@ -873,9 +943,7 @@ export const RoomLeadDashboard = () => {
                         onClick={() => setMemberFilter(f)}
                         className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all ${
                           memberFilter === f
-                            ? 'bg-slate-900 text-white shadow-xs dark:bg-slate-100 dark:text-slate-950 font-bold'
-                            : darkMode
-                            ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                            ? 'bg-slate-900 text-white shadow-xs font-bold'
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                         }`}
                       >
@@ -884,15 +952,24 @@ export const RoomLeadDashboard = () => {
                     ))}
                   </div>
 
+                  {/* Checklist #13: MOVED HOME LEAVE BUTTON HIGHER UP IN SECTION */}
+                  <button
+                    type="button"
+                    onClick={() => setShowQuickLeaveModal(true)}
+                    className="px-3.5 py-1.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
+                    title="Quickly mark a roommate on home leave or vacation"
+                  >
+                    <Home className="w-3.5 h-3.5 text-amber-700" />
+                    <span>Mark Home Leave</span>
+                  </button>
+
                   {/* Broadcast Nudge Button */}
                   <button
                     type="button"
                     onClick={() => setShowBroadcastModal(true)}
-                    className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs ${
-                      darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-                    }`}
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
                   >
-                    <Share2 className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" />
+                    <Share2 className="w-3.5 h-3.5 text-slate-700" />
                     <span>WhatsApp Nudge</span>
                   </button>
 
@@ -901,22 +978,40 @@ export const RoomLeadDashboard = () => {
                     <button
                       type="button"
                       onClick={remindAllPendingInRoom}
-                      className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
+                      className="bg-slate-900 hover:bg-slate-800 text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
                     >
-                      <Send className="w-3.5 h-3.5 text-slate-300 dark:text-slate-700" />
+                      <Send className="w-3.5 h-3.5 text-slate-300" />
                       <span>Remind All ({pendingCount})</span>
                     </button>
                   )}
                 </div>
               </div>
 
+              {/* Leave Status Alert Strip at Top (Checklist #13: visible without scrolling) */}
+              {roomMembers.some((m) => m.status === 'On Leave') && (
+                <div className="mb-4 p-3 rounded-2xl bg-amber-50/90 border border-amber-200 text-amber-900 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <Home className="w-4 h-4 text-amber-700 shrink-0" />
+                    <span>
+                      <strong>Roommates on Home Leave:</strong>{' '}
+                      {roomMembers.filter((m) => m.status === 'On Leave').map((m) => m.name).join(', ')} — Daily mess portions are zeroed in kitchen requisition.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setMemberFilter('On Leave')}
+                    className="underline font-bold text-amber-800 hover:text-amber-950 cursor-pointer"
+                  >
+                    View Leave List →
+                  </button>
+                </div>
+              )}
+
               {/* Table Container */}
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs sm:text-sm">
                   <thead>
-                    <tr className={`border-b font-bold uppercase text-[10px] tracking-wider ${
-                      darkMode ? 'border-slate-800 text-slate-400' : 'border-slate-200 text-slate-500'
-                    }`}>
+                    <tr className="border-b border-slate-200 font-bold uppercase text-[10px] tracking-wider text-slate-500">
                       <th className="pb-3.5 pl-2">Member</th>
                       <th className="pb-3.5">Status</th>
                       <th className="pb-3.5 text-center">Breakfast</th>
@@ -927,7 +1022,7 @@ export const RoomLeadDashboard = () => {
                       <th className="pb-3.5 text-right pr-2">Lead Editing Actions</th>
                     </tr>
                   </thead>
-                  <tbody className={`divide-y ${darkMode ? 'divide-slate-800' : 'divide-slate-100'}`}>
+                  <tbody className="divide-y divide-slate-100">
                     {filteredRoomMembers.length === 0 ? (
                       <tr>
                         <td colSpan={8} className="py-8 text-center text-xs text-slate-400">
@@ -944,153 +1039,225 @@ export const RoomLeadDashboard = () => {
                           <tr
                             key={member.id}
                             className={`transition-colors ${
-                              isPending
-                                ? darkMode
-                                  ? 'bg-slate-800/40'
-                                  : 'bg-slate-50/70'
-                                : ''
-                            } ${darkMode ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50/80'}`}
+                              isPending ? 'bg-slate-50/70' : ''
+                            } hover:bg-slate-50/80`}
                           >
-                            {/* Member Name and Bed */}
+                            {/* Member Name and Bed (Checklist #11 & Fix Invisible White Text) */}
                             <td className="py-4 pl-2 font-bold flex items-center gap-2.5">
-                              <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
-                                darkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'
-                              }`}>
+                              <div className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 bg-slate-100 text-slate-800 border border-slate-200">
                                 {member.name.charAt(0)}
                               </div>
                               <div>
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-slate-900 dark:text-white font-bold">{member.name}</span>
-                                  {member.name.includes('(You)') && (
-                                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950">
+                                  <span className="text-slate-900 font-bold text-sm tracking-tight">{member.name}</span>
+                                  {(member.name.includes('(You)') || member.name.includes('(Lead)')) && (
+                                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-slate-900 text-white">
                                       Lead
                                     </span>
                                   )}
                                 </div>
-                                <span className={`text-[11px] block font-mono ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                                  Bed {member.id} • Room D-101
+                                <span className="text-[11px] block font-mono text-slate-500">
+                                  Bed {member.id} • {activeRoomHierarchy.roomNo}
                                 </span>
                               </div>
                             </td>
 
-                            {/* Status Pill (Strict 2-Color System) */}
+                            {/* Status Pill */}
                             <td className="py-4">
                               {isSubmitted && (
-                                <span className="inline-flex items-center gap-1 font-bold text-xs px-2.5 py-1 rounded-xl bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950 shadow-xs">
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-white dark:text-slate-950" />
+                                <span className="inline-flex items-center gap-1 font-bold text-xs px-2.5 py-1 rounded-xl bg-slate-900 text-white shadow-xs">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                                   Submitted
                                 </span>
                               )}
                               {isPending && (
-                                <span className="inline-flex items-center gap-1 font-bold text-xs px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
+                                <span className="inline-flex items-center gap-1 font-bold text-xs px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 border border-slate-300">
                                   <AlertCircle className="w-3.5 h-3.5 text-slate-500" />
                                   Pending
                                 </span>
                               )}
                               {isOnLeave && (
-                                <span className="inline-flex items-center gap-1 font-bold text-xs px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                                  <Home className="w-3.5 h-3.5 text-slate-500" />
+                                <span className="inline-flex items-center gap-1 font-bold text-xs px-2.5 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-300">
+                                  <Home className="w-3.5 h-3.5 text-amber-600" />
                                   On Leave
                                 </span>
                               )}
                             </td>
 
-                            {/* Breakfast */}
+                            {/* Breakfast Quick Toggle (Checklist #12) */}
                             <td className="py-4 text-center">
                               {member.choices?.b === 'Yes' ? (
-                                <span className="font-bold text-xs text-white bg-slate-900 dark:bg-slate-100 dark:text-slate-950 px-2 py-0.5 rounded-lg shadow-xs">
-                                  Eat
-                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleQuickMeal(member, 'b')}
+                                  disabled={!isEditingWindowActive || isOnLeave}
+                                  className="font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1 rounded-xl shadow-xs inline-flex items-center gap-1 cursor-pointer transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Click to toggle Skip"
+                                >
+                                  <Check className="w-3 h-3" /> Eat
+                                </button>
                               ) : member.choices?.b === 'No' ? (
-                                <span className="font-semibold text-xs text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg">
-                                  Skip
-                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleQuickMeal(member, 'b')}
+                                  disabled={!isEditingWindowActive || isOnLeave}
+                                  className="font-bold text-xs text-slate-700 bg-slate-200 hover:bg-slate-300 px-2.5 py-1 rounded-xl shadow-xs inline-flex items-center gap-1 cursor-pointer transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Click to toggle Eat"
+                                >
+                                  <X className="w-3 h-3" /> Skip
+                                </button>
                               ) : (
-                                <span className="font-mono text-xs text-slate-400 font-bold">-</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleQuickMeal(member, 'b')}
+                                  disabled={!isEditingWindowActive || isOnLeave}
+                                  className="font-mono text-xs text-slate-400 font-bold px-2 py-0.5 rounded-lg border border-dashed border-slate-300 hover:border-slate-500 hover:text-slate-700 cursor-pointer disabled:opacity-50"
+                                  title="Click to set Eat"
+                                >
+                                  -
+                                </button>
                               )}
                             </td>
 
-                            {/* Lunch */}
+                            {/* Lunch Quick Toggle (Checklist #12) */}
                             <td className="py-4 text-center">
                               {member.choices?.l === 'Yes' ? (
-                                <span className="font-bold text-xs text-white bg-slate-900 dark:bg-slate-100 dark:text-slate-950 px-2 py-0.5 rounded-lg shadow-xs">
-                                  Eat
-                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleQuickMeal(member, 'l')}
+                                  disabled={!isEditingWindowActive || isOnLeave}
+                                  className="font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1 rounded-xl shadow-xs inline-flex items-center gap-1 cursor-pointer transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Click to toggle Skip"
+                                >
+                                  <Check className="w-3 h-3" /> Eat
+                                </button>
                               ) : member.choices?.l === 'No' ? (
-                                <span className="font-semibold text-xs text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg">
-                                  Skip
-                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleQuickMeal(member, 'l')}
+                                  disabled={!isEditingWindowActive || isOnLeave}
+                                  className="font-bold text-xs text-slate-700 bg-slate-200 hover:bg-slate-300 px-2.5 py-1 rounded-xl shadow-xs inline-flex items-center gap-1 cursor-pointer transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Click to toggle Eat"
+                                >
+                                  <X className="w-3 h-3" /> Skip
+                                </button>
                               ) : (
-                                <span className="font-mono text-xs text-slate-400 font-bold">-</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleQuickMeal(member, 'l')}
+                                  disabled={!isEditingWindowActive || isOnLeave}
+                                  className="font-mono text-xs text-slate-400 font-bold px-2 py-0.5 rounded-lg border border-dashed border-slate-300 hover:border-slate-500 hover:text-slate-700 cursor-pointer disabled:opacity-50"
+                                  title="Click to set Eat"
+                                >
+                                  -
+                                </button>
                               )}
                             </td>
 
-                            {/* Snacks */}
+                            {/* Snacks Quick Toggle (Checklist #12) */}
                             <td className="py-4 text-center">
                               {member.choices?.s === 'Yes' ? (
-                                <span className="font-bold text-xs text-white bg-slate-900 dark:bg-slate-100 dark:text-slate-950 px-2 py-0.5 rounded-lg shadow-xs">
-                                  Eat
-                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleQuickMeal(member, 's')}
+                                  disabled={!isEditingWindowActive || isOnLeave}
+                                  className="font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1 rounded-xl shadow-xs inline-flex items-center gap-1 cursor-pointer transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Click to toggle Skip"
+                                >
+                                  <Check className="w-3 h-3" /> Eat
+                                </button>
                               ) : member.choices?.s === 'No' ? (
-                                <span className="font-semibold text-xs text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg">
-                                  Skip
-                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleQuickMeal(member, 's')}
+                                  disabled={!isEditingWindowActive || isOnLeave}
+                                  className="font-bold text-xs text-slate-700 bg-slate-200 hover:bg-slate-300 px-2.5 py-1 rounded-xl shadow-xs inline-flex items-center gap-1 cursor-pointer transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Click to toggle Eat"
+                                >
+                                  <X className="w-3 h-3" /> Skip
+                                </button>
                               ) : (
-                                <span className="font-mono text-xs text-slate-400 font-bold">-</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleQuickMeal(member, 's')}
+                                  disabled={!isEditingWindowActive || isOnLeave}
+                                  className="font-mono text-xs text-slate-400 font-bold px-2 py-0.5 rounded-lg border border-dashed border-slate-300 hover:border-slate-500 hover:text-slate-700 cursor-pointer disabled:opacity-50"
+                                  title="Click to set Eat"
+                                >
+                                  -
+                                </button>
                               )}
                             </td>
 
-                            {/* Dinner */}
+                            {/* Dinner Quick Toggle (Checklist #12) */}
                             <td className="py-4 text-center">
                               {member.choices?.d === 'Yes' ? (
-                                <span className="font-bold text-xs text-white bg-slate-900 dark:bg-slate-100 dark:text-slate-950 px-2 py-0.5 rounded-lg shadow-xs">
-                                  Eat
-                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleQuickMeal(member, 'd')}
+                                  disabled={!isEditingWindowActive || isOnLeave}
+                                  className="font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1 rounded-xl shadow-xs inline-flex items-center gap-1 cursor-pointer transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Click to toggle Skip"
+                                >
+                                  <Check className="w-3 h-3" /> Eat
+                                </button>
                               ) : member.choices?.d === 'No' ? (
-                                <span className="font-semibold text-xs text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg">
-                                  Skip
-                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleQuickMeal(member, 'd')}
+                                  disabled={!isEditingWindowActive || isOnLeave}
+                                  className="font-bold text-xs text-slate-700 bg-slate-200 hover:bg-slate-300 px-2.5 py-1 rounded-xl shadow-xs inline-flex items-center gap-1 cursor-pointer transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Click to toggle Eat"
+                                >
+                                  <X className="w-3 h-3" /> Skip
+                                </button>
                               ) : (
-                                <span className="font-mono text-xs text-slate-400 font-bold">-</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleQuickMeal(member, 'd')}
+                                  disabled={!isEditingWindowActive || isOnLeave}
+                                  className="font-mono text-xs text-slate-400 font-bold px-2 py-0.5 rounded-lg border border-dashed border-slate-300 hover:border-slate-500 hover:text-slate-700 cursor-pointer disabled:opacity-50"
+                                  title="Click to set Eat"
+                                >
+                                  -
+                                </button>
                               )}
                             </td>
 
-                            {/* Submission Time / Lead Edit Note */}
+                            {/* Submission Time / Notes */}
                             <td className="py-4">
-                              <span className={`font-mono text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                              <span className="font-mono text-xs text-slate-600">
                                 {member.time || 'Awaiting'}
                               </span>
                               {member.editedByLead && (
-                                <span className="block text-[10px] text-slate-700 dark:text-slate-300 font-semibold mt-0.5">
+                                <span className="block text-[10px] text-slate-700 font-semibold mt-0.5">
                                   ✏️ Edited by Lead ({member.leadEditTime || member.time})
                                 </span>
                               )}
                               {member.note && (
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate max-w-[140px] mt-0.5">
+                                <p className="text-[10px] text-slate-500 font-medium truncate max-w-[140px] mt-0.5">
                                   {member.note}
                                 </p>
                               )}
                             </td>
 
-                            {/* Lead Actions: Time-Bounded Edit, Remind, or Mark On Leave */}
+                            {/* Lead Actions: Time-Bounded Edit, Remind, or Mark On Leave (Checklist #12) */}
                             <td className="py-4 text-right pr-2">
                               <div className="flex items-center justify-end gap-1.5">
-                                {/* Time-Bounded Edit / Assist Button */}
+                                {/* Edit / Assist Button */}
                                 <button
                                   type="button"
                                   onClick={() => handleOpenEditModal(member)}
                                   disabled={!isEditingWindowActive}
-                                  className={`px-2.5 py-1.5 rounded-xl border text-xs font-semibold transition-all flex items-center gap-1 ${
+                                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs ${
                                     !isEditingWindowActive
-                                      ? 'opacity-50 cursor-not-allowed bg-slate-100 border-slate-200 text-slate-400 dark:bg-slate-800 dark:border-slate-700'
-                                      : darkMode
-                                      ? 'bg-slate-800 border-slate-700 text-slate-200 hover:text-white hover:bg-slate-700 cursor-pointer shadow-xs'
-                                      : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer shadow-xs'
+                                      ? 'opacity-50 cursor-not-allowed bg-slate-100 border border-slate-200 text-slate-400'
+                                      : 'bg-slate-900 hover:bg-slate-800 text-white cursor-pointer active:scale-95'
                                   }`}
-                                  title={isEditingWindowActive ? 'Edit or Assist Meal Submission' : 'Editing Locked after Cutoff'}
+                                  title={isEditingWindowActive ? 'Open Assisted Order Form' : 'Editing Locked after Cutoff'}
                                 >
                                   {isEditingWindowActive ? (
-                                    <Edit3 className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" />
+                                    <Edit3 className="w-3.5 h-3.5 text-slate-300" />
                                   ) : (
                                     <Lock className="w-3.5 h-3.5 text-slate-400" />
                                   )}
@@ -1102,29 +1269,28 @@ export const RoomLeadDashboard = () => {
                                   <button
                                     type="button"
                                     onClick={() => remindStudent(member.name)}
-                                    className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white text-white text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 shadow-xs active:scale-95"
+                                    className="px-2.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-xs active:scale-95"
                                     title="Send Reminder Nudge"
                                   >
-                                    <Send className="w-3.5 h-3.5 text-slate-300 dark:text-slate-700" />
+                                    <Send className="w-3.5 h-3.5" />
                                     <span className="hidden sm:inline">Remind</span>
                                   </button>
                                 )}
 
-                                {/* Mark On Leave Button */}
-                                {!isOnLeave && (
-                                  <button
-                                    type="button"
-                                    onClick={() => markMemberOnLeave(member.id)}
-                                    className={`p-1.5 rounded-xl border text-xs transition-all cursor-pointer ${
-                                      darkMode
-                                        ? 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
-                                        : 'bg-white border-slate-200 text-slate-500 hover:text-slate-800'
-                                    }`}
-                                    title="Mark as On Leave / Home Visit"
-                                  >
-                                    <Home className="w-3.5 h-3.5" />
-                                  </button>
-                                )}
+                                {/* Mark On Leave / Resume Button (Checklist #12 & #13) */}
+                                <button
+                                  type="button"
+                                  onClick={() => (isOnLeave ? handleRestoreFromLeave(member) : markMemberOnLeave(member.id))}
+                                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 border shadow-xs ${
+                                    isOnLeave
+                                      ? 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100'
+                                      : 'bg-white border-slate-200 text-slate-700 hover:bg-amber-50 hover:border-amber-200 hover:text-amber-800'
+                                  }`}
+                                  title={isOnLeave ? 'Restore to hostel mess roster' : 'Mark as On Leave / Home Visit'}
+                                >
+                                  <Home className="w-3.5 h-3.5" />
+                                  <span>{isOnLeave ? 'Resume' : 'Leave'}</span>
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -1578,23 +1744,21 @@ export const RoomLeadDashboard = () => {
       {/* MODAL 1: TIME-BOUNDED MEAL SUBMISSION EDITOR (LEAD PROXY & EDIT) */}
       {editingMember && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className={`max-w-md w-full rounded-3xl border shadow-2xl p-6 transition-all ${
-            darkMode ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-          }`}>
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+          <div className="max-w-md w-full rounded-3xl border border-slate-200 bg-white shadow-2xl p-6 text-slate-900 transition-all">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
               <div>
-                <h3 className="font-black text-lg flex items-center gap-2">
-                  <Edit3 className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+                <h3 className="font-black text-lg flex items-center gap-2 text-slate-900">
+                  <Edit3 className="w-5 h-5 text-slate-700" />
                   {editingMember.status === 'Submitted' ? 'Edit Meal Choices' : 'Assist Roommate Order'}
                 </h3>
-                <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Active Lead Window: Modifying order for <strong>{editingMember.name}</strong>
+                <p className="text-xs mt-0.5 text-slate-500">
+                  Active Lead Window: Modifying order for <strong className="text-slate-900">{editingMember.name}</strong>
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setEditingMember(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1602,12 +1766,10 @@ export const RoomLeadDashboard = () => {
 
             <form onSubmit={handleSaveAssistedBooking} className="mt-5 space-y-4">
               {/* Breakfast Choice */}
-              <div className={`p-3.5 rounded-2xl border flex items-center justify-between ${
-                darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
-              }`}>
+              <div className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-bold">Breakfast (07:30 - 09:30 AM)</p>
-                  <p className={`text-[11px] ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <p className="text-xs font-bold text-slate-900">Breakfast (07:30 - 09:30 AM)</p>
+                  <p className="text-[11px] text-slate-500">
                     Masala Dosa / Poha with Chai
                   </p>
                 </div>
@@ -1617,8 +1779,8 @@ export const RoomLeadDashboard = () => {
                     onClick={() => setAssistedChoices((prev) => ({ ...prev, b: 'Yes' }))}
                     className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       assistedChoices.b === 'Yes'
-                        ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950 shadow-xs'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                        ? 'bg-slate-900 text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
                     Eat
@@ -1628,8 +1790,8 @@ export const RoomLeadDashboard = () => {
                     onClick={() => setAssistedChoices((prev) => ({ ...prev, b: 'No' }))}
                     className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       assistedChoices.b === 'No'
-                        ? 'bg-slate-700 dark:bg-slate-600 text-white shadow-xs'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                        ? 'bg-slate-700 text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
                     Skip
@@ -1638,12 +1800,10 @@ export const RoomLeadDashboard = () => {
               </div>
 
               {/* Lunch Choice */}
-              <div className={`p-3.5 rounded-2xl border flex items-center justify-between ${
-                darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
-              }`}>
+              <div className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-bold">Lunch (12:30 - 02:30 PM)</p>
-                  <p className={`text-[11px] ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <p className="text-xs font-bold text-slate-900">Lunch (12:30 - 02:30 PM)</p>
+                  <p className="text-[11px] text-slate-500">
                     Rajma Chawal Thali & Paneer
                   </p>
                 </div>
@@ -1653,8 +1813,8 @@ export const RoomLeadDashboard = () => {
                     onClick={() => setAssistedChoices((prev) => ({ ...prev, l: 'Yes' }))}
                     className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       assistedChoices.l === 'Yes'
-                        ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950 shadow-xs'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                        ? 'bg-slate-900 text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
                     Eat
@@ -1664,8 +1824,8 @@ export const RoomLeadDashboard = () => {
                     onClick={() => setAssistedChoices((prev) => ({ ...prev, l: 'No' }))}
                     className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       assistedChoices.l === 'No'
-                        ? 'bg-slate-700 dark:bg-slate-600 text-white shadow-xs'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                        ? 'bg-slate-700 text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
                     Skip
@@ -1674,12 +1834,10 @@ export const RoomLeadDashboard = () => {
               </div>
 
               {/* Snacks Choice */}
-              <div className={`p-3.5 rounded-2xl border flex items-center justify-between ${
-                darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
-              }`}>
+              <div className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-bold">Evening Snacks (05:00 - 06:00 PM)</p>
-                  <p className={`text-[11px] ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <p className="text-xs font-bold text-slate-900">Evening Snacks (05:00 - 06:00 PM)</p>
+                  <p className="text-[11px] text-slate-500">
                     Samosa & Hot Chai
                   </p>
                 </div>
@@ -1689,8 +1847,8 @@ export const RoomLeadDashboard = () => {
                     onClick={() => setAssistedChoices((prev) => ({ ...prev, s: 'Yes' }))}
                     className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       assistedChoices.s === 'Yes'
-                        ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950 shadow-xs'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                        ? 'bg-slate-900 text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
                     Eat
@@ -1700,8 +1858,8 @@ export const RoomLeadDashboard = () => {
                     onClick={() => setAssistedChoices((prev) => ({ ...prev, s: 'No' }))}
                     className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       assistedChoices.s === 'No'
-                        ? 'bg-slate-700 dark:bg-slate-600 text-white shadow-xs'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                        ? 'bg-slate-700 text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
                     Skip
@@ -1710,12 +1868,10 @@ export const RoomLeadDashboard = () => {
               </div>
 
               {/* Dinner Choice */}
-              <div className={`p-3.5 rounded-2xl border flex items-center justify-between ${
-                darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
-              }`}>
+              <div className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-bold">Dinner (07:30 - 09:30 PM)</p>
-                  <p className={`text-[11px] ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <p className="text-xs font-bold text-slate-900">Dinner (07:30 - 09:30 PM)</p>
+                  <p className="text-[11px] text-slate-500">
                     Roti, Dal, Rice & Chicken/Paneer
                   </p>
                 </div>
@@ -1725,8 +1881,8 @@ export const RoomLeadDashboard = () => {
                     onClick={() => setAssistedChoices((prev) => ({ ...prev, d: 'Yes' }))}
                     className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       assistedChoices.d === 'Yes'
-                        ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950 shadow-xs'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                        ? 'bg-slate-900 text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
                     Eat
@@ -1736,8 +1892,8 @@ export const RoomLeadDashboard = () => {
                     onClick={() => setAssistedChoices((prev) => ({ ...prev, d: 'No' }))}
                     className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       assistedChoices.d === 'No'
-                        ? 'bg-slate-700 dark:bg-slate-600 text-white shadow-xs'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                        ? 'bg-slate-700 text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
                     Skip
@@ -1747,7 +1903,7 @@ export const RoomLeadDashboard = () => {
 
               {/* Optional Note */}
               <div>
-                <label className="block text-xs font-bold mb-1 text-slate-700 dark:text-slate-300">
+                <label className="block text-xs font-bold mb-1 text-slate-700">
                   Lead Edit Reason / Dietary Note
                 </label>
                 <input
@@ -1755,26 +1911,22 @@ export const RoomLeadDashboard = () => {
                   placeholder="e.g. Requested via call, exam schedule, fasting..."
                   value={assistedNote}
                   onChange={(e) => setAssistedNote(e.target.value)}
-                  className={`w-full p-2.5 rounded-xl border text-xs focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white ${
-                    darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
-                  }`}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-slate-900"
                 />
               </div>
 
               {/* Submit Action Buttons */}
-              <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2">
+              <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setEditingMember(null)}
-                  className={`px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer ${
-                    darkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
+                  className="bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
                 >
                   <Check className="w-4 h-4" />
                   Save & Update Order
@@ -1788,32 +1940,28 @@ export const RoomLeadDashboard = () => {
       {/* MODAL 2: WHATSAPP ROOM BROADCAST NOTIFIER */}
       {showBroadcastModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className={`max-w-md w-full rounded-3xl border shadow-2xl p-6 transition-all ${
-            darkMode ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-          }`}>
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+          <div className="max-w-md w-full rounded-3xl border border-slate-200 bg-white shadow-2xl p-6 text-slate-900 transition-all">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
               <div className="flex items-center gap-2">
-                <Share2 className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+                <Share2 className="w-5 h-5 text-slate-700" />
                 <h3 className="font-black text-lg">Room WhatsApp Nudge</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowBroadcastModal(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="mt-4 space-y-3">
-              <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                Copy this pre-formatted reminder and paste it directly into your Room D-101 WhatsApp or Telegram group:
+              <p className="text-xs text-slate-600">
+                Copy this pre-formatted reminder and paste it directly into your {activeRoomHierarchy.roomNo} WhatsApp group:
               </p>
 
               {/* Pre-formatted message card */}
-              <div className={`p-4 rounded-2xl border font-mono text-xs whitespace-pre-wrap leading-relaxed ${
-                darkMode ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'
-              }`}>
+              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50 text-slate-800 font-mono text-xs whitespace-pre-wrap leading-relaxed">
                 {broadcastText}
               </div>
 
@@ -1821,21 +1969,97 @@ export const RoomLeadDashboard = () => {
                 <button
                   type="button"
                   onClick={() => setShowBroadcastModal(false)}
-                  className={`px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer ${
-                    darkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'
-                  }`}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
                 >
                   Close
                 </button>
                 <button
                   type="button"
                   onClick={handleCopyBroadcast}
-                  className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
+                  className="bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
                 >
                   <Copy className="w-4 h-4" />
                   Copy Reminder Message
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: QUICK MARK HOME LEAVE / RESUME (Checklist #13) */}
+      {showQuickLeaveModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="max-w-md w-full rounded-3xl border border-slate-200 bg-white shadow-2xl p-6 text-slate-900 transition-all">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <Home className="w-5 h-5 text-amber-600" />
+                <h3 className="font-black text-lg">Mark Roommate on Home Leave</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowQuickLeaveModal(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600 mt-3 mb-4 leading-relaxed">
+              When a roommate is marked on Home Leave, their daily food selections are zeroed out in the hostel mess kitchen requisition to prevent food waste.
+            </p>
+
+            <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+              {roomMembers.map((member) => {
+                const isOnLeave = member.status === 'On Leave';
+                return (
+                  <div
+                    key={member.id}
+                    className="p-3 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between gap-3"
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">{member.name}</p>
+                      <p className="text-[11px] font-mono text-slate-500">
+                        Bed {member.id} • Status: {member.status}
+                      </p>
+                    </div>
+                    {isOnLeave ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleRestoreFromLeave(member);
+                          setShowQuickLeaveModal(false);
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs cursor-pointer active:scale-95 transition-all"
+                      >
+                        Restore Present
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          markMemberOnLeave(member.id);
+                          setShowQuickLeaveModal(false);
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-xs cursor-pointer active:scale-95 transition-all flex items-center gap-1"
+                      >
+                        <Home className="w-3.5 h-3.5" />
+                        <span>Mark Leave</span>
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-5 pt-3 border-t border-slate-200 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowQuickLeaveModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
+              >
+                Done
+              </button>
             </div>
           </div>
         </div>
@@ -1846,3 +2070,4 @@ export const RoomLeadDashboard = () => {
 
 // Export the component as default export
 export default RoomLeadDashboard;
+

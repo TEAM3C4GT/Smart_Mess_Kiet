@@ -7,12 +7,22 @@ import {
   Bell,
   ChevronRight,
   LogOut,
-  Moon,
-  Sun,
   LayoutGrid,
   TrendingUp,
   Users,
-  CookingPot
+  CookingPot,
+  Scale,
+  Layers,
+  BrainCircuit,
+  AlertTriangle,
+  Building,
+  Building2,
+  LayoutDashboard,
+  Clock,
+  HeartHandshake,
+  BellRing,
+  ShieldCheck,
+  ShoppingBag
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
@@ -22,7 +32,8 @@ export const Navbar = ({
   onTabChange,
   activeStudentTab,
   onStudentTabChange,
-  darkMode,
+  tabs: propTabs,
+  darkMode = false,
   onToggleDarkMode
 }) => {
   const location = useLocation();
@@ -37,19 +48,8 @@ export const Navbar = ({
     studentNotifications = [],
     markAllNotificationsRead
   } = useApp();
-  const [isDark, setIsDark] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-
-  const darkActive = darkMode !== undefined ? darkMode : isDark;
-
-  const handleToggleDark = () => {
-    if (onToggleDarkMode) {
-      onToggleDarkMode();
-    } else {
-      setIsDark(prev => !prev);
-    }
-  };
 
   const handleSignOut = () => {
     logout();
@@ -71,17 +71,70 @@ export const Navbar = ({
     { id: 'Alerts', label: 'Alerts', icon: Bell }
   ];
 
+  const messInchargeTabs = [
+    { id: "Today's Menu", label: "Today's Menu", icon: UtensilsCrossed },
+    { id: 'Headcount & Forecast', label: 'Headcount & Forecast', icon: Scale },
+    { id: 'Kitchen Requisitions', label: 'Kitchen Requisitions', icon: Layers },
+    { id: 'AI Forecast Engine', label: 'AI Forecast', icon: BrainCircuit },
+    { id: 'Anomaly Alerts', label: 'Alerts', icon: AlertTriangle },
+    { id: 'Student Requests', label: 'Student Requests', icon: CookingPot }
+  ];
+
+  const blockCoordinatorTabs = [
+    { id: 'Block D', label: 'Block D', icon: Building },
+    { id: 'Block E', label: 'Block E', icon: Building },
+    { id: 'All', label: 'All Blocks', icon: Layers },
+    { id: 'Room Leads', label: 'Room Leads', icon: Users }
+  ];
+
+  const roomLeadTabs = [
+    { id: 'Dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'Room Members', label: 'Room Members', icon: Users },
+    { id: 'Incharge Alerts', label: 'Alerts', icon: Bell },
+    { id: 'Kitchen Requisition', label: 'Requisition', icon: UtensilsCrossed },
+    { id: 'Editing Window', label: 'Window', icon: Clock }
+  ];
+
+  const floorInchargeTabs = [
+    { id: 'Room & Floor Monitoring', label: 'Monitoring', icon: LayoutDashboard },
+    { id: 'Floor Roster', label: 'Floor Roster', icon: Users },
+    { id: 'Live Room Submissions', label: 'Rooms', icon: Building2 },
+    { id: 'Meal Requisition', label: 'Requisition', icon: UtensilsCrossed },
+    { id: 'Student Care & Diet', label: 'Care & Diet', icon: HeartHandshake },
+    { id: 'Alerts & Nudges', label: 'Alerts', icon: BellRing }
+  ];
+
   const principalTabs = [
-    { id: 'Analytics', label: 'Analytics', icon: TrendingUp },
-    { id: 'Rollups', label: 'Rollups', icon: Users },
-    { id: 'Mess', label: 'Mess', icon: CookingPot },
-    { id: 'Alerts', label: 'Alerts', icon: Bell }
+    { id: 'Campus Analytics', label: 'Analytics', icon: TrendingUp },
+    { id: 'Meal Rollups', label: 'Rollups', icon: Users },
+    { id: 'Mess Cook Plan', label: 'Mess Ops', icon: CookingPot },
+    { id: 'Alerts & Notices', label: 'Alerts', icon: Bell }
+  ];
+
+  const kfcStaffTabs = [
+    { id: 'Live Orders', label: 'Live Orders', icon: Clock },
+    { id: 'Order History', label: 'History', icon: History },
+    { id: 'Menu & Stock', label: 'Menu & Stock', icon: UtensilsCrossed },
+    { id: 'Analytics', label: 'Analytics', icon: TrendingUp }
   ];
 
   const adminTabs = [
     { id: 'Switchboard', label: 'Role Switchboard', icon: LayoutGrid },
     { id: 'UserManager', label: 'User Manager', icon: Users }
   ];
+
+  // Resolve active tabs for top navigation
+  const resolvedTabs = propTabs || (
+    isStudentPortal ? studentTabs :
+    isAdminPortal ? adminTabs :
+    isPrincipalPortal ? principalTabs :
+    (currentRole === 'Mess Incharge' || location.pathname.includes('mess-incharge')) ? messInchargeTabs :
+    (currentRole === 'Block Coordinator' || location.pathname.includes('block-coordinator')) ? blockCoordinatorTabs :
+    (currentRole === 'Room Lead' || location.pathname.includes('room-lead')) ? roomLeadTabs :
+    (currentRole === 'Floor Incharge' || location.pathname.includes('floor-incharge')) ? floorInchargeTabs :
+    (currentRole === 'KFC Staff' || location.pathname.includes('kfc-staff')) ? kfcStaffTabs :
+    null
+  );
 
   // User badge info
   let userInitial = 'U';
@@ -153,111 +206,94 @@ export const Navbar = ({
   };
 
   return (
-    <header className={`sticky top-0 z-30 px-4 lg:px-8 py-2.5 flex items-center justify-between backdrop-blur-md transition-colors duration-300 ${
-      darkActive ? 'bg-slate-900/95 border-b border-slate-800' : 'bg-white/95 border-b border-slate-200/80'
-    }`}>
+    <header className="sticky top-0 z-30 px-4 lg:px-8 py-2.5 flex items-center justify-between backdrop-blur-md bg-white/95 border-b border-slate-200/80 transition-colors duration-300">
       {/* Brand Logo */}
       <div className="flex items-center gap-3">
         <Link
           to="/login"
           className="flex items-center gap-2.5 group transition-all"
         >
-          <div className="w-9 h-9 rounded-xl bg-slate-900 dark:bg-slate-800 flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform">
+          <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform">
             <UtensilsCrossed className="w-4 h-4 text-slate-200" />
           </div>
           <div>
             <span className="text-[10px] font-mono tracking-widest uppercase font-semibold text-slate-400 block leading-tight">
               CAMPUS OS
             </span>
-            <span className={`text-sm font-extrabold tracking-tight leading-tight ${darkActive ? 'text-white' : 'text-slate-900'}`}>
+            <span className="text-sm font-extrabold tracking-tight leading-tight text-slate-900">
               Smart Mess • KFC
             </span>
           </div>
         </Link>
 
-        {!isStudentPortal && !isPrincipalPortal && !isAdminPortal && currentRole && (
-          <div className={`flex items-center gap-2 pl-2 sm:pl-4 border-l ${darkActive ? 'border-slate-700 text-slate-400' : 'border-slate-200 text-slate-400'}`}>
+        {!isStudentPortal && !isAdminPortal && currentRole && (
+          <div className="hidden sm:flex items-center gap-2 pl-2 sm:pl-4 border-l border-slate-200 text-slate-400">
             <ChevronRight className="w-4 h-4" />
-            <span className={`text-xs sm:text-sm font-semibold px-3 py-1 rounded-full border ${
-              darkActive
-                ? 'bg-slate-800 text-slate-200 border-slate-700'
-                : 'bg-slate-100 text-slate-800 border-slate-300'
-            }`}>
+            <span className="text-xs sm:text-sm font-semibold px-3 py-1 rounded-full border bg-slate-100 text-slate-800 border-slate-300">
               {currentRole}
             </span>
           </div>
         )}
       </div>
 
-      {/* CENTER: Student Nav Tabs */}
-      {isStudentPortal && currentTabChangeHandler && (
-        <nav className="hidden md:flex items-center gap-1 bg-slate-50/80 p-1 rounded-2xl border border-slate-200/70">
-          {studentTabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = currentActiveTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => currentTabChangeHandler(tab.id)}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                  isActive
-                    ? 'bg-slate-900 text-white font-bold shadow-xs dark:bg-slate-100 dark:text-slate-950'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60 dark:text-slate-400 dark:hover:text-white'
-                }`}
-              >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white dark:text-slate-950' : 'text-slate-500'}`} />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-      )}
+      {/* CENTER: Universal Nav Tabs (Dynamic across all roles & synced with sidebar) */}
+      {resolvedTabs && resolvedTabs.length > 0 && currentTabChangeHandler && (
+        <nav className="hidden md:flex items-center gap-1 bg-slate-50/90 p-1 rounded-2xl border border-slate-200/80 max-w-[48vw] xl:max-w-2xl overflow-x-auto scrollbar-none shadow-2xs">
+          {resolvedTabs
+            .filter((tab) => !tab.isHeader)
+            .map((tab) => {
+              const Icon = tab.icon;
+              const tabId = tab.id || tab.name || tab.label;
+              const tabLabel = tab.label || tab.name || tab.id;
+              const isActive =
+                currentActiveTab === tabId ||
+                currentActiveTab === tabLabel ||
+                currentActiveTab === tab.name ||
+                (typeof currentActiveTab === 'string' &&
+                  typeof tabId === 'string' &&
+                  currentActiveTab.toLowerCase() === tabId.toLowerCase());
 
-      {/* CENTER: Principal Nav Tabs (Matching Reference Screenshots 1, 3, 4, 5) */}
-      {isPrincipalPortal && currentTabChangeHandler && (
-        <nav className="hidden md:flex items-center gap-1 bg-slate-50/80 dark:bg-slate-900 p-1 rounded-2xl border border-slate-200/70 dark:border-slate-800">
-          {principalTabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = currentActiveTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => currentTabChangeHandler(tab.id)}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                  isActive
-                    ? 'bg-slate-900 text-white font-bold shadow-xs dark:bg-slate-100 dark:text-slate-950'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60 dark:text-slate-400 dark:hover:text-white'
-                }`}
-              >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white dark:text-slate-950' : 'text-slate-500'}`} />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-      )}
+              const hasBadge =
+                tab.badge !== undefined &&
+                tab.badge !== null &&
+                tab.badge !== '' &&
+                tab.badge !== 0;
 
-      {/* CENTER: Admin Nav Tabs */}
-      {isAdminPortal && currentTabChangeHandler && (
-        <nav className="hidden md:flex items-center gap-1 bg-slate-50/80 dark:bg-slate-900 p-1 rounded-2xl border border-slate-200/70 dark:border-slate-800">
-          {adminTabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = currentActiveTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => currentTabChangeHandler(tab.id)}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                  isActive
-                    ? 'bg-slate-900 text-white font-bold shadow-xs dark:bg-slate-100 dark:text-slate-950'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60 dark:text-slate-400 dark:hover:text-white'
-                }`}
-              >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white dark:text-slate-950' : 'text-slate-500'}`} />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={tabId}
+                  type="button"
+                  onClick={() => currentTabChangeHandler(tabId)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                    isActive
+                      ? 'bg-[#1b4d3e] text-white font-bold shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                  }`}
+                >
+                  {Icon && (
+                    <Icon
+                      className={`w-3.5 h-3.5 shrink-0 ${
+                        isActive ? 'text-white' : 'text-slate-500'
+                      }`}
+                    />
+                  )}
+                  <span>{tabLabel}</span>
+                  {hasBadge && (
+                    <span
+                      className={`ml-0.5 px-1.5 py-0.2 rounded-full text-[9px] font-mono font-black ${
+                        isActive
+                          ? 'bg-white/20 text-white'
+                          : tab.badgeColor
+                          ? `${tab.badgeColor} text-white`
+                          : 'bg-slate-200 text-slate-800'
+                      }`}
+                    >
+                      {tab.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
         </nav>
       )}
 
@@ -267,16 +303,12 @@ export const Navbar = ({
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className={`relative p-2 rounded-xl transition-colors cursor-pointer ${
-              darkActive
-                ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
-            }`}
+            className="relative p-2 rounded-xl transition-colors cursor-pointer text-slate-500 hover:text-slate-700 hover:bg-slate-100"
             title="Notifications"
           >
             <Bell className="w-4 h-4" />
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950 font-black text-[9px] flex items-center justify-center ring-2 ring-white dark:ring-slate-900 animate-pulse">
+              <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-slate-900 text-white font-black text-[9px] flex items-center justify-center ring-2 ring-white animate-pulse">
                 {unreadCount}
               </span>
             )}
@@ -284,16 +316,14 @@ export const Navbar = ({
 
           {/* Notifications Dropdown Popover */}
           {showNotifications && (
-            <div className={`absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl shadow-2xl border p-4 z-50 animate-fade-in ${
-              darkActive ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200/90 text-slate-900'
-            }`}>
+            <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl shadow-2xl border p-4 z-50 animate-fade-in bg-white border-slate-200/90 text-slate-900">
               {/* Header */}
-              <div className="flex items-center justify-between pb-3 border-b border-slate-200/80 dark:border-slate-800">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200/80">
                 <div className="flex items-center gap-2">
-                  <Bell className="w-4 h-4 text-slate-700 dark:text-slate-300" />
+                  <Bell className="w-4 h-4 text-slate-700" />
                   <span className="font-bold text-xs">Notifications</span>
                   {unreadCount > 0 && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200">
+                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-800">
                       {unreadCount} unread
                     </span>
                   )}
@@ -301,7 +331,7 @@ export const Navbar = ({
                 {unreadCount > 0 && (
                   <button
                     onClick={handleMarkAllRead}
-                    className="text-[11px] font-bold text-slate-700 dark:text-slate-300 hover:underline cursor-pointer"
+                    className="text-[11px] font-bold text-slate-700 hover:underline cursor-pointer"
                   >
                     Mark all read
                   </button>
@@ -326,27 +356,23 @@ export const Navbar = ({
                       }}
                       className={`p-3 rounded-xl border text-xs transition-all ${
                         !notif.read
-                          ? darkActive
-                            ? 'bg-slate-800/80 border-slate-700'
-                            : 'bg-slate-100 border-slate-300'
-                          : darkActive
-                          ? 'bg-slate-800/40 border-slate-800 text-slate-400'
+                          ? 'bg-slate-100 border-slate-300'
                           : 'bg-slate-50/80 border-slate-100 text-slate-600'
                       }`}
                     >
                       <div className="flex items-center justify-between gap-1 mb-1">
-                        <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                          {!notif.read && <span className="w-2 h-2 rounded-full bg-slate-900 dark:bg-slate-100 animate-pulse"></span>}
+                        <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                          {!notif.read && <span className="w-2 h-2 rounded-full bg-slate-900 animate-pulse"></span>}
                           {notif.title}
                         </span>
                         <span className="text-[10px] text-slate-400 font-mono">{notif.time}</span>
                       </div>
-                      <p className={`text-[11px] leading-relaxed ${darkActive ? 'text-slate-300' : 'text-slate-600'}`}>
+                      <p className="text-[11px] leading-relaxed text-slate-600">
                         {notif.message}
                       </p>
-                      <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between">
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                          From: <strong className="text-slate-700 dark:text-slate-200">{notif.sender || 'Floor Incharge'}</strong>
+                      <div className="mt-2 pt-2 border-t border-slate-200/60 flex items-center justify-between">
+                        <span className="text-[10px] text-slate-500 font-medium">
+                          From: <strong className="text-slate-700">{notif.sender || 'Floor Incharge'}</strong>
                         </span>
                         {isRoomLeadPortal && (
                           !notif.read ? (
@@ -356,12 +382,12 @@ export const Navbar = ({
                                 e.stopPropagation();
                                 if (markRoomLeadNotificationRead) markRoomLeadNotificationRead(notif.id);
                               }}
-                              className="px-2 py-0.5 rounded-lg bg-slate-900 text-white text-[10px] font-bold hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white cursor-pointer shadow-xs active:scale-95"
+                              className="px-2 py-0.5 rounded-lg bg-slate-900 text-white text-[10px] font-bold hover:bg-slate-800 cursor-pointer shadow-xs active:scale-95"
                             >
                               Acknowledge
                             </button>
                           ) : (
-                            <span className="text-[10px] text-slate-700 dark:text-slate-300 font-bold">
+                            <span className="text-[10px] text-slate-700 font-bold">
                               ✓ Read
                             </span>
                           )
@@ -373,16 +399,16 @@ export const Navbar = ({
               </div>
 
               {/* Footer */}
-              <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-[11px]">
+              <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between text-[11px]">
                 <button
                   onClick={handleClearAll}
-                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                  className="text-slate-400 hover:text-slate-600 cursor-pointer"
                 >
                   Clear all
                 </button>
                 <button
                   onClick={() => setShowNotifications(false)}
-                  className="font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+                  className="font-bold text-slate-600 hover:text-slate-900 cursor-pointer"
                 >
                   Close
                 </button>
@@ -391,32 +417,17 @@ export const Navbar = ({
           )}
         </div>
 
-        {/* Theme Toggle */}
-        <button
-          onClick={handleToggleDark}
-          className={`p-2 rounded-xl transition-colors cursor-pointer ${
-            darkActive
-              ? 'text-slate-200 hover:text-white hover:bg-slate-800'
-              : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
-          }`}
-          title={darkActive ? 'Switch to Day Mode' : 'Switch to Dark Mode'}
-        >
-          {darkActive ? <Sun className="w-4 h-4 text-slate-200" /> : <Moon className="w-4 h-4 text-slate-700" />}
-        </button>
-
         {/* User Badge with Dropdown */}
         <div className="relative">
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className={`flex items-center gap-2 pl-2 pr-1 py-1 rounded-xl transition-all cursor-pointer text-left ${
-              darkActive ? 'hover:bg-slate-800' : 'hover:bg-slate-100'
-            }`}
+            className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-xl transition-all cursor-pointer text-left hover:bg-slate-100"
           >
-            <div className="w-7 h-7 rounded-full bg-slate-900 dark:bg-slate-700 text-white flex items-center justify-center text-xs font-bold shrink-0">
+            <div className="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold shrink-0">
               {userInitial}
             </div>
             <div className="hidden sm:block">
-              <span className={`text-xs font-bold block leading-tight ${darkActive ? 'text-white' : 'text-slate-800'}`}>
+              <span className="text-xs font-bold block leading-tight text-slate-800">
                 {userName}
               </span>
               <span className="text-[10px] font-mono tracking-wider font-semibold text-slate-400 uppercase block leading-tight">
@@ -427,33 +438,27 @@ export const Navbar = ({
 
           {/* User Dropdown */}
           {showUserMenu && (
-            <div className={`absolute right-0 mt-2 w-56 rounded-2xl shadow-xl border py-2 z-50 animate-fade-in ${
-              darkActive ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200/90'
-            }`}>
-              <div className={`px-3 py-2 border-b ${darkActive ? 'border-slate-700' : 'border-slate-100'}`}>
-                <p className={`text-xs font-bold ${darkActive ? 'text-white' : 'text-slate-900'}`}>{userName}</p>
-                <p className={`text-[11px] font-mono ${darkActive ? 'text-slate-400' : 'text-slate-500'}`}>{currentUser?.email || 'user@demo.edu'}</p>
+            <div className="absolute right-0 mt-2 w-56 rounded-2xl shadow-xl border py-2 z-50 animate-fade-in bg-white border-slate-200/90">
+              <div className="px-3 py-2 border-b border-slate-100">
+                <p className="text-xs font-bold text-slate-900">{userName}</p>
+                <p className="text-[11px] font-mono text-slate-500">{currentUser?.email || 'user@demo.edu'}</p>
               </div>
 
               <div className="py-1">
                 <Link
                   to="/dashboards"
                   onClick={() => setShowUserMenu(false)}
-                  className={`flex items-center gap-2 px-3 py-2 text-xs font-semibold ${
-                    darkActive ? 'text-slate-300 hover:bg-slate-700/60' : 'text-slate-700 hover:bg-slate-50'
-                  }`}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                 >
                   <LayoutGrid className="w-3.5 h-3.5 text-slate-500" />
                   All Portals
                 </Link>
               </div>
 
-              <div className={`pt-1 border-t ${darkActive ? 'border-slate-700' : 'border-slate-100'}`}>
+              <div className="pt-1 border-t border-slate-100">
                 <button
                   onClick={handleSignOut}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-red-500 ${
-                    darkActive ? 'hover:bg-rose-950/30' : 'hover:bg-red-50'
-                  } text-left cursor-pointer`}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 text-left cursor-pointer"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   Log Out
@@ -466,3 +471,5 @@ export const Navbar = ({
     </header>
   );
 };
+
+export default Navbar;

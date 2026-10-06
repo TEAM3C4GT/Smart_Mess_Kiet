@@ -61,12 +61,78 @@ export const STAFF_ACCOUNTS = [
     path: '/kfc-staff',
     badge: 'Canteen Fulfillment'
   },
+  // --- 8 ROOM LEADS (BLOCK D & BLOCK E - 1 LEAD PER ROOM) ---
   {
     role: 'Room Lead',
     email: 'nithin.roomlead@gmail.com',
-    name: 'Alex Rivers (Room Lead)',
+    name: 'Alex Rivers (Room Lead D-101)',
     path: '/room-lead',
-    badge: 'Lead • Room D-101'
+    badge: 'Lead • Room D-101 • Block D',
+    room: 'Room D-101',
+    block: 'Block D'
+  },
+  {
+    role: 'Room Lead',
+    email: 'abhishek.lead@kiet.edu',
+    name: 'Abhishek Tiwari (Room Lead D-102)',
+    path: '/room-lead',
+    badge: 'Lead • Room D-102 • Block D',
+    room: 'Room D-102',
+    block: 'Block D'
+  },
+  {
+    role: 'Room Lead',
+    email: 'prashant.lead@kiet.edu',
+    name: 'Prashant Singh (Room Lead D-201)',
+    path: '/room-lead',
+    badge: 'Lead • Room D-201 • Block D',
+    room: 'Room D-201',
+    block: 'Block D'
+  },
+  {
+    role: 'Room Lead',
+    email: 'vaibhav.lead@kiet.edu',
+    name: 'Vaibhav Goyal (Room Lead D-202)',
+    path: '/room-lead',
+    badge: 'Lead • Room D-202 • Block D',
+    room: 'Room D-202',
+    block: 'Block D'
+  },
+  {
+    role: 'Room Lead',
+    email: 'sriram.lead@kiet.edu',
+    name: 'SRIRAM (Room Lead E-101)',
+    path: '/room-lead',
+    badge: 'Lead • Room E-101 • Block E',
+    room: 'Room E-101',
+    block: 'Block E'
+  },
+  {
+    role: 'Room Lead',
+    email: 'aaditya.lead@kiet.edu',
+    name: 'Aaditya Nair (Room Lead E-102)',
+    path: '/room-lead',
+    badge: 'Lead • Room E-102 • Block E',
+    room: 'Room E-102',
+    block: 'Block E'
+  },
+  {
+    role: 'Room Lead',
+    email: 'kavya.lead@kiet.edu',
+    name: 'Kavya Madhavan (Room Lead E-201)',
+    path: '/room-lead',
+    badge: 'Lead • Room E-201 • Block E',
+    room: 'Room E-201',
+    block: 'Block E'
+  },
+  {
+    role: 'Room Lead',
+    email: 'pooja.lead@kiet.edu',
+    name: 'Pooja Hegde (Room Lead E-202)',
+    path: '/room-lead',
+    badge: 'Lead • Room E-202 • Block E',
+    room: 'Room E-202',
+    block: 'Block E'
   },
   {
     role: 'Floor Incharge',
@@ -106,9 +172,16 @@ export const STAFF_ACCOUNTS = [
   {
     role: 'Block Coordinator',
     email: 'nithin.block@gmail.com',
-    name: 'Nithin (Block Coordinator)',
+    name: 'Nithin (Block D Coordinator)',
     path: '/block-coordinator',
-    badge: 'Block Coordinator • Block D & E'
+    badge: 'Block Coordinator • Block D'
+  },
+  {
+    role: 'Block Coordinator',
+    email: 'mukerjee.block@kiet.edu',
+    name: 'Dr. S. Mukerjee (Block E Coordinator)',
+    path: '/block-coordinator',
+    badge: 'Block Coordinator • Block E'
   },
   {
     role: 'Mess Incharge',
@@ -351,14 +424,14 @@ export const AppProvider = ({ children }) => {
   // Campus Users Management State
   const [users, setUsers] = useState(() => {
     try {
-      const saved = localStorage.getItem('smart_mess_users_v3');
+      const saved = localStorage.getItem('smart_mess_users_v5');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length >= 40 && !parsed.some(u => (u.badge || '').includes('Block B'))) {
+        if (Array.isArray(parsed) && parsed.length >= 50 && !parsed.some(u => (u.badge || '').includes('Block B'))) {
           return parsed;
         }
       }
-      localStorage.setItem('smart_mess_users_v3', JSON.stringify(DEFAULT_CAMPUS_USERS));
+      localStorage.setItem('smart_mess_users_v5', JSON.stringify(DEFAULT_CAMPUS_USERS));
       return DEFAULT_CAMPUS_USERS;
     } catch {
       return DEFAULT_CAMPUS_USERS;
@@ -367,7 +440,7 @@ export const AppProvider = ({ children }) => {
 
   const broadcastUsers = (newUsers) => {
     try {
-      localStorage.setItem('smart_mess_users_v3', JSON.stringify(newUsers));
+      localStorage.setItem('smart_mess_users_v5', JSON.stringify(newUsers));
       broadcastMessSync('USERS_SYNC', { users: newUsers });
     } catch (e) {
       console.warn(e);
@@ -503,7 +576,7 @@ export const AppProvider = ({ children }) => {
           setUsers((prev) => {
             if (JSON.stringify(prev) !== JSON.stringify(data.users)) {
               try {
-                localStorage.setItem('smart_mess_users_v3', JSON.stringify(data.users));
+                localStorage.setItem('smart_mess_users_v5', JSON.stringify(data.users));
               } catch (e) {}
               return data.users;
             }
@@ -1348,7 +1421,7 @@ export const AppProvider = ({ children }) => {
         try {
           setHeadcount(JSON.parse(e.newValue));
         } catch {}
-      } else if (e.key === 'smart_mess_users_v3' && e.newValue) {
+      } else if (e.key === 'smart_mess_users_v5' && e.newValue) {
         try {
           const parsed = JSON.parse(e.newValue);
           if (Array.isArray(parsed) && !parsed.some(u => (u.badge || '').includes('Block B'))) setUsers(parsed);
@@ -1380,7 +1453,7 @@ export const AppProvider = ({ children }) => {
           const parsedHeadcount = JSON.parse(savedHeadcount);
           setHeadcount((prev) => (JSON.stringify(prev) !== JSON.stringify(parsedHeadcount) ? parsedHeadcount : prev));
         }
-        const savedUsers = localStorage.getItem('smart_mess_users_v3');
+        const savedUsers = localStorage.getItem('smart_mess_users_v5');
         if (savedUsers) {
           const parsedUsers = JSON.parse(savedUsers);
           if (Array.isArray(parsedUsers) && !parsedUsers.some(u => (u.badge || '').includes('Block B'))) {
@@ -1719,7 +1792,20 @@ export const AppProvider = ({ children }) => {
       getFloorStats('E-2', 'Floor 2 (Block E)')
     ];
   }, [floorRooms]);
-  const [blockConsolidatedSent, setBlockConsolidatedSent] = useState(false);
+  const [blockConsolidatedSent, setBlockConsolidatedSent] = useState(() => {
+    try {
+      return localStorage.getItem('smart_mess_block_consolidated_sent') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [blockSentMap, setBlockSentMap] = useState(() => {
+    try {
+      const saved = localStorage.getItem('smart_mess_block_sent_map_v1');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return { 'Block D': false, 'Block E': false, 'All': false };
+  });
 
   // 6. Mess Incharge Data & Menu is initialized and synced at top of context
 
@@ -1757,32 +1843,37 @@ export const AppProvider = ({ children }) => {
 
   const [principalFlagged, setPrincipalFlagged] = useState(false);
   const principalRollups = useMemo(() => {
-    const totalRooms = floorRooms.length || 8;
+    const safeFloorRooms = Array.isArray(floorRooms) ? floorRooms : [];
+    const safeRoomMembers = Array.isArray(roomMembers) ? roomMembers : [];
+    const totalRooms = safeFloorRooms.length || 8;
     const totalStudents = totalRooms * 5;
-    const submitted = floorRooms.reduce((acc, r) => acc + (r.submitted || 0), 0);
+    const submitted = safeFloorRooms.reduce((acc, r) => acc + ((r && r.submitted) || 0), 0);
     const pending = Math.max(0, totalStudents - submitted);
     const rate = totalStudents > 0 ? parseFloat(((submitted / totalStudents) * 100).toFixed(1)) : 0;
 
-    const d101B = roomMembers.filter((m) => m.status !== 'On Leave' && m.choices?.b === 'Yes').length;
-    const d101L = roomMembers.filter((m) => m.status !== 'On Leave' && m.choices?.l === 'Yes').length;
-    const d101S = roomMembers.filter((m) => m.status !== 'On Leave' && m.choices?.s === 'Yes').length;
-    const d101D = roomMembers.filter((m) => m.status !== 'On Leave' && m.choices?.d === 'Yes').length;
+    const d101B = safeRoomMembers.filter((m) => m && m.status !== 'On Leave' && m.choices?.b === 'Yes').length;
+    const d101L = safeRoomMembers.filter((m) => m && m.status !== 'On Leave' && m.choices?.l === 'Yes').length;
+    const d101S = safeRoomMembers.filter((m) => m && m.status !== 'On Leave' && m.choices?.s === 'Yes').length;
+    const d101D = safeRoomMembers.filter((m) => m && m.status !== 'On Leave' && m.choices?.d === 'Yes').length;
 
-    const otherSubmitted = floorRooms.filter((r) => r.roomNo !== 'Room D-101').reduce((acc, r) => acc + (r.submitted || 0), 0);
+    const otherSubmitted = safeFloorRooms.filter((r) => r && r.roomNo !== 'Room D-101').reduce((acc, r) => acc + ((r && r.submitted) || 0), 0);
     const breakfast = d101B + Math.round(otherSubmitted * 0.95);
     const lunch = d101L + Math.round(otherSubmitted * 1.0);
     const snacks = d101S + Math.round(otherSubmitted * 0.82);
     const dinner = d101D + Math.round(otherSubmitted * 0.95);
 
-    const d101Pending = roomMembers
-      .filter((m) => m.status === 'Pending')
-      .map((m) => ({
-        id: `D101-${m.id}`,
-        initial: m.name.charAt(0),
-        name: m.name,
-        email: `${m.name.toLowerCase().replace(/[^a-z]/g, '')}@kiet.edu`,
-        room: 'Room D-101 • Block D'
-      }));
+    const d101Pending = safeRoomMembers
+      .filter((m) => m && m.status === 'Pending')
+      .map((m) => {
+        const studentName = m?.name || 'Student';
+        return {
+          id: `D101-${m?.id || Math.random()}`,
+          initial: (studentName.charAt(0) || 'S').toUpperCase(),
+          name: studentName,
+          email: `${studentName.toLowerCase().replace(/[^a-z]/g, '')}@kiet.edu`,
+          room: 'Room D-101 • Block D'
+        };
+      });
 
     const otherPending = [
       { id: 'D201-5', initial: 'A', name: 'Ananya Gupta', email: 'ananya.gupta@kiet.edu', room: 'Room D-201 • Block D' },
@@ -1800,7 +1891,7 @@ export const AppProvider = ({ children }) => {
       total: totalStudents,
       pending,
       cutoff: '22:00',
-      flagged: principalFlagged,
+      flagged: Boolean(principalFlagged),
       mealCounts: {
         breakfast,
         lunch,
@@ -2168,17 +2259,51 @@ export const AppProvider = ({ children }) => {
 
   const placeKfcOrder = async (items, totalAmount) => {
     const studentName = currentUser?.name || 'Aarav Sharma';
+    const studentRoll = currentUser?.rollNo || studentName;
     const room = (currentUser?.badge ? currentUser.badge.split('•')[0].trim() : 'Room D-101') || 'Room D-101';
+
+    // Checklist #8: Limit Orders - Max 5 per person per day, only 1 active at a time
+    const activeOrder = kfcOrders.find(
+      (o) =>
+        (o.studentName?.toLowerCase() === studentName.toLowerCase() ||
+         (o.studentRoll && o.studentRoll === studentRoll)) &&
+        ['Pending', 'Preparing', 'Ready'].includes(o.status)
+    );
+    if (activeOrder) {
+      addToast(
+        `Active order in progress (#${activeOrder.token})! Please collect or cancel it before placing a new one.`,
+        'warning'
+      );
+      return null;
+    }
+
+    const todayOrdersCount = kfcOrders.filter(
+      (o) =>
+        (o.studentName?.toLowerCase() === studentName.toLowerCase() ||
+         (o.studentRoll && o.studentRoll === studentRoll)) &&
+        o.status !== 'Cancelled'
+    ).length;
+    if (todayOrdersCount >= 5) {
+      addToast(
+        'Daily order limit reached! You can place a maximum of 5 KFC orders per day.',
+        'error'
+      );
+      return null;
+    }
+
     const roomDigits = room.replace(/\D/g, '') || '101';
     const randNum = Math.floor(10 + Math.random() * 90);
     const token = `KFC-D${roomDigits}-${randNum}`;
+    const placedAt = Date.now();
     const newOrderData = {
       token,
       studentName,
+      studentRoll,
       room,
       items,
       totalAmount,
       orderTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      placedAt,
       status: 'Pending'
     };
 
@@ -2192,7 +2317,7 @@ export const AppProvider = ({ children }) => {
       console.warn(e);
     }
 
-    addToast(`KFC Order Placed! Token: ${token}`, 'success');
+    addToast(`KFC Order Placed! Token: #${token}`, 'success');
 
     // Deduct stock for ordered items in real time and broadcast across tabs
     setKfcMenu((prev) => {
@@ -2234,6 +2359,114 @@ export const AppProvider = ({ children }) => {
     }
 
     return optimisticOrder;
+  };
+
+  // Checklist #6 & #7: Cancel Order with 2-minute cancellation limit & stock restoration
+  const cancelKfcOrder = async (orderId) => {
+    const targetOrder = kfcOrders.find((o) => o.id === orderId || o.token === orderId);
+    if (!targetOrder) {
+      addToast('Order not found', 'error');
+      return false;
+    }
+    if (targetOrder.status === 'Cancelled') {
+      addToast('Order is already cancelled', 'info');
+      return false;
+    }
+    if (targetOrder.status === 'Collected') {
+      addToast('Cannot cancel an order that has already been collected', 'warning');
+      return false;
+    }
+
+    // Cancellation window: 2 minutes (120,000 ms)
+    const placedTimestamp = targetOrder.placedAt || targetOrder.timestamp || null;
+    if (placedTimestamp && Date.now() - placedTimestamp > 120000) {
+      addToast('Cancellation window has closed. Orders can only be cancelled within 2 minutes of placing.', 'error');
+      return false;
+    }
+
+    const orderToken = targetOrder.token || orderId;
+
+    // Set status to Cancelled
+    setKfcOrders((prev) =>
+      prev.map((ord) => (ord.id === orderId || ord.token === orderId ? { ...ord, status: 'Cancelled' } : ord))
+    );
+    broadcastKfcOrderStatus(orderId, 'Cancelled');
+    broadcastKfcOrderStatus(orderToken, 'Cancelled');
+
+    // Restore stock for cancelled items
+    if (Array.isArray(targetOrder.items) && targetOrder.items.length > 0) {
+      setKfcMenu((prev) => {
+        const restored = prev.map((menuItem) => {
+          const orderedItem = targetOrder.items.find((i) => i.name === menuItem.name);
+          if (!orderedItem) return menuItem;
+          const currentStock = menuItem.stock !== undefined ? menuItem.stock : 0;
+          const restoredStock = currentStock + (orderedItem.qty || 1);
+          return {
+            ...menuItem,
+            stock: restoredStock,
+            isAvailable: restoredStock > 0
+          };
+        });
+        broadcastKfcMenu(restored);
+        fetch('/api/kfc/menu', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ menu: restored })
+        }).catch(() => {});
+        return restored;
+      });
+    }
+
+    addToast(`KFC Order #${orderToken} cancelled. Items restored to kitchen stock.`, 'info');
+
+    const cancelNotif = {
+      id: Date.now(),
+      title: '❌ KFC Order Cancelled',
+      message: `Your Order #${orderToken} was cancelled within the 2-minute cancellation window.`,
+      sender: 'KFC Express Counter',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: Date.now(),
+      read: false,
+      type: 'kfc'
+    };
+    addStudentNotification(cancelNotif);
+
+    try {
+      await fetch(`/api/kfc/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Cancelled' })
+      });
+    } catch (err) {}
+
+    return true;
+  };
+
+  // Checklist #6: Order Feedback (Star rating + comments)
+  const submitOrderFeedback = async (orderId, rating, comment) => {
+    const feedbackObj = {
+      rating: Number(rating) || 5,
+      comment: (comment || '').trim(),
+      submittedAt: Date.now()
+    };
+
+    setKfcOrders((prev) =>
+      prev.map((ord) => (ord.id === orderId || ord.token === orderId ? { ...ord, feedback: feedbackObj } : ord))
+    );
+
+    addToast('Thank you! Your KFC feedback and rating have been recorded.', 'success');
+
+    if (kfcBcRef.current) {
+      try {
+        kfcBcRef.current.postMessage({
+          type: 'KFC_ORDER_FEEDBACK_SYNC',
+          orderId,
+          feedback: feedbackObj
+        });
+      } catch (e) {}
+    }
+
+    return true;
   };
 
   const broadcastKfcOrderStatus = (orderId, status) => {
@@ -2412,6 +2645,22 @@ export const AppProvider = ({ children }) => {
     } catch (err) {
       console.warn('Backend item delete note:', err);
     }
+  };
+
+  const updateKfcMenuItem = async (updatedItem) => {
+    setKfcMenu((prev) => {
+      const updated = prev.map((item) =>
+        String(item.id) === String(updatedItem.id) ? { ...item, ...updatedItem } : item
+      );
+      broadcastKfcMenu(updated);
+      fetch('/api/kfc/menu', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ menu: updated })
+      }).catch(() => {});
+      return updated;
+    });
+    addToast(`${updatedItem.name} updated successfully!`, 'success');
   };
 
   const setKfcItemStockDirect = (itemId, newStock) => {
@@ -2954,18 +3203,34 @@ export const AppProvider = ({ children }) => {
     addToast(`Room ${roomNo} status updated.`, 'warning');
   };
 
-  const sendBlockConsolidatedCount = () => {
-    setBlockConsolidatedSent(true);
-    try {
-      localStorage.setItem('smart_mess_block_consolidated_sent', 'true');
-    } catch (e) {}
+  const sendBlockConsolidatedCount = (targetBlock = 'All') => {
+    const isBlockD = targetBlock === 'Block D';
+    const isBlockE = targetBlock === 'Block E';
 
+    setBlockConsolidatedSent(true);
+    setBlockSentMap((prev) => {
+      const updated = {
+        ...prev,
+        [targetBlock]: true,
+        ...(targetBlock === 'All' ? { 'Block D': true, 'Block E': true, 'All': true } : {})
+      };
+      if (updated['Block D'] && updated['Block E']) {
+        updated['All'] = true;
+      }
+      try {
+        localStorage.setItem('smart_mess_block_sent_map_v1', JSON.stringify(updated));
+        localStorage.setItem('smart_mess_block_consolidated_sent', 'true');
+      } catch (e) {}
+      return updated;
+    });
+
+    const blockLabel = isBlockD ? 'Block D (Senior Wing)' : isBlockE ? 'Block E (International & PG Wing)' : 'Block D & Block E';
     const blockNotif = {
       id: Date.now(),
-      title: '🏢 Block D & E Requisitions Forwarded to Mess',
-      message: 'Block Coordinator has consolidated and forwarded the final Block D & Block E meal requisitions to the Main Mess Kitchen.',
+      title: `🏢 ${blockLabel} Requisitions Forwarded to Mess`,
+      message: `Block Coordinator has consolidated and forwarded the final ${blockLabel} meal requisitions to the Main Mess Kitchen.`,
       sender: 'Nithin (Block Coordinator)',
-      roomNo: 'Room D-101',
+      roomNo: isBlockE ? 'Room E-101' : 'Room D-101',
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       timestamp: Date.now(),
       read: false,
@@ -2983,11 +3248,12 @@ export const AppProvider = ({ children }) => {
         broadcastChannelRef.current.postMessage({
           type: 'BLOCK_CONSOLIDATED_COUNT_SENT',
           timestamp: Date.now(),
+          targetBlock,
           notification: blockNotif
         });
       } catch (e) {}
     }
-    addToast('Block-wise meal count sent successfully to Mess Incharge!', 'success');
+    addToast(`${isBlockD ? 'Block D' : isBlockE ? 'Block E' : 'Consolidated'} meal count sent successfully to Mess Incharge!`, 'success');
   };
 
   // Nudges a Room Lead directly from Block Coordinator or Principal
@@ -3196,20 +3462,95 @@ export const AppProvider = ({ children }) => {
       return sessionUser;
     }
 
-    // 2. Check Staff & Admin accounts (nithin.<role>@gmail.com, admin@gmail.com)
-    let matchedStaff = STAFF_ACCOUNTS.find((st) => st.email.toLowerCase() === lowerId);
+    // 2. Check Room Lead direct shorthands & aliases (d101, d102, d201, d202, e101, e102, e201, e202, etc.)
+    const roomLeadShorthands = {
+      'd101': 'nithin.roomlead@gmail.com',
+      'd-101': 'nithin.roomlead@gmail.com',
+      'room d-101': 'nithin.roomlead@gmail.com',
+      'roomd101': 'nithin.roomlead@gmail.com',
+      'alex.lead@kiet.edu': 'nithin.roomlead@gmail.com',
+      'd101.lead@kiet.edu': 'nithin.roomlead@gmail.com',
+      'nithin.roomd101@gmail.com': 'nithin.roomlead@gmail.com',
+      'lead.d101': 'nithin.roomlead@gmail.com',
+
+      'd102': 'abhishek.lead@kiet.edu',
+      'd-102': 'abhishek.lead@kiet.edu',
+      'room d-102': 'abhishek.lead@kiet.edu',
+      'roomd102': 'abhishek.lead@kiet.edu',
+      'd102.lead@kiet.edu': 'abhishek.lead@kiet.edu',
+      'nithin.roomd102@gmail.com': 'abhishek.lead@kiet.edu',
+      'lead.d102': 'abhishek.lead@kiet.edu',
+
+      'd201': 'prashant.lead@kiet.edu',
+      'd-201': 'prashant.lead@kiet.edu',
+      'room d-201': 'prashant.lead@kiet.edu',
+      'roomd201': 'prashant.lead@kiet.edu',
+      'd201.lead@kiet.edu': 'prashant.lead@kiet.edu',
+      'nithin.roomd201@gmail.com': 'prashant.lead@kiet.edu',
+      'lead.d201': 'prashant.lead@kiet.edu',
+
+      'd202': 'vaibhav.lead@kiet.edu',
+      'd-202': 'vaibhav.lead@kiet.edu',
+      'room d-202': 'vaibhav.lead@kiet.edu',
+      'roomd202': 'vaibhav.lead@kiet.edu',
+      'd202.lead@kiet.edu': 'vaibhav.lead@kiet.edu',
+      'nithin.roomd202@gmail.com': 'vaibhav.lead@kiet.edu',
+      'lead.d202': 'vaibhav.lead@kiet.edu',
+
+      'e101': 'sriram.lead@kiet.edu',
+      'e-101': 'sriram.lead@kiet.edu',
+      'room e-101': 'sriram.lead@kiet.edu',
+      'roome101': 'sriram.lead@kiet.edu',
+      'e101.lead@kiet.edu': 'sriram.lead@kiet.edu',
+      'nithin.roome101@gmail.com': 'sriram.lead@kiet.edu',
+      'lead.e101': 'sriram.lead@kiet.edu',
+
+      'e102': 'aaditya.lead@kiet.edu',
+      'e-102': 'aaditya.lead@kiet.edu',
+      'room e-102': 'aaditya.lead@kiet.edu',
+      'roome102': 'aaditya.lead@kiet.edu',
+      'e102.lead@kiet.edu': 'aaditya.lead@kiet.edu',
+      'nithin.roome102@gmail.com': 'aaditya.lead@kiet.edu',
+      'lead.e102': 'aaditya.lead@kiet.edu',
+
+      'e201': 'kavya.lead@kiet.edu',
+      'e-201': 'kavya.lead@kiet.edu',
+      'room e-201': 'kavya.lead@kiet.edu',
+      'roome201': 'kavya.lead@kiet.edu',
+      'e201.lead@kiet.edu': 'kavya.lead@kiet.edu',
+      'nithin.roome201@gmail.com': 'kavya.lead@kiet.edu',
+      'lead.e201': 'kavya.lead@kiet.edu',
+
+      'e202': 'pooja.lead@kiet.edu',
+      'e-202': 'pooja.lead@kiet.edu',
+      'room e-202': 'pooja.lead@kiet.edu',
+      'roome202': 'pooja.lead@kiet.edu',
+      'e202.lead@kiet.edu': 'pooja.lead@kiet.edu',
+      'nithin.roome202@gmail.com': 'pooja.lead@kiet.edu',
+      'lead.e202': 'pooja.lead@kiet.edu',
+    };
+
+    let targetStaffEmail = roomLeadShorthands[lowerId] || lowerId;
+
+    // Check Staff & Admin accounts
+    let matchedStaff = STAFF_ACCOUNTS.find((st) => st.email.toLowerCase() === targetStaffEmail);
 
     // Support admin aliases
     if (!matchedStaff && (lowerId === 'admin' || lowerId === 'admin@gmail.com' || lowerId === 'karthiksuru06@gmail.com')) {
       matchedStaff = STAFF_ACCOUNTS.find((st) => st.role === 'Admin');
     }
 
-    // Support shorthand like "nithin.kfcstaff" or "nithin.kfc"
+    // Support shorthand like "nithin.kfcstaff" or "nithin.kfc" or email prefix
     if (!matchedStaff) {
       matchedStaff = STAFF_ACCOUNTS.find((st) => st.email.split('@')[0].toLowerCase() === lowerId);
     }
 
-    // Support role-based matches if user enters "kfcstaff", "principal", "mess", "floor", "roomlead", "block"
+    // Support badge room match (e.g. if entered "Room D-102" or "Lead • Room D-201")
+    if (!matchedStaff) {
+      matchedStaff = STAFF_ACCOUNTS.find((st) => (st.badge || '').toLowerCase().includes(lowerId));
+    }
+
+    // Support role-based generic matches if user enters "kfcstaff", "principal", "mess", "floor", "roomlead", "block"
     if (!matchedStaff) {
       if (lowerId.includes('kfc')) matchedStaff = STAFF_ACCOUNTS.find((st) => st.role === 'KFC Staff');
       else if (lowerId.includes('room')) matchedStaff = STAFF_ACCOUNTS.find((st) => st.role === 'Room Lead');
@@ -3225,7 +3566,8 @@ export const AppProvider = ({ children }) => {
       const dynamicUser = users.find(
         (u) => (u.email && u.email.toLowerCase() === lowerId) ||
                (u.rollNo && u.rollNo.toLowerCase() === lowerId) ||
-               (u.id && u.id.toLowerCase() === lowerId)
+               (u.id && u.id.toLowerCase() === lowerId) ||
+               (u.badge && u.badge.toLowerCase().includes(lowerId))
       );
       if (dynamicUser) {
         matchedStaff = dynamicUser;
@@ -3310,9 +3652,12 @@ export const AppProvider = ({ children }) => {
         setKfcItemStockDirect,
         restockAllKfcItems,
         addKfcMenuItem,
+        updateKfcMenuItem,
         removeKfcMenuItem,
         kfcOrders,
         placeKfcOrder,
+        cancelKfcOrder,
+        submitOrderFeedback,
         updateKfcOrderStatus,
         advanceKfcOrderStatus,
         refreshKfcOrders,
@@ -3338,6 +3683,7 @@ export const AppProvider = ({ children }) => {
         flagRoom,
         blockData,
         blockConsolidatedSent,
+        blockSentMap,
         sendBlockConsolidatedCount,
         nudgeFloorIncharge,
         nudgeRoomLead,

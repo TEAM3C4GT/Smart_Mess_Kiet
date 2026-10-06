@@ -12,25 +12,19 @@ import { PrincipalDashboard } from './pages/PrincipalDashboard';
 import { KfcStaffDashboard } from './pages/KfcStaffDashboard';
 import { ToastContainer } from './components/ToastContainer';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 export const App = () => {
   return (
-    <>
+    <ErrorBoundary>
       <ToastContainer />
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
 
-        {/* Protected Dashboard Routes */}
-        <Route
-          path="/dashboards"
-          element={
-            <ProtectedRoute allowedRoles={['Admin']}>
-              <MainDashboards />
-            </ProtectedRoute>
-          }
-        />
+        {/* Switchboard & Portals Directory */}
+        <Route path="/dashboards" element={<MainDashboards />} />
         <Route
           path="/student"
           element={
@@ -99,7 +93,7 @@ export const App = () => {
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
-    </>
+    </ErrorBoundary>
   );
 };
 

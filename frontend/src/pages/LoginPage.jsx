@@ -8,7 +8,11 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
-  Sparkles
+  Sparkles,
+  BedDouble,
+  ChevronDown,
+  ChevronUp,
+  LogIn
 } from 'lucide-react';
 
 export const LoginPage = () => {
@@ -19,6 +23,37 @@ export const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showRoomLeads, setShowRoomLeads] = useState(true);
+
+  // 8 Room Leads across Block D (4 rooms) and Block E (4 rooms)
+  const roomLeads = [
+    { room: 'Room D-101', name: 'Alex Rivers', email: 'nithin.roomlead@gmail.com', block: 'Block D • Floor 1', code: 'd101' },
+    { room: 'Room D-102', name: 'Abhishek Tiwari', email: 'abhishek.lead@kiet.edu', block: 'Block D • Floor 1', code: 'd102' },
+    { room: 'Room D-201', name: 'Prashant Singh', email: 'prashant.lead@kiet.edu', block: 'Block D • Floor 2', code: 'd201' },
+    { room: 'Room D-202', name: 'Vaibhav Goyal', email: 'vaibhav.lead@kiet.edu', block: 'Block D • Floor 2', code: 'd202' },
+    { room: 'Room E-101', name: 'SRIRAM', email: 'sriram.lead@kiet.edu', block: 'Block E • Floor 1', code: 'e101' },
+    { room: 'Room E-102', name: 'Aaditya Nair', email: 'aaditya.lead@kiet.edu', block: 'Block E • Floor 1', code: 'e102' },
+    { room: 'Room E-201', name: 'Kavya Madhavan', email: 'kavya.lead@kiet.edu', block: 'Block E • Floor 2', code: 'e201' },
+    { room: 'Room E-202', name: 'Pooja Hegde', email: 'pooja.lead@kiet.edu', block: 'Block E • Floor 2', code: 'e202' }
+  ];
+
+  const handleQuickFill = (emailVal, passVal = '123456789') => {
+    setIdentifier(emailVal);
+    setPassword(passVal);
+  };
+
+  const handleDirectLogin = (emailVal, passVal = '123456789') => {
+    setIdentifier(emailVal);
+    setPassword(passVal);
+    setIsSubmitting(true);
+    setTimeout(() => {
+      const session = login(emailVal, passVal);
+      setIsSubmitting(false);
+      if (session && session.path) {
+        navigate(session.path);
+      }
+    }, 200);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -169,6 +204,76 @@ export const LoginPage = () => {
               )}
             </button>
           </form>
+
+          {/* Quick 8 Room Lead Logins Panel */}
+          <div className="mt-5 pt-5 border-t border-slate-100">
+            <div 
+              onClick={() => setShowRoomLeads(!showRoomLeads)}
+              className="flex items-center justify-between cursor-pointer p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 transition-colors border border-slate-200/80"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-[#1b4d3e] text-emerald-100 flex items-center justify-center shrink-0">
+                  <BedDouble className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-slate-900">8 Room Lead Logins</span>
+                    <span className="text-[10px] font-mono font-bold bg-emerald-100 text-[#1b4d3e] px-1.5 py-0.2 rounded">
+                      8 Rooms
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 font-medium">40 Students (5 per room) • Blocks D & E</p>
+                </div>
+              </div>
+              <div className="text-slate-400 p-1">
+                {showRoomLeads ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </div>
+            </div>
+
+            {showRoomLeads && (
+              <div className="mt-2.5 space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
+                  {roomLeads.map((rl) => (
+                    <div 
+                      key={rl.room}
+                      className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-2xs hover:border-emerald-500/70 hover:shadow-xs transition-all flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-black text-slate-900">{rl.room}</span>
+                          <span className="text-[9px] font-mono font-bold bg-slate-100 text-slate-700 px-1 py-0.5 rounded">
+                            {rl.code}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-800 font-semibold truncate mt-0.5">{rl.name}</p>
+                        <p className="text-[10px] text-slate-400 font-mono truncate">{rl.email}</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-2 pt-1.5 border-t border-slate-100">
+                        <button
+                          type="button"
+                          onClick={() => handleQuickFill(rl.email, '123456789')}
+                          className="flex-1 text-[10px] font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 py-1 rounded-md transition-colors cursor-pointer"
+                        >
+                          Autofill
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDirectLogin(rl.email, '123456789')}
+                          className="flex-1 text-[10px] font-bold text-white bg-[#1b4d3e] hover:bg-[#163f33] py-1 rounded-md transition-colors shadow-2xs cursor-pointer flex items-center justify-center gap-1"
+                        >
+                          <LogIn className="w-3 h-3" />
+                          <span>Login</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-slate-500 text-center font-medium pt-0.5">
+                  Standard password for all Room Leads is <span className="font-mono font-bold text-slate-700">123456789</span>. You can also type room shortcodes (<span className="font-mono font-bold">d101</span>, <span className="font-mono font-bold">e201</span>).
+                </p>
+              </div>
+            )}
+          </div>
 
           {/* Bottom Link */}
           <div className="mt-8 pt-5 flex items-center justify-between text-xs text-slate-500 border-t border-slate-100">

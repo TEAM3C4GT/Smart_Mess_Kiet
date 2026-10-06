@@ -285,6 +285,7 @@ export const FloorInchargeDashboard = () => {
         currentRole="Floor Incharge"                   // Displays 'Floor Incharge' role badge in header
         activeTab={activeTab}                          // Passes currently selected tab
         onTabChange={setActiveTab}                     // Callback when user clicks a nav tab in header
+        tabs={sidebarItems}
         darkMode={darkMode}                            // Passes current dark mode state
         onToggleDarkMode={() => setDarkMode((prev) => !prev)} // Callback to flip dark mode on/off
       />

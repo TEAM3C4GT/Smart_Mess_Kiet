@@ -32,7 +32,9 @@ import {
   AlertTriangle,
   RotateCcw,
   Check,
-  History
+  History,
+  Edit,
+  Star
 } from 'lucide-react';
 
 export const KfcStaffDashboard = () => {
@@ -44,6 +46,7 @@ export const KfcStaffDashboard = () => {
   const [menuSearchQuery, setMenuSearchQuery] = useState('');
   const [menuSelectedCategory, setMenuSelectedCategory] = useState('All');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingMenuItem, setEditingMenuItem] = useState(null);
   const [newItem, setNewItem] = useState({
     name: '',
     price: '',
@@ -63,6 +66,7 @@ export const KfcStaffDashboard = () => {
     setKfcItemStockDirect,
     restockAllKfcItems,
     addKfcMenuItem,
+    updateKfcMenuItem,
     removeKfcMenuItem,
     kfcOrders,
     updateKfcOrderStatus,
@@ -71,6 +75,32 @@ export const KfcStaffDashboard = () => {
     clearAllKfcOrders,
     addToast
   } = useApp();
+
+  const handleSaveEditItem = (e) => {
+    e.preventDefault();
+    if (!editingMenuItem || !editingMenuItem.name.trim()) {
+      addToast('Please enter an item name', 'error');
+      return;
+    }
+    const priceNum = parseFloat(editingMenuItem.price);
+    if (isNaN(priceNum) || priceNum <= 0) {
+      addToast('Please enter a valid price in ₹', 'error');
+      return;
+    }
+    const stockNum = parseInt(editingMenuItem.stock);
+    const finalStock = isNaN(stockNum) || stockNum < 0 ? 0 : stockNum;
+
+    if (updateKfcMenuItem) {
+      updateKfcMenuItem({
+        ...editingMenuItem,
+        name: editingMenuItem.name.trim(),
+        price: priceNum,
+        stock: finalStock,
+        isAvailable: finalStock > 0
+      });
+    }
+    setEditingMenuItem(null);
+  };
 
   const handleAddItem = (e) => {
     e.preventDefault();
@@ -226,125 +256,211 @@ export const KfcStaffDashboard = () => {
   });
   const itemSalesList = Object.values(itemSalesStats).sort((a, b) => b.qty - a.qty);
 
-  const renderOrderCard = (order) => (
-    <div
-      key={order.id}
-      className={`bg-white rounded-2xl border transition-all p-5 shadow-xs flex flex-col justify-between ${
-        order.status === 'Ready'
-          ? 'border-emerald-300 ring-2 ring-emerald-500/10'
-          : order.status === 'Preparing'
-          ? 'border-emerald-300 ring-2 ring-emerald-500/10'
-          : order.status === 'Collected'
-          ? 'border-slate-200 bg-slate-50/40 opacity-75'
-          : 'border-amber-300 ring-2 ring-amber-500/10'
-      }`}
-    >
-      <div>
-        {/* Card Header: Token & Status */}
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <div className="flex items-center gap-2">
-            <span className="font-extrabold text-slate-900 text-lg bg-slate-100 px-2.5 py-1 rounded-lg font-mono">
-              #{order.token}
-            </span>
-            <span className="text-[11px] font-semibold text-slate-400 font-mono">
-              {order.orderTime}
-            </span>
-          </div>
+  const renderOrderCard = (order) => {
+    const isCancelled = order.status === 'Cancelled';
+    const currentStep =
+      order.status === 'Pending' ? 1 :
+      order.status === 'Preparing' ? 2 :
+      order.status === 'Ready' ? 3 :
+      order.status === 'Collected' ? 4 : 0;
 
-          <span
-            className={`text-xs font-bold px-2.5 py-1 rounded-full border font-mono ${
-              order.status === 'Ready'
-                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                : order.status === 'Preparing'
-                ? 'bg-blue-100 text-blue-800 border-blue-200'
-                : order.status === 'Collected'
-                ? 'bg-slate-100 text-slate-700 border-slate-300'
-                : 'bg-amber-100 text-amber-800 border-amber-300'
-            }`}
-          >
-            {order.status}
-          </span>
-        </div>
-
-        {/* Student Meta */}
-        <div className="mb-3 pb-3 border-b border-slate-100">
-          <p className="text-sm font-bold text-slate-900">{order.studentName}</p>
-          <p className="text-xs text-[#1b4d3e] font-semibold">{order.room}{order.room?.includes('Block') ? '' : ' • Campus Hostel'}</p>
-        </div>
-
-        {/* Order Items */}
-        <div className="space-y-1.5 mb-4">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block font-mono">
-            Ordered Items
-          </span>
-          {order.items.map((item, idx) => (
-            <div key={idx} className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-slate-800">
-                <span className="font-bold text-[#1b4d3e] mr-1.5">{item.qty}x</span>
-                {item.name}
+    return (
+      <div
+        key={order.id}
+        className={`bg-white rounded-2xl border transition-all p-5 shadow-xs flex flex-col justify-between ${
+          order.status === 'Ready'
+            ? 'border-emerald-400 ring-2 ring-emerald-500/15 shadow-md shadow-emerald-500/5'
+            : order.status === 'Preparing'
+            ? 'border-blue-400 ring-2 ring-blue-500/15 shadow-md shadow-blue-500/5'
+            : order.status === 'Collected'
+            ? 'border-slate-200 bg-slate-50/40 opacity-80'
+            : isCancelled
+            ? 'border-rose-200 bg-rose-50/20 opacity-70'
+            : 'border-amber-400 ring-2 ring-amber-500/15 shadow-md shadow-amber-500/5'
+        }`}
+      >
+        <div>
+          {/* Card Header: Token & Status */}
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <span className="font-extrabold text-slate-900 text-lg bg-slate-100 px-2.5 py-1 rounded-lg font-mono">
+                #{order.token}
               </span>
-              <span className="font-bold text-slate-500 font-mono">₹{item.price * item.qty}</span>
+              <span className="text-[11px] font-semibold text-slate-400 font-mono">
+                {order.orderTime}
+              </span>
             </div>
-          ))}
+
+            <span
+              className={`text-xs font-bold px-2.5 py-1 rounded-full border font-mono flex items-center gap-1 ${
+                order.status === 'Ready'
+                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300 animate-pulse'
+                  : order.status === 'Preparing'
+                  ? 'bg-blue-100 text-blue-800 border-blue-200'
+                  : order.status === 'Collected'
+                  ? 'bg-slate-100 text-slate-700 border-slate-300'
+                  : isCancelled
+                  ? 'bg-rose-100 text-rose-800 border-rose-300'
+                  : 'bg-amber-100 text-amber-800 border-amber-300 animate-pulse'
+              }`}
+            >
+              {order.status === 'Ready' ? (
+                <BellRing className="w-3 h-3 text-emerald-700" />
+              ) : order.status === 'Preparing' ? (
+                <Flame className="w-3 h-3 text-blue-700" />
+              ) : isCancelled ? (
+                <X className="w-3 h-3 text-rose-700" />
+              ) : (
+                <Clock className="w-3 h-3 text-amber-700" />
+              )}
+              <span>{order.status}</span>
+            </span>
+          </div>
+
+          {/* Student Meta */}
+          <div className="mb-3 pb-3 border-b border-slate-100">
+            <p className="text-sm font-bold text-slate-900">{order.studentName}</p>
+            <p className="text-xs text-[#1b4d3e] font-semibold">{order.room}{order.room?.includes('Block') ? '' : ' • Campus Hostel'}</p>
+          </div>
+
+          {/* Checklist #9: Visual Order Tracking Timeline Stepper for Staff */}
+          {!isCancelled && (
+            <div className="mb-4 bg-slate-50/70 p-2.5 rounded-xl border border-slate-100">
+              <span className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                Kitchen Stage Timeline
+              </span>
+              <div className="flex items-center justify-between text-[10px] font-mono font-bold">
+                {[
+                  { num: 1, label: 'Placed' },
+                  { num: 2, label: 'Preparing' },
+                  { num: 3, label: 'Ready' },
+                  { num: 4, label: 'Delivered' }
+                ].map((st, sIdx) => {
+                  const isDone = currentStep >= st.num;
+                  const isCurrent = currentStep === st.num;
+                  return (
+                    <div key={st.num} className="flex items-center gap-1">
+                      <div
+                        className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
+                          isDone
+                            ? 'bg-[#1b4d3e] text-white'
+                            : 'bg-slate-200 text-slate-500'
+                        } ${isCurrent ? 'ring-2 ring-emerald-300' : ''}`}
+                      >
+                        {isDone ? '✓' : st.num}
+                      </div>
+                      <span className={isDone ? 'text-slate-800' : 'text-slate-400'}>
+                        {st.label}
+                      </span>
+                      {sIdx < 3 && <span className="text-slate-300 text-[8px] mx-0.5">→</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Order Items */}
+          <div className="space-y-1.5 mb-4">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block font-mono">
+              Ordered Items
+            </span>
+            {order.items.map((item, idx) => (
+              <div key={idx} className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-slate-800">
+                  <span className="font-bold text-[#1b4d3e] mr-1.5">{item.qty}x</span>
+                  {item.name}
+                </span>
+                <span className="font-bold text-slate-500 font-mono">₹{item.price * item.qty}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Checklist #6: Customer Feedback Star Badge */}
+          {order.feedback && (
+            <div className="mb-3 p-2.5 rounded-xl bg-amber-50/80 border border-amber-200/70 text-xs">
+              <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                <span>Student Rating: {order.feedback.rating}/5</span>
+              </div>
+              {order.feedback.comment && (
+                <p className="text-[11px] text-amber-800 mt-1 italic font-medium">
+                  "{order.feedback.comment}"
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Card Footer: Amount Due & One-Click Actions */}
+        <div className="pt-3 border-t border-slate-100">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase block font-mono">Total Due</span>
+              <span className="text-lg font-extrabold text-slate-900 font-mono">₹{order.totalAmount}</span>
+            </div>
+            <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/70">
+              Cash at Counter
+            </span>
+          </div>
+
+          {/* Action Progression Button */}
+          {order.status === 'Pending' && (
+            <button
+              onClick={() => advanceKfcOrderStatus(order.id)}
+              className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Flame className="w-3.5 h-3.5" />
+              Start Preparing
+            </button>
+          )}
+
+          {order.status === 'Preparing' && (
+            <button
+              onClick={() => advanceKfcOrderStatus(order.id)}
+              className="w-full bg-[#1b4d3e] hover:bg-[#143d31] text-white font-bold py-2.5 px-3 rounded-xl text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <BellRing className="w-3.5 h-3.5" />
+              Mark Ready for Pickup
+            </button>
+          )}
+
+          {order.status === 'Ready' && (
+            <button
+              onClick={() => advanceKfcOrderStatus(order.id)}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition-all shadow-md shadow-emerald-600/20 flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Mark Paid & Delivered
+            </button>
+          )}
+
+          {order.status === 'Collected' && (
+            <div className="w-full text-center py-2 rounded-xl bg-slate-100 text-slate-500 text-xs font-bold flex items-center justify-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              Order Collected & Settled
+            </div>
+          )}
+
+          {isCancelled && (
+            <div className="w-full text-center py-2 rounded-xl bg-rose-50 text-rose-600 text-xs font-bold flex items-center justify-center gap-1.5 border border-rose-200">
+              <X className="w-3.5 h-3.5" />
+              Cancelled • Stock Restored
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Card Footer: Amount Due & One-Click Actions */}
-      <div className="pt-3 border-t border-slate-100">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase block font-mono">Total Due</span>
-            <span className="text-lg font-extrabold text-slate-900 font-mono">₹{order.totalAmount}</span>
-          </div>
-          <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/70">
-            Cash at Counter
-          </span>
-        </div>
-
-        {/* Action Progression Button */}
-        {order.status === 'Pending' && (
-          <button
-            onClick={() => advanceKfcOrderStatus(order.id)}
-            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-3 rounded-xl text-xs transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
-          >
-            <Flame className="w-3.5 h-3.5" />
-            Start Preparing
-          </button>
-        )}
-
-        {order.status === 'Preparing' && (
-          <button
-            onClick={() => advanceKfcOrderStatus(order.id)}
-            className="w-full bg-[#1b4d3e] hover:bg-[#143d31] text-white font-bold py-2 px-3 rounded-xl text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
-          >
-            <BellRing className="w-3.5 h-3.5" />
-            Mark Ready for Pickup
-          </button>
-        )}
-
-        {order.status === 'Ready' && (
-          <button
-            onClick={() => advanceKfcOrderStatus(order.id)}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-xl text-xs transition-all shadow-md shadow-emerald-600/20 flex items-center justify-center gap-1.5 cursor-pointer"
-          >
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            Mark Paid & Delivered
-          </button>
-        )}
-
-        {order.status === 'Collected' && (
-          <div className="w-full text-center py-2 rounded-xl bg-slate-100 text-slate-500 text-xs font-bold flex items-center justify-center gap-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-            Order Collected & Settled
-          </div>
-        )}
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
-      <Navbar currentRole="KFC Staff" />
+      <Navbar
+        currentRole="KFC Staff"
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        tabs={sidebarItems}
+      />
 
       <div className="flex-1 flex flex-col lg:flex-row">
         <Sidebar items={sidebarItems} activeTab={activeTab} onTabChange={setActiveTab} />
@@ -1114,18 +1230,27 @@ export const KfcStaffDashboard = () => {
                               </div>
                             </div>
 
-                            <button
-                              onClick={() => removeKfcMenuItem(item.id)}
-                              title="Delete menu item"
-                              className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all cursor-pointer shrink-0"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                onClick={() => setEditingMenuItem({ ...item })}
+                                title="Edit item name, price, or stock"
+                                className="p-1.5 text-slate-400 hover:text-[#1b4d3e] hover:bg-emerald-50 rounded-lg transition-all cursor-pointer"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => removeKfcMenuItem(item.id)}
+                                title="Delete menu item"
+                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
 
                           {/* Inventory Stock Controls */}
-                          <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
-                            {/* Stock Counter Controls */}
+                          <div className="pt-2.5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            {/* Stock Counter Controls & Checklist #17 Direct Manual Entry */}
                             <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2 py-1 rounded-xl">
                               <button
                                 onClick={() => updateKfcItemStock(item.id, -1)}
@@ -1135,12 +1260,19 @@ export const KfcStaffDashboard = () => {
                               >
                                 <Minus className="w-3 h-3" />
                               </button>
-                              <div className="text-center min-w-[32px]">
-                                <span className="font-mono font-extrabold text-xs text-slate-900">
-                                  {item.stock ?? 0}
-                                </span>
-                                <span className="text-[9px] text-slate-400 block -mt-1 font-mono">qty</span>
+                              
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={item.stock ?? 0}
+                                  onChange={(e) => setKfcItemStockDirect(item.id, e.target.value)}
+                                  className="w-12 text-center text-xs font-mono font-black text-slate-900 bg-white border border-slate-200 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-[#1b4d3e]"
+                                  title="Enter manual stock quantity directly"
+                                />
+                                <span className="text-[9px] text-slate-400 font-mono">qty</span>
                               </div>
+
                               <button
                                 onClick={() => updateKfcItemStock(item.id, 5)}
                                 title="Restock +5 units"
@@ -1149,11 +1281,11 @@ export const KfcStaffDashboard = () => {
                                 +5
                               </button>
                               <button
-                                onClick={() => updateKfcItemStock(item.id, 10)}
-                                title="Restock +10 units"
-                                className="px-2 py-0.5 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-[#1b4d3e] hover:border-emerald-300 text-[10px] font-bold cursor-pointer shadow-2xs font-mono"
+                                onClick={() => setKfcItemStockDirect(item.id, 50)}
+                                title="Set full stock (50 units)"
+                                className="px-2 py-0.5 rounded-lg bg-emerald-50 border border-emerald-200 text-[#1b4d3e] hover:bg-emerald-100 text-[10px] font-bold cursor-pointer shadow-2xs font-mono"
                               >
-                                +10
+                                Full (50)
                               </button>
                             </div>
 
@@ -1336,6 +1468,138 @@ export const KfcStaffDashboard = () => {
                           >
                             <Plus className="w-4 h-4" />
                             Add to Menu
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
+
+                {/* Checklist #9: Edit Menu Item Modal */}
+                {editingMenuItem && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+                    <div className="bg-white rounded-2xl border border-slate-200 w-full max-w-md p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+                      <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-emerald-50 text-[#1b4d3e] border border-emerald-200/70 flex items-center justify-center font-bold">
+                            <Edit className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-slate-900 text-base">Edit Menu Item</h3>
+                            <p className="text-xs text-slate-400">Modify title, price, category, icon, or inventory</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setEditingMenuItem(null)}
+                          className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-all cursor-pointer"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      <form onSubmit={handleSaveEditItem} className="space-y-4">
+                        {/* Item Name */}
+                        <div>
+                          <label className="block text-[10px] font-mono font-bold text-slate-700 uppercase tracking-wider mb-1">
+                            Item Name <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. Crispy Chicken Tenders"
+                            value={editingMenuItem.name || ''}
+                            onChange={(e) => setEditingMenuItem({ ...editingMenuItem, name: e.target.value })}
+                            className="w-full text-sm px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1b4d3e] focus:border-transparent font-medium"
+                          />
+                        </div>
+
+                        {/* Price, Category, and Stock in 3 columns */}
+                        <div className="grid grid-cols-3 gap-2.5">
+                          <div>
+                            <label className="block text-[10px] font-mono font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Price (₹) <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              step="1"
+                              required
+                              value={editingMenuItem.price ?? ''}
+                              onChange={(e) => setEditingMenuItem({ ...editingMenuItem, price: e.target.value })}
+                              className="w-full text-sm px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1b4d3e] focus:border-transparent font-medium font-mono"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-mono font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Category
+                            </label>
+                            <select
+                              value={editingMenuItem.category || 'Snacks'}
+                              onChange={(e) => setEditingMenuItem({ ...editingMenuItem, category: e.target.value })}
+                              className="w-full text-sm px-2 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1b4d3e] focus:border-transparent bg-white cursor-pointer font-medium text-xs"
+                            >
+                              {categories.map((c) => (
+                                <option key={c} value={c}>
+                                  {c}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-mono font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Stock Count
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={editingMenuItem.stock ?? 0}
+                              onChange={(e) => setEditingMenuItem({ ...editingMenuItem, stock: e.target.value })}
+                              className="w-full text-sm px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1b4d3e] focus:border-transparent font-medium font-mono"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Quick Emoji Selector */}
+                        <div>
+                          <label className="block text-[10px] font-mono font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Item Icon / Emoji
+                          </label>
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            {quickEmojis.map((emoji) => (
+                              <button
+                                type="button"
+                                key={emoji}
+                                onClick={() => setEditingMenuItem({ ...editingMenuItem, image: emoji })}
+                                className={`w-9 h-9 rounded-xl text-lg flex items-center justify-center transition-all cursor-pointer ${
+                                  editingMenuItem.image === emoji
+                                    ? 'bg-emerald-50 border-2 border-[#1b4d3e] shadow-xs scale-105'
+                                    : 'bg-slate-100 hover:bg-slate-200 border border-slate-200'
+                                }`}
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                          <button
+                            type="button"
+                            onClick={() => setEditingMenuItem(null)}
+                            className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="px-5 py-2 text-xs font-bold bg-[#1b4d3e] hover:bg-[#143d31] text-white rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <Check className="w-4 h-4" />
+                            Save Changes
                           </button>
                         </div>
                       </form>

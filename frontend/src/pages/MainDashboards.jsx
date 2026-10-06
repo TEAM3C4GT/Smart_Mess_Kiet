@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
-import { useApp } from '../context/AppContext';
+import { useApp, STAFF_ACCOUNTS } from '../context/AppContext';
 import {
   GraduationCap,
   BedDouble,
@@ -38,6 +38,7 @@ import {
 export const MainDashboards = () => {
   const navigate = useNavigate();
   const {
+    currentUser,
     users = [],
     addUser,
     updateUser,
@@ -59,6 +60,7 @@ export const MainDashboards = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [deletingUser, setDeletingUser] = useState(null);
+  const [showRoomLeadModal, setShowRoomLeadModal] = useState(false);
 
   // Form State for Add User
   const [formData, setFormData] = useState({
@@ -116,8 +118,8 @@ export const MainDashboards = () => {
       icon: BedDouble,
       emoji: '🛏️',
       path: '/room-lead',
-      description: 'Track room submissions and remind pending students.',
-      badge: 'Room D-101 Tracking',
+      description: 'Track room submissions and remind pending students across all 8 rooms.',
+      badge: '8 Rooms • All Leads',
       color: 'bg-[#1b4d3e]'
     },
     {
@@ -252,6 +254,36 @@ export const MainDashboards = () => {
     navigate(user.path || '/student');
   };
 
+  // 8 Room Leads across Block D & Block E
+  const roomLeadsList = useMemo(() => {
+    const fromUsers = users.filter((u) => u.role === 'Room Lead');
+    if (fromUsers.length >= 8) return fromUsers;
+    return STAFF_ACCOUNTS.filter((st) => st.role === 'Room Lead');
+  }, [users]);
+
+  // Launch role dashboard from Switchboard (auto-switch session for seamless demo access)
+  const handleLaunchDashboard = (card) => {
+    if (card.id === 'room-lead') {
+      setShowRoomLeadModal(true);
+      return;
+    }
+    if (currentUser && currentUser.role === 'Admin') {
+      navigate(card.path);
+      return;
+    }
+    if (currentUser && currentUser.role === card.title) {
+      navigate(card.path);
+      return;
+    }
+    const matchingUser =
+      users.find((u) => u.role === card.title || u.path === card.path) ||
+      (Array.isArray(STAFF_ACCOUNTS) && STAFF_ACCOUNTS.find((st) => st.role === card.title || st.path === card.path));
+    if (matchingUser) {
+      loginAsUser(matchingUser);
+    }
+    navigate(card.path);
+  };
+
   // Distinct role options for selects
   const roleOptions = [
     'Student',
@@ -376,7 +408,7 @@ export const MainDashboards = () => {
                 return (
                   <div
                     key={card.id}
-                    onClick={() => navigate(card.path)}
+                    onClick={() => handleLaunchDashboard(card)}
                     className="group relative bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-xs transition-all duration-300 hover:shadow-lg hover:shadow-emerald-950/5 hover:-translate-y-0.5 hover:border-emerald-300 cursor-pointer flex flex-col justify-between"
                   >
                     <div>
@@ -1003,6 +1035,90 @@ export const MainDashboards = () => {
                   className="px-5 py-2 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white transition-colors shadow-xs"
                 >
                   Yes, Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL: ROOM LEAD SELECTION MODAL (8 ROOMS) */}
+        {showRoomLeadModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 relative animate-in fade-in zoom-in-95 duration-150">
+              <button
+                onClick={() => setShowRoomLeadModal(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-[#1b4d3e] text-emerald-100 flex items-center justify-center">
+                  <BedDouble className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-slate-900">
+                    Select Room Lead Portal (8 Rooms)
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    40 students across 8 rooms (5 members per room) • Blocks D & E
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-72 overflow-y-auto pr-1 my-4">
+                {roomLeadsList.map((lead) => {
+                  const roomMatch = (lead.badge || lead.name || '').match(/Room\s+[DE]-\d{3}/i);
+                  const roomTitle = roomMatch ? roomMatch[0] : (lead.badge || 'Room Lead');
+                  const isBlockD = roomTitle.includes('D-');
+
+                  return (
+                    <div
+                      key={lead.id || lead.email}
+                      className="p-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-emerald-50/50 hover:border-emerald-300 transition-all flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-black text-slate-900">{roomTitle}</span>
+                          <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                            isBlockD ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                          }`}>
+                            {isBlockD ? 'Block D' : 'Block E'}
+                          </span>
+                        </div>
+                        <p className="text-xs font-semibold text-slate-800 mt-1 truncate">
+                          {lead.name}
+                        </p>
+                        <p className="text-[10px] text-slate-500 font-mono truncate">
+                          {lead.email}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          loginAsUser(lead);
+                          setShowRoomLeadModal(false);
+                          navigate('/room-lead');
+                        }}
+                        className="mt-2.5 w-full bg-[#1b4d3e] hover:bg-[#163f33] text-white text-xs font-bold py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+                      >
+                        <span>Launch Dashboard</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                <span className="text-slate-500 font-medium">All 8 Room Leads configured</span>
+                <button
+                  type="button"
+                  onClick={() => setShowRoomLeadModal(false)}
+                  className="px-4 py-1.5 rounded-lg font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                >
+                  Close
                 </button>
               </div>
             </div>
