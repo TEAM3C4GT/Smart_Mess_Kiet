@@ -1,251 +1,22 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react';
+import { io } from 'socket.io-client';
 
 const AppContext = createContext();
 
-export const STUDENT_ROSTER = [
-  // Block D - Floor 1 - Room D-101
-  { rollNo: '23B21A4501', name: 'Alex Rivers', email: 'alex.rivers@kiet.edu', room: 'Room D-101 • Block D' },
-  { rollNo: '23B21A4225', name: 'NITHIN', email: '23b21a4225@kiet.edu', room: 'Room D-101 • Block D' },
-  { rollNo: '23JN1A4543', name: 'VISALYA', email: '23jn1a4543@kiet.edu', room: 'Room D-101 • Block D' },
-  { rollNo: '23B21A4502', name: 'Rahul Verma', email: 'rahul.verma@kiet.edu', room: 'Room D-101 • Block D' },
-  { rollNo: '23B21A4503', name: 'Priya Sundaram', email: 'priya.sundaram@kiet.edu', room: 'Room D-101 • Block D' },
-  // Block D - Floor 1 - Room D-102
-  { rollNo: '23B21D0101', name: 'Abhishek Tiwari', email: 'abhishek.tiwari@kiet.edu', room: 'Room D-102 • Block D' },
-  { rollNo: '23B21D0102', name: 'Saurabh Mishra', email: 'saurabh.mishra@kiet.edu', room: 'Room D-102 • Block D' },
-  { rollNo: '23B21D0103', name: 'Harshit Srivastava', email: 'harshit.s@kiet.edu', room: 'Room D-102 • Block D' },
-  { rollNo: '23B21D0104', name: 'Mohit Pandey', email: 'mohit.pandey@kiet.edu', room: 'Room D-102 • Block D' },
-  { rollNo: '23B21D0105', name: 'Anurag Yadav', email: 'anurag.yadav@kiet.edu', room: 'Room D-102 • Block D' },
-  // Block D - Floor 2 - Room D-201
-  { rollNo: '23B21D0201', name: 'Prashant Singh', email: 'prashant.singh@kiet.edu', room: 'Room D-201 • Block D' },
-  { rollNo: '23B21D0202', name: 'Utkarsh Shukla', email: 'utkarsh.shukla@kiet.edu', room: 'Room D-201 • Block D' },
-  { rollNo: '23B21D0203', name: 'Deepanshu Bhatt', email: 'deepanshu.b@kiet.edu', room: 'Room D-201 • Block D' },
-  { rollNo: '23B21A4504', name: 'Vikram Sethi', email: 'vikram.sethi@kiet.edu', room: 'Room D-201 • Block D' },
-  { rollNo: '23B21A4505', name: 'Ananya Gupta', email: 'ananya.gupta@kiet.edu', room: 'Room D-201 • Block D' },
-  // Block D - Floor 2 - Room D-202
-  { rollNo: '23B21D0204', name: 'Vaibhav Goyal', email: 'vaibhav.goyal@kiet.edu', room: 'Room D-202 • Block D' },
-  { rollNo: '23B21D0205', name: 'Ayush Saxena', email: 'ayush.saxena@kiet.edu', room: 'Room D-202 • Block D' },
-  { rollNo: '23B21D0206', name: 'Rishabh Dubey', email: 'rishabh.dubey@kiet.edu', room: 'Room D-202 • Block D' },
-  { rollNo: '23B21D0106', name: 'Shivam Dixit', email: 'shivam.dixit@kiet.edu', room: 'Room D-202 • Block D' },
-  { rollNo: '23B21A0201', name: 'Karan Mehra', email: 'karan.mehra@kiet.edu', room: 'Room D-202 • Block D' },
-  // Block E - Floor 1 - Room E-101
-  { rollNo: '23B21A4538', name: 'SRIRAM', email: '23b21a4538@kiet.edu', room: 'Room E-101 • Block E' },
-  { rollNo: '23B21A45A1', name: 'KEERTHI', email: '23b21a45a1@kiet.edu', room: 'Room E-101 • Block E' },
-  { rollNo: '23JN1A4316', name: 'SUPRIYA', email: '23jn1a4316@kiet.edu', room: 'Room E-101 • Block E' },
-  { rollNo: '24B21A4576', name: 'SRK', email: '24b21a4576@kiet.edu', room: 'Room E-101 • Block E' },
-  { rollNo: '23B21A4661', name: 'KARTHIK', email: '23b21a4661@kiet.edu', room: 'Room E-101 • Block E' },
-  // Block E - Floor 1 - Room E-102
-  { rollNo: '23B21E0101', name: 'Aaditya Nair', email: 'aaditya.nair@kiet.edu', room: 'Room E-102 • Block E' },
-  { rollNo: '23B21E0102', name: 'Tanvi Sharma', email: 'tanvi.sharma@kiet.edu', room: 'Room E-102 • Block E' },
-  { rollNo: '23B21E0103', name: 'Rhea Sen', email: 'rhea.sen@kiet.edu', room: 'Room E-102 • Block E' },
-  { rollNo: '23B21E0104', name: 'Chaitanya Pillai', email: 'chaitanya.p@kiet.edu', room: 'Room E-102 • Block E' },
-  { rollNo: '23B21E0105', name: 'Aditi Deshmukh', email: 'aditi.deshmukh@kiet.edu', room: 'Room E-102 • Block E' },
-  // Block E - Floor 2 - Room E-201
-  { rollNo: '23B21E0201', name: 'Kavya Madhavan', email: 'kavya.m@kiet.edu', room: 'Room E-201 • Block E' },
-  { rollNo: '23B21E0202', name: 'Siddharth Menon', email: 'siddharth.m@kiet.edu', room: 'Room E-201 • Block E' },
-  { rollNo: '23B21E0203', name: 'Arvind Swaminathan', email: 'arvind.s@kiet.edu', room: 'Room E-201 • Block E' },
-  { rollNo: '23B21E0106', name: 'Meera Chawla', email: 'meera.chawla@kiet.edu', room: 'Room E-201 • Block E' },
-  { rollNo: '24B21A43A1', name: 'NITHIN (PG)', email: '24b21a43a1@kiet.edu', room: 'Room E-201 • Block E' },
-  // Block E - Floor 2 - Room E-202
-  { rollNo: '23B21E0204', name: 'Pooja Hegde', email: 'pooja.hegde@kiet.edu', room: 'Room E-202 • Block E' },
-  { rollNo: '23B21E0205', name: 'Divya Krishnan', email: 'divya.krishnan@kiet.edu', room: 'Room E-202 • Block E' },
-  { rollNo: '23B21E0206', name: 'Raghavan Iyer', email: 'raghavan.iyer@kiet.edu', room: 'Room E-202 • Block E' },
-  { rollNo: '23B21A0206', name: 'Deepak Roy', email: 'deepak.roy@kiet.edu', room: 'Room E-202 • Block E' },
-  { rollNo: '23B21A0211', name: 'Tarun Josh', email: 'tarun.josh@kiet.edu', room: 'Room E-202 • Block E' }
-];
-
-export const STAFF_ACCOUNTS = [
-  {
-    role: 'KFC Staff',
-    email: 'nithin.kfcstaff@gmail.com',
-    name: 'Nithin (KFC Staff)',
-    path: '/kfc-staff',
-    badge: 'Canteen Fulfillment'
-  },
-  // --- 8 ROOM LEADS (BLOCK D & BLOCK E - 1 LEAD PER ROOM) ---
-  {
-    role: 'Room Lead',
-    email: 'nithin.roomlead@gmail.com',
-    name: 'Alex Rivers (Room Lead D-101)',
-    path: '/room-lead',
-    badge: 'Lead • Room D-101 • Block D',
-    room: 'Room D-101',
-    block: 'Block D'
-  },
-  {
-    role: 'Room Lead',
-    email: 'abhishek.lead@kiet.edu',
-    name: 'Abhishek Tiwari (Room Lead D-102)',
-    path: '/room-lead',
-    badge: 'Lead • Room D-102 • Block D',
-    room: 'Room D-102',
-    block: 'Block D'
-  },
-  {
-    role: 'Room Lead',
-    email: 'prashant.lead@kiet.edu',
-    name: 'Prashant Singh (Room Lead D-201)',
-    path: '/room-lead',
-    badge: 'Lead • Room D-201 • Block D',
-    room: 'Room D-201',
-    block: 'Block D'
-  },
-  {
-    role: 'Room Lead',
-    email: 'vaibhav.lead@kiet.edu',
-    name: 'Vaibhav Goyal (Room Lead D-202)',
-    path: '/room-lead',
-    badge: 'Lead • Room D-202 • Block D',
-    room: 'Room D-202',
-    block: 'Block D'
-  },
-  {
-    role: 'Room Lead',
-    email: 'sriram.lead@kiet.edu',
-    name: 'SRIRAM (Room Lead E-101)',
-    path: '/room-lead',
-    badge: 'Lead • Room E-101 • Block E',
-    room: 'Room E-101',
-    block: 'Block E'
-  },
-  {
-    role: 'Room Lead',
-    email: 'aaditya.lead@kiet.edu',
-    name: 'Aaditya Nair (Room Lead E-102)',
-    path: '/room-lead',
-    badge: 'Lead • Room E-102 • Block E',
-    room: 'Room E-102',
-    block: 'Block E'
-  },
-  {
-    role: 'Room Lead',
-    email: 'kavya.lead@kiet.edu',
-    name: 'Kavya Madhavan (Room Lead E-201)',
-    path: '/room-lead',
-    badge: 'Lead • Room E-201 • Block E',
-    room: 'Room E-201',
-    block: 'Block E'
-  },
-  {
-    role: 'Room Lead',
-    email: 'pooja.lead@kiet.edu',
-    name: 'Pooja Hegde (Room Lead E-202)',
-    path: '/room-lead',
-    badge: 'Lead • Room E-202 • Block E',
-    room: 'Room E-202',
-    block: 'Block E'
-  },
-  {
-    role: 'Floor Incharge',
-    email: 'nithin.floor@gmail.com',
-    name: 'Prof. Sharma (Floor D-1 Incharge)',
-    path: '/floor-incharge',
-    badge: 'Floor 1 Incharge • Block D'
-  },
-  {
-    role: 'Floor Incharge',
-    email: 'nithin.floord1@gmail.com',
-    name: 'Prof. Sharma (Floor D-1 Incharge)',
-    path: '/floor-incharge',
-    badge: 'Floor 1 Incharge • Block D'
-  },
-  {
-    role: 'Floor Incharge',
-    email: 'nithin.floord2@gmail.com',
-    name: 'Prof. R. Verma (Floor D-2 Incharge)',
-    path: '/floor-incharge',
-    badge: 'Floor 2 Incharge • Block D'
-  },
-  {
-    role: 'Floor Incharge',
-    email: 'nithin.floore1@gmail.com',
-    name: 'Dr. Ananya Roy (Floor E-1 Incharge)',
-    path: '/floor-incharge',
-    badge: 'Floor 1 Incharge • Block E'
-  },
-  {
-    role: 'Floor Incharge',
-    email: 'nithin.floore2@gmail.com',
-    name: 'Dr. K. Swaminathan (Floor E-2 Incharge)',
-    path: '/floor-incharge',
-    badge: 'Floor 2 Incharge • Block E'
-  },
-  {
-    role: 'Block Coordinator',
-    email: 'nithin.block@gmail.com',
-    name: 'Nithin (Block D Coordinator)',
-    path: '/block-coordinator',
-    badge: 'Block Coordinator • Block D'
-  },
-  {
-    role: 'Block Coordinator',
-    email: 'mukerjee.block@kiet.edu',
-    name: 'Dr. S. Mukerjee (Block E Coordinator)',
-    path: '/block-coordinator',
-    badge: 'Block Coordinator • Block E'
-  },
-  {
-    role: 'Mess Incharge',
-    email: 'nithin.mess@gmail.com',
-    name: 'Nithin (Mess Incharge)',
-    path: '/mess-incharge',
-    badge: 'Main Mess Kitchen'
-  },
-  {
-    role: 'Principal',
-    email: 'nithin.principal@gmail.com',
-    name: 'Nithin (Principal)',
-    path: '/principal',
-    badge: 'Executive Command'
-  },
-  {
-    role: 'Admin',
-    email: 'admin@gmail.com',
-    name: 'Admin',
-    path: '/dashboards',
-    badge: 'Campus Superadmin'
-  }
-];
-
-export const DEFAULT_CAMPUS_USERS = [
-  ...STUDENT_ROSTER.map((s, idx) => ({
-    id: `USR-S${String(idx + 1).padStart(2, '0')}`,
-    name: s.name,
-    rollNo: s.rollNo,
-    email: s.email,
-    role: 'Student',
-    path: '/student',
-    badge: `${s.rollNo} • ${s.room}`,
-    status: 'Active',
-    lastActive: idx === 0 ? 'Active now' : 'Today'
-  })),
-  ...STAFF_ACCOUNTS.map((st, idx) => ({
-    id: `USR-ST${String(idx + 1).padStart(2, '0')}`,
-    name: st.name,
-    email: st.email,
-    role: st.role,
-    path: st.path,
-    badge: st.badge,
-    status: 'Active',
-    lastActive: 'Active now'
-  }))
-];
-
-export const DEMO_USERS = DEFAULT_CAMPUS_USERS;
+export const STUDENT_ROSTER = [];
+export const STAFF_ACCOUNTS = [];
+export const DEFAULT_CAMPUS_USERS = [];
+export const DEMO_USERS = [];
 
 export const DEFAULT_MESS_MENU = {
-  date: 'Tomorrow (Sept 17)',
-  breakfast: 'Masala Dosa & Sambar, Poha with Chai',
-  lunch: 'Rajma Chawal Thali, Paneer Butter Masala',
-  snacks: 'Samosa & Chai',
-  dinner: 'Roti, Dal, Sabzi, Chicken Curry & Rice'
+  date: 'Today',
+  breakfast: 'Loading daily menu...',
+  lunch: 'Loading daily menu...',
+  snacks: 'Loading daily menu...',
+  dinner: 'Loading daily menu...'
 };
 
-export const DEFAULT_HEADCOUNT = [
-  { meal: 'Breakfast', selected: 169, predicted: 175, actual: 172, variance: '+6' },
-  { meal: 'Lunch', selected: 185, predicted: 192, actual: 189, variance: '+7' },
-  { meal: 'Snacks', selected: 140, predicted: 148, actual: 145, variance: '+8' },
-  { meal: 'Dinner', selected: 178, predicted: 184, actual: 180, variance: '+6' }
-];
+export const DEFAULT_HEADCOUNT = [];
 
 const DISH_IMAGE_MAP = {
   dosa: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=200&auto=format&fit=crop&q=80',
@@ -268,6 +39,50 @@ const DISH_IMAGE_MAP = {
   egg: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=200&auto=format&fit=crop&q=80',
   gulab: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=200&auto=format&fit=crop&q=80',
   jamun: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=200&auto=format&fit=crop&q=80'
+};
+
+export const getAuthToken = () => {
+  try {
+    const sessionToken = sessionStorage.getItem('smart_mess_token');
+    const savedUserStr = sessionStorage.getItem('smart_mess_current_user') || localStorage.getItem('smart_mess_current_user');
+    let userRole = null;
+    if (savedUserStr) {
+      try {
+        const u = JSON.parse(savedUserStr);
+        userRole = u?.role;
+      } catch (e) {}
+    }
+
+    if (userRole) {
+      const roleSessionToken = sessionStorage.getItem(`smart_mess_token_${userRole}`);
+      if (roleSessionToken) return roleSessionToken;
+      const roleLocalToken = localStorage.getItem(`smart_mess_token_${userRole}`);
+      if (roleLocalToken) return roleLocalToken;
+    }
+
+    if (sessionToken) return sessionToken;
+    return localStorage.getItem('smart_mess_token') || '';
+  } catch (e) {
+    return '';
+  }
+};
+
+export const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+
+export const apiUrl = (path) => `${API_BASE_URL}${path}`;
+
+export const authFetch = async (url, options = {}) => {
+  const token = getAuthToken();
+  const headers = {
+    ...(options.headers || {})
+  };
+  if (token && !headers['Authorization'] && !headers['authorization']) {
+    headers['Authorization'] = 'Bearer ' + token;
+  }
+  return fetch(apiUrl(url), {
+    ...options,
+    headers
+  });
 };
 
 const getDishImage = (dishName) => {
@@ -334,10 +149,10 @@ export const AppProvider = ({ children }) => {
   // Auth state
   const [currentUser, setCurrentUser] = useState(() => {
     try {
-      const saved = localStorage.getItem('smart_mess_current_user');
-      return saved ? JSON.parse(saved) : DEMO_USERS[0];
+      const saved = sessionStorage.getItem('smart_mess_current_user') || localStorage.getItem('smart_mess_current_user');
+      return saved ? JSON.parse(saved) : null;
     } catch {
-      return DEMO_USERS[0];
+      return null;
     }
   });
 
@@ -427,14 +242,13 @@ export const AppProvider = ({ children }) => {
       const saved = localStorage.getItem('smart_mess_users_v5');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length >= 50 && !parsed.some(u => (u.badge || '').includes('Block B'))) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed;
         }
       }
-      localStorage.setItem('smart_mess_users_v5', JSON.stringify(DEFAULT_CAMPUS_USERS));
-      return DEFAULT_CAMPUS_USERS;
+      return [];
     } catch {
-      return DEFAULT_CAMPUS_USERS;
+      return [];
     }
   });
 
@@ -479,7 +293,7 @@ export const AppProvider = ({ children }) => {
     addToast(`User ${newUser.name} registered as ${newUser.role}!`, 'success');
 
     try {
-      await fetch('/api/users', {
+      await authFetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newUser)
@@ -518,7 +332,7 @@ export const AppProvider = ({ children }) => {
     addToast('User details updated successfully!', 'success');
 
     try {
-      await fetch(`/api/users/${userId}`, {
+      await authFetch(`/api/users/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedData)
@@ -537,39 +351,77 @@ export const AppProvider = ({ children }) => {
     addToast(`User account ${target ? target.name : ''} removed`, 'info');
 
     try {
-      await fetch(`/api/users/${userId}`, { method: 'DELETE' });
+      await authFetch(`/api/users/${userId}`, { method: 'DELETE' });
     } catch (err) {}
   };
 
-  const toggleUserStatus = (userId) => {
+  const toggleUserStatus = async (userId) => {
+    let nextStatus = null;
     setUsers((prev) => {
       const updated = prev.map((u) => {
         if (u.id !== userId) return u;
         const newStatus = u.status === 'Active' ? 'Suspended' : 'Active';
+        nextStatus = newStatus;
         addToast(`${u.name} marked as ${newStatus}`, newStatus === 'Active' ? 'success' : 'warning');
         return { ...u, status: newStatus };
       });
       broadcastUsers(updated);
       return updated;
     });
+    try {
+      if (nextStatus) {
+        await authFetch(`/api/users/${userId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: nextStatus })
+        });
+      }
+    } catch (e) {}
   };
 
-  const loginAsUser = (targetUser) => {
+  const loginAsUser = async (targetUser) => {
     const sessionUser = {
       ...targetUser,
       loginTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
     setCurrentUser(sessionUser);
     try {
-      localStorage.setItem('smart_mess_current_user', JSON.stringify(sessionUser));
+      sessionStorage.setItem('smart_mess_current_user', JSON.stringify(sessionUser));
+    localStorage.setItem('smart_mess_current_user', JSON.stringify(sessionUser));
     } catch (e) {}
+
+    try {
+      const res = await fetch(apiUrl('/api/auth/switch-token'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: targetUser.id || targetUser._id,
+          email: targetUser.email,
+          role: targetUser.role,
+          rollNo: targetUser.rollNo,
+          name: targetUser.name
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.token) {
+          sessionStorage.setItem('smart_mess_token', data.token);
+          sessionStorage.setItem(`smart_mess_token_${sessionUser.role}`, data.token);
+          localStorage.setItem(`smart_mess_token_${sessionUser.role}`, data.token);
+          localStorage.setItem('smart_mess_token', data.token);
+        }
+      }
+    } catch (err) {
+      console.warn('Switch token error:', err);
+    }
+
     addToast(`Switched portal session to ${sessionUser.name} (${sessionUser.role})`, 'success');
     return sessionUser;
   };
 
   const refreshUsers = async () => {
     try {
-      const res = await fetch('/api/users');
+      const res = await authFetch('/api/users');
       if (res.ok) {
         const data = await res.json();
         if (data.success && Array.isArray(data.users)) {
@@ -694,7 +546,7 @@ export const AppProvider = ({ children }) => {
       studentName
     });
 
-    fetch('/api/selections', {
+    authFetch('/api/selections', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -838,7 +690,7 @@ export const AppProvider = ({ children }) => {
       selections: studentMealPlan.selections,
       dietaryNote: note
     });
-    fetch('/api/selections', {
+    authFetch('/api/selections', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -884,7 +736,7 @@ export const AppProvider = ({ children }) => {
     };
     addStudentNotification(menuNotif);
 
-    fetch('/api/menu', {
+    authFetch('/api/menu', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newMenu)
@@ -931,7 +783,7 @@ export const AppProvider = ({ children }) => {
 
     broadcastMessSync('MESS_MENU_SYNC', { menu: updatedMenu, meals: updatedMeals });
 
-    fetch('/api/menu', {
+    authFetch('/api/menu', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updatedMenu)
@@ -988,7 +840,7 @@ export const AppProvider = ({ children }) => {
 
     broadcastMessSync('MESS_MENU_SYNC', { menu: updatedMenu, meals: updatedMeals });
 
-    fetch('/api/menu', {
+    authFetch('/api/menu', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updatedMenu)
@@ -997,9 +849,28 @@ export const AppProvider = ({ children }) => {
     addToast(`"${cleanName}" added to ${mealKey} menu!`, 'success');
   };
 
+  const updateMessDishImage = (mealKey, dishName, image) => {
+    const meal = studentMealPlan.meals?.[mealKey];
+    if (!meal) return;
+
+    const items = meal.items.map((i) =>
+      i.name.toLowerCase() === dishName.toLowerCase() ? { ...i, image } : i
+    );
+    const updatedMeals = { ...studentMealPlan.meals, [mealKey]: { ...meal, items } };
+    const updatedPlan = { ...studentMealPlan, meals: updatedMeals };
+
+    setStudentMealPlan(updatedPlan);
+    try {
+      localStorage.setItem('smart_mess_student_meal_plan', JSON.stringify(updatedPlan));
+    } catch (e) {}
+
+    broadcastMessSync('MESS_MENU_SYNC', { menu, meals: updatedMeals });
+    addToast(`Updated image for "${dishName}"`, 'success');
+  };
+
   const refreshMessMenu = async () => {
     try {
-      const res = await fetch('/api/menu');
+      const res = await authFetch('/api/menu');
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.menu) {
@@ -1025,52 +896,10 @@ export const AppProvider = ({ children }) => {
     } catch (err) {}
   };
 
-  // Student Meal History (last 8 days)
-  const [mealHistory, setMealHistory] = useState([
-    { id: '1', date: 'Thu, Sep 17', dateCode: '2026-09-17', breakfast: false, lunch: true, snacks: true, dinner: true },
-    { id: '2', date: 'Tue, Sep 15', dateCode: '2026-09-15', breakfast: false, lunch: true, snacks: true, dinner: true },
-    { id: '3', date: 'Mon, Sep 14', dateCode: '2026-09-14', breakfast: true, lunch: true, snacks: true, dinner: true },
-    { id: '4', date: 'Sun, Sep 13', dateCode: '2026-09-13', breakfast: true, lunch: true, snacks: true, dinner: true },
-    { id: '5', date: 'Sat, Sep 12', dateCode: '2026-09-12', breakfast: true, lunch: true, snacks: true, dinner: true },
-    { id: '6', date: 'Fri, Sep 11', dateCode: '2026-09-11', breakfast: true, lunch: true, snacks: false, dinner: true },
-    { id: '7', date: 'Thu, Sep 10', dateCode: '2026-09-10', breakfast: true, lunch: true, snacks: true, dinner: true },
-    { id: '8', date: 'Wed, Sep 9',  dateCode: '2026-09-09', breakfast: true, lunch: true, snacks: true, dinner: true },
-  ]);
+  // Student Meal History
+  const [mealHistory, setMealHistory] = useState([]);
 
-  // Student Notifications / Inbox (Persisted & Synced across tabs)
-  const INITIAL_STUDENT_NOTIFICATIONS = [
-    {
-      id: 1,
-      title: '👨‍🍳 Mess Menu Published for Tomorrow',
-      message: "Chef Ramesh updated tomorrow's menu: Masala Dosa, Paneer Butter Masala, Sambar & Gulab Jamun. Cutoff 10:00 PM tonight.",
-      sender: 'Chef Ramesh (Mess Incharge)',
-      time: '08:30 PM',
-      timestamp: Date.now() - 3600000,
-      read: false,
-      type: 'mess'
-    },
-    {
-      id: 2,
-      title: '🍳 Kitchen Cooking Prep Confirmed',
-      message: 'Floor 1 & Block D dining requisitions verified and confirmed by Main Kitchen. Cooking prep initiated.',
-      sender: 'Chef Ramesh (Mess Incharge)',
-      time: '09:00 PM',
-      timestamp: Date.now() - 1800000,
-      read: false,
-      type: 'kitchen'
-    },
-    {
-      id: 3,
-      title: '🍗 KFC Counter Pickup Notification',
-      message: 'Your express counter token #KFC-D101-84 has been completed and collected at Counter 1.',
-      sender: 'KFC Express Counter',
-      time: '10:45 AM',
-      timestamp: Date.now() - 28800000,
-      read: true,
-      type: 'kfc'
-    }
-  ];
-
+  // Student Notifications / Inbox (Persisted & Synced across tabs and MongoDB)
   const [studentNotifications, setStudentNotifications] = useState(() => {
     try {
       const saved = localStorage.getItem('smart_mess_student_notifications_v1');
@@ -1079,7 +908,7 @@ export const AppProvider = ({ children }) => {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch (e) {}
-    return INITIAL_STUDENT_NOTIFICATIONS;
+    return [];
   });
 
   const addStudentNotification = (notif) => {
@@ -1119,70 +948,7 @@ export const AppProvider = ({ children }) => {
     addToast('Student inbox cleared', 'info');
   };
 
-  // Student Dining Requests & Special Dietary Requisitions (Persisted & Synced across tabs)
-  const INITIAL_STUDENT_DINING_REQUESTS = [
-    {
-      id: 'REQ-01',
-      studentName: 'NITHIN',
-      rollNo: '24B21A43A1',
-      roomNo: 'Room D-101',
-      block: 'Block D',
-      meals: { breakfast: true, lunch: true, snacks: true, dinner: true },
-      dietaryNote: 'Regular Dining • No Onion/Garlic on Dinner',
-      status: 'Confirmed',
-      time: '09:15 PM',
-      acknowledged: true
-    },
-    {
-      id: 'REQ-02',
-      studentName: 'Alex Rivers',
-      rollNo: '23B21A4201',
-      roomNo: 'Room D-101 (Lead)',
-      block: 'Block D',
-      meals: { breakfast: true, lunch: true, snacks: false, dinner: true },
-      dietaryNote: 'High Protein / Extra curd preferred',
-      status: 'Confirmed',
-      time: '08:45 PM',
-      acknowledged: true
-    },
-    {
-      id: 'REQ-03',
-      studentName: 'VISALYA',
-      rollNo: '24B21A43A2',
-      roomNo: 'Room D-101',
-      block: 'Block D',
-      meals: { breakfast: true, lunch: true, snacks: true, dinner: true },
-      dietaryNote: 'Standard Veg Meal',
-      status: 'Confirmed',
-      time: '09:05 PM',
-      acknowledged: false
-    },
-    {
-      id: 'REQ-04',
-      studentName: 'Abhishek Tiwari',
-      rollNo: '23B21A4202',
-      roomNo: 'Room D-102 (Lead)',
-      block: 'Block D',
-      meals: { breakfast: true, lunch: true, snacks: true, dinner: true },
-      dietaryNote: 'Jain Meal Requested (Strict Veg)',
-      status: 'Confirmed',
-      time: '07:30 PM',
-      acknowledged: true
-    },
-    {
-      id: 'REQ-05',
-      studentName: 'Prashant Singh',
-      rollNo: '23B21A4203',
-      roomNo: 'Room D-201 (Lead)',
-      block: 'Block D',
-      meals: { breakfast: true, lunch: true, snacks: false, dinner: true },
-      dietaryNote: 'Late dining requisition (Lab class until 8:45 PM)',
-      status: 'Confirmed',
-      time: '06:50 PM',
-      acknowledged: false
-    }
-  ];
-
+  // Student Dining Requests & Special Dietary Requisitions (Persisted & Synced across tabs and MongoDB)
   const [studentDiningRequests, setStudentDiningRequests] = useState(() => {
     try {
       const saved = localStorage.getItem('smart_mess_student_dining_requests_v1');
@@ -1191,7 +957,7 @@ export const AppProvider = ({ children }) => {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch (e) {}
-    return INITIAL_STUDENT_DINING_REQUESTS;
+    return [];
   });
 
   const acknowledgeStudentDiningRequest = (reqId) => {
@@ -1238,106 +1004,15 @@ export const AppProvider = ({ children }) => {
   const [studentSubmitted, setStudentSubmitted] = useState(true);
 
   // 2. KFC Menu & Pre-Orders
-  const DEFAULT_KFC_MENU = [
-    {
-      id: 1,
-      name: 'Zinger Burger',
-      price: 179,
-      category: 'Burgers',
-      imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&auto=format&fit=crop&q=80',
-      image: '🍔',
-      stock: 25,
-      isAvailable: true
-    },
-    {
-      id: 2,
-      name: 'Chicken Popcorn',
-      price: 149,
-      category: 'Snacks',
-      imageUrl: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=500&auto=format&fit=crop&q=80',
-      image: '🍿',
-      stock: 18,
-      isAvailable: true
-    },
-    {
-      id: 3,
-      name: 'Hot Wings (6 pc)',
-      price: 229,
-      category: 'Chicken',
-      imageUrl: 'https://images.unsplash.com/photo-1527477248705-200752240e3a?w=500&auto=format&fit=crop&q=80',
-      image: '🍗',
-      stock: 15,
-      isAvailable: true
-    },
-    {
-      id: 4,
-      name: 'Crispy Tenders (4 pc)',
-      price: 199,
-      category: 'Chicken',
-      imageUrl: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=500&auto=format&fit=crop&q=80',
-      image: '🍗',
-      stock: 12,
-      isAvailable: true
-    },
-    {
-      id: 5,
-      name: 'Zinger Meal Combo',
-      price: 299,
-      category: 'Combos',
-      imageUrl: 'https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=500&auto=format&fit=crop&q=80',
-      image: '🍔',
-      stock: 20,
-      isAvailable: true
-    },
-    {
-      id: 6,
-      name: 'Veg Rice Bowl',
-      price: 149,
-      category: 'Rice Bowls',
-      imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=80',
-      image: '🥗',
-      stock: 10,
-      isAvailable: true
-    },
-    {
-      id: 7,
-      name: 'French Fries',
-      price: 99,
-      category: 'Snacks',
-      imageUrl: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500&auto=format&fit=crop&q=80',
-      image: '🍟',
-      stock: 30,
-      isAvailable: true
-    },
-    {
-      id: 8,
-      name: 'Choco Lava Cake',
-      price: 99,
-      category: 'Desserts',
-      imageUrl: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=500&auto=format&fit=crop&q=80',
-      image: '🍰',
-      stock: 14,
-      isAvailable: true
-    },
-    {
-      id: 9,
-      name: 'Pepsi 500ml',
-      price: 60,
-      category: 'Drinks',
-      imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=500&auto=format&fit=crop&q=80',
-      image: '🥤',
-      stock: 40,
-      isAvailable: true
-    }
-  ];
-
   const [kfcMenu, setKfcMenu] = useState(() => {
     try {
       const saved = localStorage.getItem('smart_mess_kfc_menu');
-      return saved ? JSON.parse(saved) : DEFAULT_KFC_MENU;
-    } catch {
-      return DEFAULT_KFC_MENU;
-    }
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return [];
   });
 
   const kfcBcRef = useRef(null);
@@ -1360,12 +1035,23 @@ export const AppProvider = ({ children }) => {
         kfcBcRef.current.onmessage = (event) => {
           if (event.data?.type === 'KFC_MENU_SYNC' && Array.isArray(event.data.menu)) {
             setKfcMenu(event.data.menu);
+          } else if (event.data?.type === 'KFC_NEW_ORDER_SYNC' && event.data.order) {
+            const incoming = event.data.order;
+            setKfcOrders((prev) => [
+              incoming,
+              ...prev.filter((o) => o.id !== incoming.id && o.token !== incoming.token)
+            ]);
+            addToast(`New live KFC order: #${incoming.token}!`, 'info');
           } else if (event.data?.type === 'KFC_ORDER_STATUS_SYNC') {
-            const { orderId, status } = event.data;
+            const { orderId, token, status } = event.data;
             setKfcOrders((prev) =>
-              prev.map((ord) => (ord.id === orderId || ord.token === orderId ? { ...ord, status } : ord))
+              prev.map((ord) =>
+                ord.id === orderId || ord.token === orderId || ord.token === token || ord.id === token || ord.orderId === orderId || ord.orderId === token
+                  ? { ...ord, status }
+                  : ord
+              )
             );
-            addToast(`KFC Order ${orderId} is now ${status}!`, 'info');
+            addToast(`KFC Order #${token || orderId} is now ${status}!`, 'info');
           }
         };
 
@@ -1500,7 +1186,7 @@ export const AppProvider = ({ children }) => {
   const ROOM_MEMBERS_STORAGE_KEY = 'smart_mess_room_members_v1';
   const FLOOR_MEAL_REQS_STORAGE_KEY = 'smart_mess_floor_meal_reqs_v1';
 
-  // 3. Room Lead Data (Room D-101, Block D) (Persisted & Synced across tabs)
+  // 3. Room Lead Data (Room D-101, Block D) (Persisted & Synced across tabs and MongoDB)
   const [roomMembers, setRoomMembers] = useState(() => {
     try {
       const saved = localStorage.getItem(ROOM_MEMBERS_STORAGE_KEY);
@@ -1509,27 +1195,8 @@ export const AppProvider = ({ children }) => {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch (e) {}
-    return [
-      { id: 1, name: 'Alex Rivers (You)', status: 'Submitted', time: '08:30 AM', choices: { b: 'Yes', l: 'Yes', s: 'No', d: 'Yes' } },
-      { id: 2, name: 'NITHIN', status: 'Submitted', time: '09:15 AM', choices: { b: 'Yes', l: 'Yes', s: 'Yes', d: 'Yes' } },
-      { id: 3, name: 'VISALYA', status: 'Submitted', time: '10:05 AM', choices: { b: 'Yes', l: 'Yes', s: 'No', d: 'Yes' } },
-      { id: 4, name: 'Rahul Verma', status: 'Submitted', time: '11:40 AM', choices: { b: 'No', l: 'Yes', s: 'No', d: 'Yes' } },
-      { id: 5, name: 'Priya Sundaram', status: 'Submitted', time: '02:10 PM', choices: { b: 'Yes', l: 'Yes', s: 'Yes', d: 'No' } }
-    ];
+    return [];
   });
-  const INITIAL_ROOM_LEAD_NOTIFICATIONS = [
-    {
-      id: 1,
-      title: 'Daily Cutoff Notice from Floor D-1 Incharge',
-      message: 'Prof. Sharma: Please verify all 5 Room D-101 members have selected their meals before tonight\'s 10:00 PM cutoff.',
-      sender: 'Prof. Sharma (Floor Incharge)',
-      roomNo: 'Room D-101',
-      time: '10:15 AM',
-      timestamp: Date.now() - 3600000,
-      read: false,
-      type: 'reminder'
-    }
-  ];
 
   // Urgent Cutoff Nudges & Alerts from Block Coordinator to Floor Incharge (Persisted & Synced across tabs)
   const [floorInchargeAlerts, setFloorInchargeAlerts] = useState(() => {
@@ -1545,7 +1212,7 @@ export const AppProvider = ({ children }) => {
     return [];
   });
 
-  // Floor Incharge Headcount Requisition Sheets sent to Mess Kitchen (Persisted & Synced across tabs)
+  // Floor Incharge Headcount Requisition Sheets sent to Mess Kitchen (Persisted & Synced across tabs and MongoDB)
   const [floorMealSheets, setFloorMealSheets] = useState(() => {
     try {
       const saved = localStorage.getItem(FLOOR_MEAL_SHEETS_STORAGE_KEY);
@@ -1556,137 +1223,38 @@ export const AppProvider = ({ children }) => {
     } catch (e) {
       console.warn('Failed to read floor meal sheets from localStorage', e);
     }
-    return [
-      {
-        id: 1,
-        floor: 'Floor 1 (Block D)',
-        incharge: 'Prof. Sharma (Floor Incharge)',
-        requirements: { breakfast: 10, lunch: 10, snacks: 8, dinner: 10 },
-        timestamp: '10:00 AM',
-        status: 'Pending Verification'
-      }
-    ];
+    return [];
   });
 
-  // Notifications received by the Room Lead from Floor Incharge & Mess Admin (Persisted & Synced across tabs)
+  // Notifications received by the Room Lead from Floor Incharge & Mess Admin (Persisted & Synced across tabs and MongoDB)
   const [roomLeadNotifications, setRoomLeadNotifications] = useState(() => {
     try {
       const saved = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0 && !parsed.some(n => (n.message || '').includes('Block B') || (n.roomNo || '').includes('302'))) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch (e) {
       console.warn('Failed to read room lead notifications from localStorage', e);
     }
-    return INITIAL_ROOM_LEAD_NOTIFICATIONS;
+    return [];
   });
 
-  // 4. Floor Incharge Data (Floor 1, Block D) (Persisted & Synced across tabs)
+  // 4. Floor Incharge Data (Floor 1, Block D) (Persisted & Synced across tabs and MongoDB)
   const [floorRooms, setFloorRooms] = useState(() => {
     try {
       const saved = localStorage.getItem(FLOOR_ROOMS_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0 && !parsed.some(r => r.roomNo.includes('F-201') || r.roomNo.includes('302'))) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch (e) {
       console.warn('Failed to read floor rooms from localStorage', e);
     }
-    return [
-      { roomNo: 'Room D-101', lead: 'Alex Rivers', members: 5, submitted: 5, pending: 0, rate: 100, status: 'High', flagged: false },
-      { roomNo: 'Room D-102', lead: 'Abhishek Tiwari', members: 5, submitted: 5, pending: 0, rate: 100, status: 'High', flagged: false },
-      { roomNo: 'Room D-201', lead: 'Prashant Singh', members: 5, submitted: 4, pending: 1, rate: 80, status: 'Good', flagged: false },
-      { roomNo: 'Room D-202', lead: 'Vaibhav Goyal', members: 5, submitted: 3, pending: 2, rate: 60, status: 'Medium', flagged: false },
-      { roomNo: 'Room E-101', lead: 'SRIRAM', members: 5, submitted: 5, pending: 0, rate: 100, status: 'High', flagged: false },
-      { roomNo: 'Room E-102', lead: 'Aaditya Nair', members: 5, submitted: 4, pending: 1, rate: 80, status: 'Good', flagged: false },
-      { roomNo: 'Room E-201', lead: 'Kavya Madhavan', members: 5, submitted: 4, pending: 1, rate: 80, status: 'Good', flagged: false },
-      { roomNo: 'Room E-202', lead: 'Pooja Hegde', members: 5, submitted: 4, pending: 1, rate: 80, status: 'Good', flagged: false }
-    ];
+    return [];
   });
 
-  const [floorAttendance, setFloorAttendance] = useState({
-    'Room D-101': {
-      verified: true,
-      students: [
-        { id: 'D101-1', name: 'Alex Rivers (Lead)', status: 'Present' },
-        { id: 'D101-2', name: 'NITHIN', status: 'Present' },
-        { id: 'D101-3', name: 'VISALYA', status: 'Present' },
-        { id: 'D101-4', name: 'Rahul Verma', status: 'Present' },
-        { id: 'D101-5', name: 'Priya Sundaram', status: 'Present' }
-      ]
-    },
-    'Room D-102': {
-      verified: true,
-      students: [
-        { id: 'D102-1', name: 'Abhishek Tiwari (Lead)', status: 'Present' },
-        { id: 'D102-2', name: 'Saurabh Mishra', status: 'Present' },
-        { id: 'D102-3', name: 'Harshit Srivastava', status: 'Present' },
-        { id: 'D102-4', name: 'Mohit Pandey', status: 'Present' },
-        { id: 'D102-5', name: 'Anurag Yadav', status: 'Present' }
-      ]
-    },
-    'Room D-201': {
-      verified: false,
-      students: [
-        { id: 'D201-1', name: 'Prashant Singh (Lead)', status: 'Present' },
-        { id: 'D201-2', name: 'Utkarsh Shukla', status: 'Present' },
-        { id: 'D201-3', name: 'Deepanshu Bhatt', status: 'Present' },
-        { id: 'D201-4', name: 'Vikram Sethi', status: 'Present' },
-        { id: 'D201-5', name: 'Ananya Gupta', status: 'Absent' }
-      ]
-    },
-    'Room D-202': {
-      verified: false,
-      students: [
-        { id: 'D202-1', name: 'Vaibhav Goyal (Lead)', status: 'Present' },
-        { id: 'D202-2', name: 'Ayush Saxena', status: 'Present' },
-        { id: 'D202-3', name: 'Rishabh Dubey', status: 'Present' },
-        { id: 'D202-4', name: 'Shivam Dixit', status: 'Absent' },
-        { id: 'D202-5', name: 'Karan Mehra', status: 'On Leave' }
-      ]
-    },
-    'Room E-101': {
-      verified: true,
-      students: [
-        { id: 'E101-1', name: 'SRIRAM (Lead)', status: 'Present' },
-        { id: 'E101-2', name: 'KEERTHI', status: 'Present' },
-        { id: 'E101-3', name: 'SUPRIYA', status: 'Present' },
-        { id: 'E101-4', name: 'SRK', status: 'Present' },
-        { id: 'E101-5', name: 'KARTHIK', status: 'Present' }
-      ]
-    },
-    'Room E-102': {
-      verified: false,
-      students: [
-        { id: 'E102-1', name: 'Aaditya Nair (Lead)', status: 'Present' },
-        { id: 'E102-2', name: 'Tanvi Sharma', status: 'Present' },
-        { id: 'E102-3', name: 'Rhea Sen', status: 'Present' },
-        { id: 'E102-4', name: 'Chaitanya Pillai', status: 'Present' },
-        { id: 'E102-5', name: 'Aditi Deshmukh', status: 'Absent' }
-      ]
-    },
-    'Room E-201': {
-      verified: false,
-      students: [
-        { id: 'E201-1', name: 'Kavya Madhavan (Lead)', status: 'Present' },
-        { id: 'E201-2', name: 'Siddharth Menon', status: 'Present' },
-        { id: 'E201-3', name: 'Arvind Swaminathan', status: 'Present' },
-        { id: 'E201-4', name: 'Meera Chawla', status: 'Present' },
-        { id: 'E201-5', name: 'NITHIN (PG)', status: 'Absent' }
-      ]
-    },
-    'Room E-202': {
-      verified: false,
-      students: [
-        { id: 'E202-1', name: 'Pooja Hegde (Lead)', status: 'Present' },
-        { id: 'E202-2', name: 'Divya Krishnan', status: 'Present' },
-        { id: 'E202-3', name: 'Raghavan Iyer', status: 'Present' },
-        { id: 'E202-4', name: 'Deepak Roy', status: 'Present' },
-        { id: 'E202-5', name: 'Tarun Josh', status: 'Absent' }
-      ]
-    }
-  });
+  const [floorAttendance, setFloorAttendance] = useState({});
 
   const updateStudentAttendance = (roomNo, studentId, newStatus) => {
     setFloorAttendance((prev) => {
@@ -1721,6 +1289,11 @@ export const AppProvider = ({ children }) => {
     const presentCount = room ? room.students.filter((s) => s.status === 'Present').length : 0;
     const totalCount = room ? room.students.length : 0;
     addToast(`Attendance submitted for ${roomNo}: ${presentCount}/${totalCount} Present`, 'success');
+    authFetch(`/api/attendance/room/${encodeURIComponent(roomNo)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ verified: true })
+    }).catch(() => {});
   };
 
   const [floorMealRequirements, setFloorMealRequirements] = useState(() => {
@@ -1809,35 +1382,15 @@ export const AppProvider = ({ children }) => {
 
   // 6. Mess Incharge Data & Menu is initialized and synced at top of context
 
-  // 7. Principal Executive Datasets (Matching Reference Screenshots)
+  // 7. Principal Executive Datasets (Backed by MongoDB & API Analytics)
   const [principalAnalytics, setPrincipalAnalytics] = useState({
     avgWastage: '0.0%',
     messRating: '4.2',
-    kfcOrders14d: 2,
-    kfcRevenue: 328,
-    predictedVsActual: [
-      { date: '09-03', actual: 0, predicted: 0 },
-      { date: '09-04', actual: 0, predicted: 0 },
-      { date: '09-05', actual: 0, predicted: 0 },
-      { date: '09-06', actual: 0, predicted: 0 },
-      { date: '09-07', actual: 0, predicted: 0 },
-      { date: '09-08', actual: 0, predicted: 0.05 },
-      { date: '09-09', actual: 0, predicted: 1 },
-      { date: '09-10', actual: 0, predicted: 1 },
-      { date: '09-11', actual: 0, predicted: 1 },
-      { date: '09-12', actual: 0, predicted: 1 },
-      { date: '09-13', actual: 0, predicted: 1 },
-      { date: '09-14', actual: 0, predicted: 1 },
-      { date: '09-15', actual: 0, predicted: 1 },
-      { date: '09-16', actual: 0, predicted: 0 }
-    ],
-    blockRates: [
-      { block: 'Block D (Senior Wing)', ratio: '17/20', rate: 85 },
-      { block: 'Block E (International/PG)', ratio: '17/20', rate: 85 }
-    ],
-    kfcFootfall: [
-      { date: '09-16', count: 2 }
-    ],
+    kfcOrders14d: 0,
+    kfcRevenue: 0,
+    predictedVsActual: [],
+    blockRates: [],
+    kfcFootfall: [],
     escalations: []
   });
 
@@ -1978,28 +1531,9 @@ export const AppProvider = ({ children }) => {
     addToast('All notifications marked as read', 'success');
   };
 
-  const [principalWastageTrend, setPrincipalWastageTrend] = useState([
-    { day: 'Mon', actualKg: 18.2, targetKg: 10.0, savedKg: 1.8 },
-    { day: 'Tue', actualKg: 14.5, targetKg: 10.0, savedKg: 3.5 },
-    { day: 'Wed', actualKg: 11.2, targetKg: 10.0, savedKg: 5.8 },
-    { day: 'Thu', actualKg: 9.1, targetKg: 10.0, savedKg: 8.9 },
-    { day: 'Fri', actualKg: 8.0, targetKg: 10.0, savedKg: 10.0 },
-    { day: 'Sat', actualKg: 6.2, targetKg: 10.0, savedKg: 11.8 },
-    { day: 'Sun (Pred)', actualKg: 5.4, targetKg: 10.0, savedKg: 12.6 }
-  ]);
-
-  const [blockPerformance, setBlockPerformance] = useState([
-    { block: 'Block D (Senior Hostel)', total: 20, submitted: 17, pending: 3, rate: 85.0, status: 'Optimal', incharge: 'Prof. Sharma' },
-    { block: 'Block E (International & PG)', total: 20, submitted: 17, pending: 3, rate: 85.0, status: 'Optimal', incharge: 'Dr. Mukerjee' }
-  ]);
-
-  const [kfcHourlyFootfall, setKfcHourlyFootfall] = useState([
-    { time: '11:00 AM', orders: 12, revenue: 1450 },
-    { time: '01:00 PM', orders: 46, revenue: 5680 },
-    { time: '04:30 PM', orders: 62, revenue: 7390 },
-    { time: '07:00 PM', orders: 32, revenue: 3890 },
-    { time: '09:00 PM', orders: 12, revenue: 1490 }
-  ]);
+  const [principalWastageTrend, setPrincipalWastageTrend] = useState([]);
+  const [blockPerformance, setBlockPerformance] = useState([]);
+  const [kfcHourlyFootfall, setKfcHourlyFootfall] = useState([]);
 
   // -------------------------------------------------------------
   // AI PREDICTIVE INTELLIGENCE & HISTORICAL HEADCOUNT FORECASTING
@@ -2059,7 +1593,7 @@ export const AppProvider = ({ children }) => {
         scenario,
         ...(customSelected ? { customSelected: String(customSelected) } : {})
       });
-      const res = await fetch(`/api/ai/forecast/mess/${date}?${queryParams.toString()}`);
+      const res = await authFetch(`/api/ai/forecast/mess/${date}?${queryParams.toString()}`);
       if (res.ok) {
         const data = await res.json();
         if (data.success) {
@@ -2094,56 +1628,7 @@ export const AppProvider = ({ children }) => {
     return await fetchAIForecast(selectedAiMeal, '2026-10-01', scenario, overrideSelected);
   };
 
-  const [aiAnomalies, setAiAnomalies] = useState([
-    {
-      id: 1,
-      title: 'Thursday Lunch Turnout Surge Forecast',
-      scope: 'Main Mess Kitchen • Lunch Shift',
-      desc: 'Historical 14-day analysis indicates Thursday Lunch turnout averages +4.2% over portal selections due to 3rd-year engineering lab schedules. Recommended: Prepare +8 buffer portions.',
-      severity: 'medium',
-      metricDifference: '+7.4 meals vs selections',
-      time: '12m ago',
-      status: 'Active',
-      actionRequired: 'Apply Kitchen Buffer Margin',
-      mitigation: 'Add +3.5 kg rice and +2.5 kg dal to Lunch prep'
-    },
-    {
-      id: 2,
-      title: 'Room D-202 Participation Lag',
-      scope: 'Hostel Block D • Floor 2 (Room D-202)',
-      desc: 'Room D-202 submission rate is 60% (3/5 students). 2 students have not opted in before the 10:00 PM cutoff. Automated nudge dispatched.',
-      severity: 'high',
-      metricDifference: '-40% vs Floor Target',
-      time: '25m ago',
-      status: 'Active',
-      actionRequired: 'Follow up with Room Lead',
-      mitigation: 'Automated nudge dispatched to Room Lead & Floor Incharge'
-    },
-    {
-      id: 3,
-      title: 'KFC Express Evening Rush Alert',
-      scope: 'Canteen Food Court • 04:30 PM - 06:00 PM',
-      desc: 'Zinger Burger Duo & Chicken Popcorn orders predicted to surge by +28% based on previous Thursday evening footfall.',
-      severity: 'medium',
-      metricDifference: '+28% Order Volume',
-      time: '35m ago',
-      status: 'Active',
-      actionRequired: 'Pre-marinate chicken stock',
-      mitigation: 'Pre-batch 15 extra fryer portions'
-    },
-    {
-      id: 4,
-      title: 'Zero Waste Milestone - International Wing',
-      scope: 'Block E International Kitchen Wing',
-      desc: 'Daily unconsumed plate wastage dropped by 32% (from 18.2kg Mon down to 4.8kg today) after adopting AI-guided portioning.',
-      severity: 'low',
-      metricDifference: '-32% Plate Waste',
-      time: '1h ago',
-      status: 'Resolved',
-      actionRequired: 'Maintain AI Batching',
-      mitigation: 'Benchmark adopted campus-wide'
-    }
-  ]);
+  const [aiAnomalies, setAiAnomalies] = useState([]);
 
   // Actions
   const updateStudentSelection = (meal, value) => {
@@ -2157,7 +1642,7 @@ export const AppProvider = ({ children }) => {
 
   const refreshKfcOrders = async (silent = false) => {
     try {
-      const res = await fetch('/api/kfc/orders');
+      const res = await authFetch('/api/kfc/orders');
       if (res.ok) {
         const data = await res.json();
         if (data.success && Array.isArray(data.orders)) {
@@ -2175,7 +1660,7 @@ export const AppProvider = ({ children }) => {
 
   const refreshKfcMenu = async () => {
     try {
-      const res = await fetch('/api/kfc/menu');
+      const res = await authFetch('/api/kfc/menu');
       if (res.ok) {
         const data = await res.json();
         if (data.success && Array.isArray(data.menu)) {
@@ -2195,7 +1680,7 @@ export const AppProvider = ({ children }) => {
 
   const refreshRooms = async () => {
     try {
-      const res = await fetch('/api/rooms');
+      const res = await authFetch('/api/rooms');
       if (res.ok) {
         const data = await res.json();
         if (data.success && Array.isArray(data.rooms) && data.rooms.length > 0) {
@@ -2220,20 +1705,201 @@ export const AppProvider = ({ children }) => {
           });
         }
       }
+
+      const activeRoom = (currentUser?.badge ? currentUser.badge.split('•')[0].trim() : 'Room D-101') || 'Room D-101';
+      const cleanRoom = activeRoom.includes('Room') ? activeRoom : `Room ${activeRoom}`;
+      const membersRes = await authFetch(`/api/rooms/${cleanRoom}/members`);
+      if (membersRes.ok) {
+        const membersData = await membersRes.json();
+        if (membersData.success && Array.isArray(membersData.members) && membersData.members.length > 0) {
+          setRoomMembers(membersData.members);
+          try {
+            localStorage.setItem(ROOM_MEMBERS_STORAGE_KEY, JSON.stringify(membersData.members));
+          } catch (e) {}
+        }
+      }
+    } catch (err) {}
+  };
+
+  const refreshAttendance = async () => {
+    try {
+      const res = await authFetch('/api/attendance/floor/floor-1');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.rooms) {
+          setFloorAttendance(data.rooms);
+        }
+      }
+    } catch (err) {}
+  };
+
+  // Per-block finalized headcount (Block D & Block E) for the Mess Incharge cutoff view
+  const [blockHeadcount, setBlockHeadcount] = useState({ 'Block D': null, 'Block E': null });
+
+  const refreshBlockHeadcount = async () => {
+    try {
+      const [resD, resE] = await Promise.all([
+        authFetch('/api/aggregations/block/block-d'),
+        authFetch('/api/aggregations/block/block-e')
+      ]);
+      const next = { 'Block D': null, 'Block E': null };
+      if (resD.ok) {
+        const dataD = await resD.json();
+        if (dataD.success && dataD.mealCounts) next['Block D'] = dataD.mealCounts;
+      }
+      if (resE.ok) {
+        const dataE = await resE.json();
+        if (dataE.success && dataE.mealCounts) next['Block E'] = dataE.mealCounts;
+      }
+      setBlockHeadcount(next);
+    } catch (err) {}
+  };
+
+  // Post-meal actual attendance records entered by the Mess Incharge
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
+
+  const refreshAttendanceRecords = async () => {
+    try {
+      const res = await authFetch('/api/attendance');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.attendance)) {
+          setAttendanceRecords(data.attendance);
+        }
+      }
+    } catch (err) {}
+  };
+
+  const saveMealAttendance = async (payload) => {
+    try {
+      const res = await authFetch('/api/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        addToast(`Actual attendance recorded for ${payload.meal}.`, 'success');
+        await refreshAttendanceRecords();
+        return true;
+      }
+      addToast('Could not save attendance to the kitchen server.', 'warning');
+      return false;
+    } catch (err) {
+      addToast('Could not save attendance to the kitchen server.', 'warning');
+      return false;
+    }
+  };
+
+  const refreshNotifications = async () => {
+    try {
+      const res = await authFetch('/api/notifications');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.notifications)) {
+          setStudentNotifications(data.notifications);
+          setRoomLeadNotifications(data.notifications);
+          setPrincipalNotifications(data.notifications);
+        }
+      }
+    } catch (err) {}
+  };
+
+  const refreshPrincipalAnalytics = async () => {
+    try {
+      const [resAnalytics, resWastage, resBlock] = await Promise.all([
+        authFetch('/api/analytics/principal'),
+        authFetch('/api/analytics/wastage'),
+        authFetch('/api/performance/blocks')
+      ]);
+      if (resAnalytics.ok) {
+        const data = await resAnalytics.json();
+        if (data.success && data.analytics) {
+          setPrincipalAnalytics(data.analytics);
+        }
+      }
+      if (resWastage.ok) {
+        const data = await resWastage.json();
+        const trend = data.wastageTrend || data.wastage;
+        if (data.success && Array.isArray(trend)) {
+          setPrincipalWastageTrend(trend);
+        }
+      }
+      if (resBlock.ok) {
+        const data = await resBlock.json();
+        if (data.success && Array.isArray(data.blockPerformance)) {
+          setBlockPerformance(data.blockPerformance);
+        }
+      }
+    } catch (err) {}
+  };
+
+  const refreshDietaryRequests = async () => {
+    try {
+      const res = await authFetch('/api/dietary-requests');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.requests)) {
+          setStudentDiningRequests(data.requests);
+        }
+      }
+    } catch (err) {}
+  };
+
+  const refreshFloorRequisitions = async () => {
+    try {
+      const res = await authFetch('/api/floor-requisitions');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.requisitions)) {
+          setFloorMealSheets(data.requisitions);
+        }
+      }
+    } catch (err) {}
+  };
+
+  const refreshAnomalies = async () => {
+    try {
+      const res = await authFetch('/api/ai/anomalies');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.anomalies)) {
+          setAiAnomalies(data.anomalies);
+        }
+      }
+    } catch (err) {}
+  };
+
+  const refreshMealHistory = async (roll) => {
+    const studentRoll = roll || currentUser?.rollNo;
+    if (!studentRoll) return;
+    try {
+      const res = await authFetch(`/api/selections/history/${studentRoll}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.history)) {
+          setMealHistory(data.history);
+        }
+      }
     } catch (err) {}
   };
 
   const reseedDatabase = async () => {
     try {
-      const res = await fetch('/api/seeder/run', { method: 'POST' });
+      const res = await authFetch('/api/seeder/run', { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
-        addToast('MongoDB database reseeded successfully with Block D & E dummy data!', 'success');
+        addToast('MongoDB database reseeded successfully with Block D & E initial data!', 'success');
         refreshRooms();
         refreshUsers();
         refreshKfcOrders();
         refreshKfcMenu();
         refreshMessMenu();
+        refreshAttendance();
+        refreshNotifications();
+        refreshPrincipalAnalytics();
+        refreshDietaryRequests();
+        refreshFloorRequisitions();
+        refreshAnomalies();
         return data;
       }
     } catch (err) {
@@ -2247,49 +1913,74 @@ export const AppProvider = ({ children }) => {
     refreshKfcMenu();
     refreshMessMenu();
     refreshUsers();
+    refreshAttendance();
+    refreshNotifications();
+    refreshPrincipalAnalytics();
+    refreshDietaryRequests();
+    refreshFloorRequisitions();
+    refreshAnomalies();
+    refreshBlockHeadcount();
+    refreshAttendanceRecords();
+    fetchAIForecast('Lunch', '2026-10-01');
+
+    if (currentUser?.rollNo) {
+      refreshMealHistory(currentUser.rollNo);
+    }
+
     const interval = setInterval(() => {
       refreshRooms();
       refreshKfcOrders(true);
       refreshKfcMenu();
       refreshMessMenu();
       refreshUsers();
-    }, 2000);
+      refreshAttendance();
+      refreshNotifications();
+      refreshPrincipalAnalytics();
+      refreshDietaryRequests();
+      refreshFloorRequisitions();
+      refreshAnomalies();
+      refreshBlockHeadcount();
+      refreshAttendanceRecords();
+    }, 4000);
     return () => clearInterval(interval);
+  }, [currentUser?.rollNo]);
+  // Realtime: Socket.IO pushes "data:changed"; refetch the affected feeds (throttled).
+  useEffect(() => {
+    let socket = null;
+    let pending = null;
+    const scheduleRefresh = () => {
+      if (pending) return;
+      pending = setTimeout(() => {
+        pending = null;
+        refreshRooms?.();
+        refreshKfcOrders?.(true);
+        refreshKfcMenu?.();
+        refreshMessMenu?.();
+        refreshUsers?.();
+        refreshNotifications?.();
+        refreshPrincipalAnalytics?.();
+        refreshDietaryRequests?.();
+        refreshFloorRequisitions?.();
+        refreshAnomalies?.();
+        refreshBlockHeadcount?.();
+        refreshAttendanceRecords?.();
+      }, 1000);
+    };
+    try {
+      socket = io(API_BASE_URL || undefined, { path: '/socket.io', transports: ['websocket', 'polling'] });
+      socket.on('data:changed', scheduleRefresh);
+    } catch (e) {}
+    return () => {
+      if (pending) clearTimeout(pending);
+      if (socket) socket.disconnect();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const placeKfcOrder = async (items, totalAmount) => {
     const studentName = currentUser?.name || 'Aarav Sharma';
     const studentRoll = currentUser?.rollNo || studentName;
     const room = (currentUser?.badge ? currentUser.badge.split('•')[0].trim() : 'Room D-101') || 'Room D-101';
-
-    // Checklist #8: Limit Orders - Max 5 per person per day, only 1 active at a time
-    const activeOrder = kfcOrders.find(
-      (o) =>
-        (o.studentName?.toLowerCase() === studentName.toLowerCase() ||
-         (o.studentRoll && o.studentRoll === studentRoll)) &&
-        ['Pending', 'Preparing', 'Ready'].includes(o.status)
-    );
-    if (activeOrder) {
-      addToast(
-        `Active order in progress (#${activeOrder.token})! Please collect or cancel it before placing a new one.`,
-        'warning'
-      );
-      return null;
-    }
-
-    const todayOrdersCount = kfcOrders.filter(
-      (o) =>
-        (o.studentName?.toLowerCase() === studentName.toLowerCase() ||
-         (o.studentRoll && o.studentRoll === studentRoll)) &&
-        o.status !== 'Cancelled'
-    ).length;
-    if (todayOrdersCount >= 5) {
-      addToast(
-        'Daily order limit reached! You can place a maximum of 5 KFC orders per day.',
-        'error'
-      );
-      return null;
-    }
 
     const roomDigits = room.replace(/\D/g, '') || '101';
     const randNum = Math.floor(10 + Math.random() * 90);
@@ -2333,7 +2024,7 @@ export const AppProvider = ({ children }) => {
         };
       });
       broadcastKfcMenu(updated);
-      fetch('/api/kfc/menu', {
+      authFetch('/api/kfc/menu', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ menu: updated })
@@ -2342,7 +2033,13 @@ export const AppProvider = ({ children }) => {
     });
 
     try {
-      const res = await fetch('/api/kfc/orders', {
+      if (kfcBcRef.current) {
+        kfcBcRef.current.postMessage({ type: 'KFC_NEW_ORDER_SYNC', order: optimisticOrder });
+      }
+    } catch (e) {}
+
+    try {
+      const res = await authFetch('/api/kfc/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newOrderData)
@@ -2351,8 +2048,16 @@ export const AppProvider = ({ children }) => {
         const data = await res.json();
         if (data.order) {
           setKfcOrders((prev) => [data.order, ...prev.filter((o) => o.id !== tempId && o.id !== data.order.id)]);
+          try {
+            if (kfcBcRef.current) {
+              kfcBcRef.current.postMessage({ type: 'KFC_NEW_ORDER_SYNC', order: data.order });
+            }
+          } catch (e) {}
           return data.order;
         }
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        addToast(errData.message || 'Order could not be saved to canteen server', 'warning');
       }
     } catch (err) {
       console.warn('Backend order persistence note:', err);
@@ -2390,8 +2095,7 @@ export const AppProvider = ({ children }) => {
     setKfcOrders((prev) =>
       prev.map((ord) => (ord.id === orderId || ord.token === orderId ? { ...ord, status: 'Cancelled' } : ord))
     );
-    broadcastKfcOrderStatus(orderId, 'Cancelled');
-    broadcastKfcOrderStatus(orderToken, 'Cancelled');
+    broadcastKfcOrderStatus(orderId, orderToken, 'Cancelled');
 
     // Restore stock for cancelled items
     if (Array.isArray(targetOrder.items) && targetOrder.items.length > 0) {
@@ -2408,7 +2112,7 @@ export const AppProvider = ({ children }) => {
           };
         });
         broadcastKfcMenu(restored);
-        fetch('/api/kfc/menu', {
+        authFetch('/api/kfc/menu', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ menu: restored })
@@ -2432,7 +2136,7 @@ export const AppProvider = ({ children }) => {
     addStudentNotification(cancelNotif);
 
     try {
-      await fetch(`/api/kfc/orders/${orderId}/status`, {
+      await authFetch(`/api/kfc/orders/${orderId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'Cancelled' })
@@ -2466,15 +2170,26 @@ export const AppProvider = ({ children }) => {
       } catch (e) {}
     }
 
+    try {
+      await authFetch(`/api/kfc/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feedback: feedbackObj })
+      });
+    } catch (e) {
+      console.warn('Feedback persistence note:', e);
+    }
+
     return true;
   };
 
-  const broadcastKfcOrderStatus = (orderId, status) => {
+  const broadcastKfcOrderStatus = (orderId, token, status) => {
     if (kfcBcRef.current) {
       try {
         kfcBcRef.current.postMessage({
           type: 'KFC_ORDER_STATUS_SYNC',
           orderId,
+          token: token || orderId,
           status
         });
       } catch (e) {}
@@ -2482,18 +2197,18 @@ export const AppProvider = ({ children }) => {
   };
 
   const updateKfcOrderStatus = async (orderId, newStatus) => {
-    let orderToken = orderId;
-    setKfcOrders((prev) =>
-      prev.map((ord) => {
-        if (ord.id === orderId || ord.token === orderId) {
-          orderToken = ord.token;
-          return { ...ord, status: newStatus };
-        }
-        return ord;
-      })
+    const target = kfcOrders.find(
+      (o) => o.id === orderId || o.token === orderId || o.orderId === orderId
     );
-    broadcastKfcOrderStatus(orderId, newStatus);
-    broadcastKfcOrderStatus(orderToken, newStatus);
+    const orderToken = target?.token || orderId;
+    setKfcOrders((prev) =>
+      prev.map((ord) =>
+        ord.id === orderId || ord.token === orderId || ord.token === orderToken
+          ? { ...ord, status: newStatus }
+          : ord
+      )
+    );
+    broadcastKfcOrderStatus(orderId, orderToken, newStatus);
     addToast(`Order ${orderToken} updated to ${newStatus}`, 'info');
 
     const kfcNotif = {
@@ -2509,7 +2224,7 @@ export const AppProvider = ({ children }) => {
     addStudentNotification(kfcNotif);
 
     try {
-      await fetch(`/api/kfc/orders/${orderId}/status`, {
+      await authFetch(`/api/kfc/orders/${orderId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
@@ -2520,46 +2235,53 @@ export const AppProvider = ({ children }) => {
   };
 
   const advanceKfcOrderStatus = async (orderId) => {
-    let nextStatus = null;
-    let targetToken = orderId;
+    const target = kfcOrders.find(
+      (o) => o.id === orderId || o.token === orderId || o.orderId === orderId
+    );
+    if (!target) return;
+
+    const nextStatus =
+      target.status === 'Pending'
+        ? 'Preparing'
+        : target.status === 'Preparing'
+        ? 'Ready'
+        : target.status === 'Ready'
+        ? 'Collected'
+        : null;
+    if (!nextStatus) return;
+
+    const targetToken = target.token || orderId;
     setKfcOrders((prev) =>
-      prev.map((ord) => {
-        if (ord.id !== orderId && ord.token !== orderId) return ord;
-        targetToken = ord.token;
-        if (ord.status === 'Pending') nextStatus = 'Preparing';
-        else if (ord.status === 'Preparing') nextStatus = 'Ready';
-        else if (ord.status === 'Ready') nextStatus = 'Collected';
-        else return ord;
-        return { ...ord, status: nextStatus };
-      })
+      prev.map((ord) =>
+        ord.id === orderId || ord.token === orderId || ord.token === targetToken
+          ? { ...ord, status: nextStatus }
+          : ord
+      )
     );
 
-    if (nextStatus) {
-      broadcastKfcOrderStatus(orderId, nextStatus);
-      broadcastKfcOrderStatus(targetToken, nextStatus);
+    broadcastKfcOrderStatus(orderId, targetToken, nextStatus);
 
-      const kfcNotif = {
-        id: Date.now(),
-        title: `🍗 KFC Order Update: ${nextStatus}`,
-        message: `Your Order #${targetToken} is now ${nextStatus.toUpperCase()}!${nextStatus === 'Ready' ? ' Hot and ready! Please proceed to Counter 1 for pickup.' : nextStatus === 'Collected' ? ' Order collected. Enjoy your meal!' : ''}`,
-        sender: 'KFC Express Counter',
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        timestamp: Date.now(),
-        read: false,
-        type: 'kfc'
-      };
-      addStudentNotification(kfcNotif);
+    const kfcNotif = {
+      id: Date.now(),
+      title: `🍗 KFC Order Update: ${nextStatus}`,
+      message: `Your Order #${targetToken} is now ${nextStatus.toUpperCase()}!${nextStatus === 'Ready' ? ' Hot and ready! Please proceed to Counter 1 for pickup.' : nextStatus === 'Collected' ? ' Order collected. Enjoy your meal!' : ''}`,
+      sender: 'KFC Express Counter',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: Date.now(),
+      read: false,
+      type: 'kfc'
+    };
+    addStudentNotification(kfcNotif);
 
-      addToast(`Order ${targetToken} status updated to ${nextStatus}`, 'success');
-      try {
-        await fetch(`/api/kfc/orders/${orderId}/status`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: nextStatus })
-        });
-      } catch (err) {
-        console.warn('Status advance backend note:', err);
-      }
+    addToast(`Order ${targetToken} status updated to ${nextStatus}`, 'success');
+    try {
+      await authFetch(`/api/kfc/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus })
+      });
+    } catch (err) {
+      console.warn('Status advance backend note:', err);
     }
   };
 
@@ -2574,7 +2296,7 @@ export const AppProvider = ({ children }) => {
         return { ...item, isAvailable: newStatus, stock: newStock };
       });
       broadcastKfcMenu(updated);
-      fetch('/api/kfc/menu', {
+      authFetch('/api/kfc/menu', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ menu: updated })
@@ -2594,7 +2316,7 @@ export const AppProvider = ({ children }) => {
         return { ...item, stock: newStock, isAvailable: newAvailable };
       });
       broadcastKfcMenu(updated);
-      fetch('/api/kfc/menu', {
+      authFetch('/api/kfc/menu', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ menu: updated })
@@ -2622,7 +2344,7 @@ export const AppProvider = ({ children }) => {
     addToast(`${item.name} added to KFC Menu!`, 'success');
 
     try {
-      await fetch('/api/kfc/menu', {
+      await authFetch('/api/kfc/menu', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(item)
@@ -2641,7 +2363,7 @@ export const AppProvider = ({ children }) => {
     addToast(`${itemToRemove ? itemToRemove.name : 'Item'} removed from menu`, 'info');
 
     try {
-      await fetch(`/api/kfc/menu/${itemId}`, { method: 'DELETE' });
+      await authFetch(`/api/kfc/menu/${itemId}`, { method: 'DELETE' });
     } catch (err) {
       console.warn('Backend item delete note:', err);
     }
@@ -2653,7 +2375,7 @@ export const AppProvider = ({ children }) => {
         String(item.id) === String(updatedItem.id) ? { ...item, ...updatedItem } : item
       );
       broadcastKfcMenu(updated);
-      fetch('/api/kfc/menu', {
+      authFetch('/api/kfc/menu', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ menu: updated })
@@ -2671,7 +2393,7 @@ export const AppProvider = ({ children }) => {
         return { ...item, stock: val, isAvailable: val > 0 };
       });
       broadcastKfcMenu(updated);
-      fetch('/api/kfc/menu', {
+      authFetch('/api/kfc/menu', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ menu: updated })
@@ -2688,7 +2410,7 @@ export const AppProvider = ({ children }) => {
         isAvailable: true
       }));
       broadcastKfcMenu(updated);
-      fetch('/api/kfc/menu', {
+      authFetch('/api/kfc/menu', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ menu: updated })
@@ -2703,7 +2425,7 @@ export const AppProvider = ({ children }) => {
     try {
       localStorage.removeItem('smart_mess_active_kfc_token');
       sessionStorage.removeItem('smart_mess_placed_kfc_token');
-      await fetch('/api/kfc/orders', { method: 'DELETE' });
+      await authFetch('/api/kfc/orders', { method: 'DELETE' });
     } catch (e) {
       console.warn(e);
     }
@@ -2794,6 +2516,13 @@ export const AppProvider = ({ children }) => {
     });
 
     addToast('Roommate meal preferences recorded and updated in Floor Monitoring!', 'success');
+    const member = roomMembers.find((m) => m.id === memberId);
+    const sid = member?.studentId || member?.name || memberId;
+    authFetch(`/api/rooms/${encodeURIComponent('Room D-101')}/members/${encodeURIComponent(sid)}/meal`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ choices, status, date: '2026-10-01' })
+    }).catch(() => {});
   };
 
   const markMemberOnLeave = (memberId) => {
@@ -2863,6 +2592,13 @@ export const AppProvider = ({ children }) => {
     });
 
     addToast('Roommate marked on leave (meals excluded from Floor Monitoring).', 'info');
+    const leaveMember = roomMembers.find((m) => m.id === memberId);
+    const leaveSid = leaveMember?.studentId || leaveMember?.name || memberId;
+    authFetch(`/api/rooms/${encodeURIComponent('Room D-101')}/members/${encodeURIComponent(leaveSid)}/meal`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ choices: { b: 'No', l: 'No', s: 'No', d: 'No' }, status: 'On Leave', date: '2026-10-01' })
+    }).catch(() => {});
   };
 
   // -------------------------------------------------------------
@@ -3276,6 +3012,11 @@ export const AppProvider = ({ children }) => {
       return updated;
     });
     addToast(`Direct alert dispatched to Lead of ${roomNo}!`, 'info');
+    authFetch('/api/notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(notice)
+    }).catch(() => {});
   };
 
   // Block Coordinator directly nudges a Floor Incharge whose floor has pending meal submissions
@@ -3356,6 +3097,11 @@ export const AppProvider = ({ children }) => {
     }
 
     addToast(`Meal Requirement Sheet for ${floorName} sent to Mess Kitchen!`, 'success');
+    authFetch('/api/floor-requisitions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newSheet)
+    }).catch(() => {});
   };
 
   // Mess Incharge confirms / acknowledges the floor meal sheet
@@ -3419,9 +3165,8 @@ export const AppProvider = ({ children }) => {
     addToast(`Floor meal sheet for ${targetFloor || 'Floor'} confirmed for kitchen preparation!`, 'success');
   };
 
-  const login = (identifier, password = '') => {
+  const login = async (identifier, password = '') => {
     const cleanId = (identifier || '').trim();
-    const lowerId = cleanId.toLowerCase();
     const cleanPass = (password || '').trim();
 
     if (!cleanId) {
@@ -3429,193 +3174,63 @@ export const AppProvider = ({ children }) => {
       return null;
     }
 
-    // 1. Check if identifier is student Roll Number or Student Email
-    const matchedStudent = STUDENT_ROSTER.find(
-      (s) => s.rollNo.toLowerCase() === lowerId || s.email.toLowerCase() === lowerId
-    );
+    try {
+      const res = await authFetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanId, password: cleanPass })
+      });
+      const data = await res.json();
 
-    if (matchedStudent) {
-      // Password must be roll number (case-insensitive)
-      if (cleanPass.toLowerCase() !== matchedStudent.rollNo.toLowerCase()) {
-        addToast('Invalid password! For students, password is your Roll Number.', 'error');
-        return null;
-      }
+      if (res.ok && data.success && data.user) {
+        const rolePaths = {
+          'Student': '/student',
+          'Room Lead': '/room-lead',
+          'Floor Incharge': '/floor-incharge',
+          'Block Coordinator': '/block-coordinator',
+          'Mess Incharge': '/mess-incharge',
+          'Principal': '/principal',
+          'KFC Staff': '/kfc-staff',
+          'Admin': '/dashboards'
+        };
 
-      const sessionUser = {
-        id: `USR-${matchedStudent.rollNo}`,
-        name: matchedStudent.name,
-        rollNo: matchedStudent.rollNo,
-        email: matchedStudent.email,
-        role: 'Student',
-        path: '/student',
-        badge: `${matchedStudent.rollNo} • ${matchedStudent.room}`,
-        status: 'Active',
-        loginTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
+        const sessionUser = {
+          ...data.user,
+          path: data.user.path || rolePaths[data.user.role] || '/student',
+          loginTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
 
-      setCurrentUser(sessionUser);
-      try {
+        setCurrentUser(sessionUser);
+        try {
+          sessionStorage.setItem('smart_mess_current_user', JSON.stringify(sessionUser));
         localStorage.setItem('smart_mess_current_user', JSON.stringify(sessionUser));
-      } catch (e) {}
+        if (data.token) {
+          sessionStorage.setItem('smart_mess_token', data.token);
+          sessionStorage.setItem(`smart_mess_token_${sessionUser.role}`, data.token);
+          localStorage.setItem(`smart_mess_token_${sessionUser.role}`, data.token);
+          localStorage.setItem('smart_mess_token', data.token);
+          }
+        } catch (e) {}
 
-      addToast(`Welcome, ${sessionUser.name}! Signed in as Student.`, 'success');
-      return sessionUser;
-    }
-
-    // 2. Check Room Lead direct shorthands & aliases (d101, d102, d201, d202, e101, e102, e201, e202, etc.)
-    const roomLeadShorthands = {
-      'd101': 'nithin.roomlead@gmail.com',
-      'd-101': 'nithin.roomlead@gmail.com',
-      'room d-101': 'nithin.roomlead@gmail.com',
-      'roomd101': 'nithin.roomlead@gmail.com',
-      'alex.lead@kiet.edu': 'nithin.roomlead@gmail.com',
-      'd101.lead@kiet.edu': 'nithin.roomlead@gmail.com',
-      'nithin.roomd101@gmail.com': 'nithin.roomlead@gmail.com',
-      'lead.d101': 'nithin.roomlead@gmail.com',
-
-      'd102': 'abhishek.lead@kiet.edu',
-      'd-102': 'abhishek.lead@kiet.edu',
-      'room d-102': 'abhishek.lead@kiet.edu',
-      'roomd102': 'abhishek.lead@kiet.edu',
-      'd102.lead@kiet.edu': 'abhishek.lead@kiet.edu',
-      'nithin.roomd102@gmail.com': 'abhishek.lead@kiet.edu',
-      'lead.d102': 'abhishek.lead@kiet.edu',
-
-      'd201': 'prashant.lead@kiet.edu',
-      'd-201': 'prashant.lead@kiet.edu',
-      'room d-201': 'prashant.lead@kiet.edu',
-      'roomd201': 'prashant.lead@kiet.edu',
-      'd201.lead@kiet.edu': 'prashant.lead@kiet.edu',
-      'nithin.roomd201@gmail.com': 'prashant.lead@kiet.edu',
-      'lead.d201': 'prashant.lead@kiet.edu',
-
-      'd202': 'vaibhav.lead@kiet.edu',
-      'd-202': 'vaibhav.lead@kiet.edu',
-      'room d-202': 'vaibhav.lead@kiet.edu',
-      'roomd202': 'vaibhav.lead@kiet.edu',
-      'd202.lead@kiet.edu': 'vaibhav.lead@kiet.edu',
-      'nithin.roomd202@gmail.com': 'vaibhav.lead@kiet.edu',
-      'lead.d202': 'vaibhav.lead@kiet.edu',
-
-      'e101': 'sriram.lead@kiet.edu',
-      'e-101': 'sriram.lead@kiet.edu',
-      'room e-101': 'sriram.lead@kiet.edu',
-      'roome101': 'sriram.lead@kiet.edu',
-      'e101.lead@kiet.edu': 'sriram.lead@kiet.edu',
-      'nithin.roome101@gmail.com': 'sriram.lead@kiet.edu',
-      'lead.e101': 'sriram.lead@kiet.edu',
-
-      'e102': 'aaditya.lead@kiet.edu',
-      'e-102': 'aaditya.lead@kiet.edu',
-      'room e-102': 'aaditya.lead@kiet.edu',
-      'roome102': 'aaditya.lead@kiet.edu',
-      'e102.lead@kiet.edu': 'aaditya.lead@kiet.edu',
-      'nithin.roome102@gmail.com': 'aaditya.lead@kiet.edu',
-      'lead.e102': 'aaditya.lead@kiet.edu',
-
-      'e201': 'kavya.lead@kiet.edu',
-      'e-201': 'kavya.lead@kiet.edu',
-      'room e-201': 'kavya.lead@kiet.edu',
-      'roome201': 'kavya.lead@kiet.edu',
-      'e201.lead@kiet.edu': 'kavya.lead@kiet.edu',
-      'nithin.roome201@gmail.com': 'kavya.lead@kiet.edu',
-      'lead.e201': 'kavya.lead@kiet.edu',
-
-      'e202': 'pooja.lead@kiet.edu',
-      'e-202': 'pooja.lead@kiet.edu',
-      'room e-202': 'pooja.lead@kiet.edu',
-      'roome202': 'pooja.lead@kiet.edu',
-      'e202.lead@kiet.edu': 'pooja.lead@kiet.edu',
-      'nithin.roome202@gmail.com': 'pooja.lead@kiet.edu',
-      'lead.e202': 'pooja.lead@kiet.edu',
-    };
-
-    let targetStaffEmail = roomLeadShorthands[lowerId] || lowerId;
-
-    // Check Staff & Admin accounts
-    let matchedStaff = STAFF_ACCOUNTS.find((st) => st.email.toLowerCase() === targetStaffEmail);
-
-    // Support admin aliases
-    if (!matchedStaff && (lowerId === 'admin' || lowerId === 'admin@gmail.com' || lowerId === 'karthiksuru06@gmail.com')) {
-      matchedStaff = STAFF_ACCOUNTS.find((st) => st.role === 'Admin');
-    }
-
-    // Support shorthand like "nithin.kfcstaff" or "nithin.kfc" or email prefix
-    if (!matchedStaff) {
-      matchedStaff = STAFF_ACCOUNTS.find((st) => st.email.split('@')[0].toLowerCase() === lowerId);
-    }
-
-    // Support badge room match (e.g. if entered "Room D-102" or "Lead • Room D-201")
-    if (!matchedStaff) {
-      matchedStaff = STAFF_ACCOUNTS.find((st) => (st.badge || '').toLowerCase().includes(lowerId));
-    }
-
-    // Support role-based generic matches if user enters "kfcstaff", "principal", "mess", "floor", "roomlead", "block"
-    if (!matchedStaff) {
-      if (lowerId.includes('kfc')) matchedStaff = STAFF_ACCOUNTS.find((st) => st.role === 'KFC Staff');
-      else if (lowerId.includes('room')) matchedStaff = STAFF_ACCOUNTS.find((st) => st.role === 'Room Lead');
-      else if (lowerId.includes('floor')) matchedStaff = STAFF_ACCOUNTS.find((st) => st.role === 'Floor Incharge');
-      else if (lowerId.includes('block')) matchedStaff = STAFF_ACCOUNTS.find((st) => st.role === 'Block Coordinator');
-      else if (lowerId.includes('mess')) matchedStaff = STAFF_ACCOUNTS.find((st) => st.role === 'Mess Incharge');
-      else if (lowerId.includes('principal')) matchedStaff = STAFF_ACCOUNTS.find((st) => st.role === 'Principal');
-      else if (lowerId.includes('admin')) matchedStaff = STAFF_ACCOUNTS.find((st) => st.role === 'Admin');
-    }
-
-    // 3. Also check dynamic users in state (in case admin created a new user)
-    if (!matchedStaff) {
-      const dynamicUser = users.find(
-        (u) => (u.email && u.email.toLowerCase() === lowerId) ||
-               (u.rollNo && u.rollNo.toLowerCase() === lowerId) ||
-               (u.id && u.id.toLowerCase() === lowerId) ||
-               (u.badge && u.badge.toLowerCase().includes(lowerId))
-      );
-      if (dynamicUser) {
-        matchedStaff = dynamicUser;
-      }
-    }
-
-    if (matchedStaff) {
-      if (matchedStaff.status === 'Suspended') {
-        addToast('This account has been suspended by the campus administrator.', 'error');
-        return null;
-      }
-
-      // If user is a student in dynamic users
-      if (matchedStaff.role === 'Student' && matchedStaff.rollNo) {
-        if (cleanPass.toLowerCase() !== matchedStaff.rollNo.toLowerCase()) {
-          addToast('Invalid password! Password is your Roll Number.', 'error');
-          return null;
-        }
+        addToast(`Welcome, ${sessionUser.name}! Signed in as ${sessionUser.role}.`, 'success');
+        return sessionUser;
       } else {
-        // Staff and Admin password must be 123456789
-        if (cleanPass !== '123456789') {
-          addToast('Invalid password! Password is 123456789.', 'error');
-          return null;
-        }
+        addToast(data.message || 'Login failed. Please check credentials.', 'error');
+        return null;
       }
-
-      const sessionUser = {
-        ...matchedStaff,
-        loginTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-
-      setCurrentUser(sessionUser);
-      try {
-        localStorage.setItem('smart_mess_current_user', JSON.stringify(sessionUser));
-      } catch (e) {}
-
-      addToast(`Signed in as ${sessionUser.name} (${sessionUser.role})`, 'success');
-      return sessionUser;
+    } catch (err) {
+      addToast('Network or server connection error during authentication.', 'error');
+      return null;
     }
-
-    addToast('Account not found! Enter a valid Roll Number (e.g. 23B21A4225) or staff email.', 'error');
-    return null;
   };
 
   const logout = () => {
     setCurrentUser(null);
     try {
+      sessionStorage.removeItem('smart_mess_current_user');
+      sessionStorage.removeItem('smart_mess_token');
       localStorage.removeItem('smart_mess_current_user');
+      localStorage.removeItem('smart_mess_token');
     } catch (e) {
       console.warn('LocalStorage error', e);
     }
@@ -3626,6 +3241,7 @@ export const AppProvider = ({ children }) => {
     <AppContext.Provider
       value={{
         currentUser,
+        setCurrentUser,
         login,
         logout,
         demoUsers: DEMO_USERS,
@@ -3696,8 +3312,14 @@ export const AppProvider = ({ children }) => {
         updateMenu,
         removeMessDish,
         addMessDish,
+        updateMessDishImage,
         refreshMessMenu,
         headcount,
+        blockHeadcount,
+        refreshBlockHeadcount,
+        attendanceRecords,
+        refreshAttendanceRecords,
+        saveMealAttendance,
         principalAnalytics,
         principalRollups,
         togglePrincipalRollupFlag,
@@ -3726,7 +3348,14 @@ export const AppProvider = ({ children }) => {
         deleteUser,
         toggleUserStatus,
         loginAsUser,
-        refreshUsers
+        refreshUsers,
+        refreshAttendance,
+        refreshNotifications,
+        refreshPrincipalAnalytics,
+        refreshDietaryRequests,
+        refreshFloorRequisitions,
+        refreshAnomalies,
+        refreshMealHistory
       }}
     >
       {children}

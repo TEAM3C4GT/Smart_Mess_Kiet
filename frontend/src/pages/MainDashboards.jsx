@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
-import { useApp, STAFF_ACCOUNTS } from '../context/AppContext';
+import { useApp } from '../context/AppContext';
 import {
   GraduationCap,
   BedDouble,
@@ -90,7 +90,7 @@ export const MainDashboards = () => {
       path: '/principal',
       description: 'Executive analytics on food wastage, block attendance, and campus KFC footfall.',
       badge: 'Executive Command',
-      color: 'bg-[#1b4d3e]'
+      color: 'bg-[#355F97]'
     },
     {
       id: 'kfc-staff',
@@ -100,7 +100,7 @@ export const MainDashboards = () => {
       path: '/kfc-staff',
       description: 'Live order queue, token pickup verification, and menu stock availability.',
       badge: 'Canteen Fulfillment',
-      color: 'bg-[#1b4d3e]'
+      color: 'bg-[#355F97]'
     },
     {
       id: 'student',
@@ -110,7 +110,7 @@ export const MainDashboards = () => {
       path: '/student',
       description: "Select tomorrow's meals and order KFC without waiting.",
       badge: 'Meal Selection & KFC',
-      color: 'bg-[#1b4d3e]'
+      color: 'bg-[#355F97]'
     },
     {
       id: 'room-lead',
@@ -120,7 +120,7 @@ export const MainDashboards = () => {
       path: '/room-lead',
       description: 'Track room submissions and remind pending students across all 8 rooms.',
       badge: '8 Rooms • All Leads',
-      color: 'bg-[#1b4d3e]'
+      color: 'bg-[#355F97]'
     },
     {
       id: 'floor-incharge',
@@ -130,7 +130,7 @@ export const MainDashboards = () => {
       path: '/floor-incharge',
       description: 'Monitor floor participation and identify low-submission rooms.',
       badge: 'Floor 2 Management',
-      color: 'bg-[#1b4d3e]'
+      color: 'bg-[#355F97]'
     },
     {
       id: 'block-coordinator',
@@ -140,7 +140,7 @@ export const MainDashboards = () => {
       path: '/block-coordinator',
       description: 'Consolidate floor-wise meal counts for the block.',
       badge: 'Block D & E Summary',
-      color: 'bg-[#1b4d3e]'
+      color: 'bg-[#355F97]'
     },
     {
       id: 'mess-incharge',
@@ -150,7 +150,7 @@ export const MainDashboards = () => {
       path: '/mess-incharge',
       description: 'Monitor final headcount, meal planning and kitchen preparation.',
       badge: 'Final Headcount & Kitchen',
-      color: 'bg-[#1b4d3e]'
+      color: 'bg-[#355F97]'
     }
   ];
 
@@ -297,7 +297,7 @@ export const MainDashboards = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#fcfdfd] text-slate-900 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F5F7FA] text-[#293749] flex flex-col font-sans">
       {/* Top Navbar with Tab integration */}
       <Navbar
         currentRole="Admin"
@@ -307,16 +307,16 @@ export const MainDashboards = () => {
 
       <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col">
         {/* Sub-header / In-page Tab Switcher */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-slate-200/80 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-[#DCE4EF]/80 mb-6">
           <div>
-            <div className="inline-flex items-center gap-2 bg-emerald-50 text-[#1b4d3e] px-3.5 py-1 rounded-full text-xs font-mono font-bold mb-2 border border-emerald-200/70 shadow-2xs">
-              <Sparkles className="w-3.5 h-3.5 text-[#1b4d3e]" />
+            <div className="inline-flex items-center gap-2 bg-[#EDF2F9] text-[#355F97] px-3.5 py-1 rounded-full text-xs font-mono font-bold mb-2 border border-[#D5E4F8]/70 shadow-2xs">
+              <Sparkles className="w-3.5 h-3.5 text-[#355F97]" />
               <span>CAMPUS SUPERADMIN CONSOLE</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#293749] tracking-tight">
               {activeTab === 'Switchboard' ? 'Role Switchboard' : 'Campus User Manager'}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
+            <p className="text-xs sm:text-sm text-[#65748A] font-medium mt-1">
               {activeTab === 'Switchboard'
                 ? 'Select any portal below or manage campus credentials in the User Manager directory.'
                 : 'Provision users, modify roles, suspend or activate logins, and switch sessions in real-time.'}
@@ -324,13 +324,13 @@ export const MainDashboards = () => {
           </div>
 
           {/* Quick Tab Switcher Buttons */}
-          <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 self-start sm:self-auto">
+          <div className="flex items-center gap-1.5 bg-[#EDF2F9] p-1.5 rounded-2xl border border-[#DCE4EF] self-start sm:self-auto">
             <button
               onClick={() => setActiveTab('Switchboard')}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'Switchboard'
-                  ? 'bg-white text-[#1b4d3e] shadow-sm border border-emerald-200/60'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                  ? 'bg-white text-[#355F97] shadow-sm border border-[#D5E4F8]/60'
+                  : 'text-slate-600 hover:text-[#293749] hover:bg-white/50'
               }`}
             >
               <LayoutGrid className="w-4 h-4" />
@@ -341,16 +341,16 @@ export const MainDashboards = () => {
               onClick={() => setActiveTab('UserManager')}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'UserManager'
-                  ? 'bg-[#1b4d3e] text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                  ? 'bg-[#355F97] text-white shadow-sm'
+                  : 'text-slate-600 hover:text-[#293749] hover:bg-white/50'
               }`}
             >
               <Users className="w-4 h-4" />
               <span>User Manager</span>
               <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-extrabold ${
                 activeTab === 'UserManager'
-                  ? 'bg-emerald-800 text-emerald-100'
-                  : 'bg-emerald-100 text-[#1b4d3e]'
+                  ? 'bg-[#2B4F80] text-[#D5E4F8]'
+                  : 'bg-[#D5E4F8] text-[#355F97]'
               }`}>
                 {totalUsersCount}
               </span>
@@ -362,17 +362,17 @@ export const MainDashboards = () => {
         {activeTab === 'Switchboard' && (
           <div className="flex-1 flex flex-col justify-between">
             {/* User Manager Quick Access Banner */}
-            <div className="bg-gradient-to-r from-emerald-50 via-teal-50/40 to-slate-50 border border-emerald-200/80 rounded-2xl p-4 sm:p-5 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+            <div className="bg-gradient-to-r from-[#EDF2F9] via-[#EDF2F9]/40 to-slate-50 border border-[#D5E4F8]/80 rounded-2xl p-4 sm:p-5 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
               <div className="flex items-center gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-[#1b4d3e] text-white flex items-center justify-center shrink-0 shadow-xs">
-                  <Users className="w-5 h-5 text-emerald-200" />
+                <div className="w-10 h-10 rounded-xl bg-[#355F97] text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <Users className="w-5 h-5 text-[#D5E4F8]" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-slate-900">
+                    <h3 className="text-sm font-bold text-[#293749]">
                       Campus User Directory & Account Provisioning
                     </h3>
-                    <span className="text-[10px] font-mono font-extrabold bg-[#1b4d3e] text-emerald-100 px-2 py-0.5 rounded-md">
+                    <span className="text-[10px] font-mono font-extrabold bg-[#355F97] text-[#D5E4F8] px-2 py-0.5 rounded-md">
                       {totalUsersCount} Accounts
                     </span>
                   </div>
@@ -384,7 +384,7 @@ export const MainDashboards = () => {
 
               <button
                 onClick={() => setActiveTab('UserManager')}
-                className="inline-flex items-center justify-center gap-2 bg-[#1b4d3e] hover:bg-[#153e32] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all shrink-0 cursor-pointer hover:shadow-md"
+                className="inline-flex items-center justify-center gap-2 bg-[#355F97] hover:bg-[#2B4F80] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all shrink-0 cursor-pointer hover:shadow-md"
               >
                 <span>Open User Manager</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -393,7 +393,7 @@ export const MainDashboards = () => {
 
             {/* Role Switchboard Header */}
             <div className="text-center pt-2 pb-6 max-w-2xl mx-auto">
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#293749] tracking-tight leading-tight">
                 Campus Multi-Role Hierarchy
               </h2>
               <p className="mt-2 text-slate-600 text-xs sm:text-sm font-medium leading-relaxed">
@@ -409,15 +409,15 @@ export const MainDashboards = () => {
                   <div
                     key={card.id}
                     onClick={() => handleLaunchDashboard(card)}
-                    className="group relative bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-xs transition-all duration-300 hover:shadow-lg hover:shadow-emerald-950/5 hover:-translate-y-0.5 hover:border-emerald-300 cursor-pointer flex flex-col justify-between"
+                    className="group relative bg-white rounded-2xl p-5 sm:p-6 border border-[#DCE4EF]/90 shadow-xs transition-all duration-300 hover:shadow-lg hover:shadow-[#1D3355]/5 hover:-translate-y-0.5 hover:border-[#A9C3E4] cursor-pointer flex flex-col justify-between"
                   >
                     <div>
                       {/* Header row */}
                       <div className="flex items-center justify-between mb-4">
-                        <div className="w-11 h-11 rounded-xl bg-[#1b4d3e] text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
-                          <Icon className="w-5 h-5 text-emerald-200" />
+                        <div className="w-11 h-11 rounded-xl bg-[#355F97] text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
+                          <Icon className="w-5 h-5 text-[#D5E4F8]" />
                         </div>
-                        <span className="text-[11px] font-mono font-bold text-[#1b4d3e] bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200/70">
+                        <span className="text-[11px] font-mono font-bold text-[#355F97] bg-[#EDF2F9] px-2.5 py-0.5 rounded-md border border-[#D5E4F8]/70">
                           {card.badge}
                         </span>
                       </div>
@@ -425,7 +425,7 @@ export const MainDashboards = () => {
                       {/* Title */}
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-xl">{card.emoji}</span>
-                        <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#1b4d3e] transition-colors">
+                        <h3 className="text-lg font-bold text-[#293749] group-hover:text-[#355F97] transition-colors">
                           {card.title}
                         </h3>
                       </div>
@@ -437,11 +437,11 @@ export const MainDashboards = () => {
                     </div>
 
                     {/* Action Link */}
-                    <div className="pt-3.5 border-t border-slate-100 flex items-center justify-between text-[#1b4d3e]">
+                    <div className="pt-3.5 border-t border-slate-100 flex items-center justify-between text-[#355F97]">
                       <span className="text-xs font-bold font-mono uppercase tracking-wider group-hover:underline">
                         Open Dashboard
                       </span>
-                      <div className="w-7 h-7 rounded-full bg-emerald-50 group-hover:bg-[#1b4d3e] group-hover:text-white flex items-center justify-center transition-colors">
+                      <div className="w-7 h-7 rounded-full bg-[#EDF2F9] group-hover:bg-[#355F97] group-hover:text-white flex items-center justify-center transition-colors">
                         <ArrowRight className="w-3.5 h-3.5" />
                       </div>
                     </div>
@@ -454,11 +454,11 @@ export const MainDashboards = () => {
             <footer className="text-center pt-8 pb-2">
               <div className="flex items-center justify-center gap-6 text-xs font-semibold text-slate-400">
                 <span className="flex items-center gap-1.5 text-slate-600">
-                  <ShieldCheck className="w-4 h-4 text-[#1b4d3e]" /> Multi-Role SaaS Hierarchy
+                  <ShieldCheck className="w-4 h-4 text-[#355F97]" /> Multi-Role SaaS Hierarchy
                 </span>
                 <span>•</span>
                 <span className="flex items-center gap-1.5 text-slate-600">
-                  <UtensilsCrossed className="w-4 h-4 text-[#1b4d3e]" /> Integrated KFC Express
+                  <UtensilsCrossed className="w-4 h-4 text-[#355F97]" /> Integrated KFC Express
                 </span>
               </div>
             </footer>
@@ -470,42 +470,42 @@ export const MainDashboards = () => {
           <div className="flex-1 flex flex-col gap-6">
             {/* KPI Summary Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
+              <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#DCE4EF]/90 shadow-2xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#65748A]">
                     Total Users
                   </span>
-                  <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700">
+                  <div className="w-8 h-8 rounded-xl bg-[#EDF2F9] flex items-center justify-center text-slate-700">
                     <Users className="w-4 h-4" />
                   </div>
                 </div>
-                <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2 font-mono">
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#293749] mt-2 font-mono">
                   {totalUsersCount}
                 </div>
-                <p className="text-[11px] text-slate-500 font-medium mt-1">
+                <p className="text-[11px] text-[#65748A] font-medium mt-1">
                   Across all campus categories
                 </p>
               </div>
 
-              <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
+              <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#DCE4EF]/90 shadow-2xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#2F5488]">
                     Active Accounts
                   </span>
-                  <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-700">
+                  <div className="w-8 h-8 rounded-xl bg-[#EDF2F9] flex items-center justify-center text-[#2F5488]">
                     <UserCheck className="w-4 h-4" />
                   </div>
                 </div>
-                <div className="text-2xl sm:text-3xl font-extrabold text-[#1b4d3e] mt-2 font-mono">
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#355F97] mt-2 font-mono">
                   {activeUsersCount}
                 </div>
-                <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-medium mt-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <div className="flex items-center gap-1.5 text-[11px] text-[#2F5488] font-medium mt-1">
+                  <span className="w-2 h-2 rounded-full bg-[#4573AC] animate-pulse"></span>
                   <span>Authorized to login</span>
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
+              <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#DCE4EF]/90 shadow-2xs">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-amber-700">
                     Suspended
@@ -522,26 +522,26 @@ export const MainDashboards = () => {
                 </p>
               </div>
 
-              <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
+              <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#DCE4EF]/90 shadow-2xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#65748A]">
                     Roles Covered
                   </span>
-                  <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700">
+                  <div className="w-8 h-8 rounded-xl bg-[#EDF2F9] flex items-center justify-center text-slate-700">
                     <BadgeCheck className="w-4 h-4" />
                   </div>
                 </div>
-                <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2 font-mono">
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#293749] mt-2 font-mono">
                   {distinctRolesCount} / 8
                 </div>
-                <p className="text-[11px] text-slate-500 font-medium mt-1">
+                <p className="text-[11px] text-[#65748A] font-medium mt-1">
                   Hierarchical role templates
                 </p>
               </div>
             </div>
 
             {/* Controls Bar: Search, Role Filter, Status Filter, Add User */}
-            <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+            <div className="bg-white rounded-2xl p-4 border border-[#DCE4EF]/90 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
               {/* Search Field */}
               <div className="relative flex-1">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -550,7 +550,7 @@ export const MainDashboards = () => {
                   placeholder="Search by name, email, role, or room/badge..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-8 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-[#1b4d3e] bg-slate-50/50"
+                  className="w-full pl-9 pr-8 py-2 text-xs sm:text-sm rounded-xl border border-[#DCE4EF] focus:outline-none focus:ring-2 focus:ring-[#4573AC]/20 focus:border-[#355F97] bg-[#F5F7FA]/50"
                 />
                 {searchQuery && (
                   <button
@@ -568,7 +568,7 @@ export const MainDashboards = () => {
                 <select
                   value={roleFilter}
                   onChange={(e) => setRoleFilter(e.target.value)}
-                  className="px-3 py-2 text-xs font-semibold rounded-xl border border-slate-200 bg-white text-slate-700 focus:outline-none focus:border-[#1b4d3e] cursor-pointer"
+                  className="px-3 py-2 text-xs font-semibold rounded-xl border border-[#DCE4EF] bg-white text-slate-700 focus:outline-none focus:border-[#355F97] cursor-pointer"
                 >
                   <option value="All">All Roles ({totalUsersCount})</option>
                   {roleOptions.map((role) => (
@@ -582,7 +582,7 @@ export const MainDashboards = () => {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-3 py-2 text-xs font-semibold rounded-xl border border-slate-200 bg-white text-slate-700 focus:outline-none focus:border-[#1b4d3e] cursor-pointer"
+                  className="px-3 py-2 text-xs font-semibold rounded-xl border border-[#DCE4EF] bg-white text-slate-700 focus:outline-none focus:border-[#355F97] cursor-pointer"
                 >
                   <option value="All">All Status</option>
                   <option value="Active">Active Only ({activeUsersCount})</option>
@@ -592,7 +592,7 @@ export const MainDashboards = () => {
                 {/* Add User Button */}
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="inline-flex items-center gap-1.5 bg-[#1b4d3e] hover:bg-[#153e32] text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer hover:shadow-md ml-auto md:ml-0"
+                  className="inline-flex items-center gap-1.5 bg-[#355F97] hover:bg-[#2B4F80] text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer hover:shadow-md ml-auto md:ml-0"
                 >
                   <UserPlus className="w-4 h-4" />
                   <span>Add User</span>
@@ -601,10 +601,10 @@ export const MainDashboards = () => {
             </div>
 
             {/* Users Directory Table */}
-            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
+            <div className="bg-white rounded-2xl border border-[#DCE4EF]/90 shadow-2xs overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-mono font-bold uppercase tracking-wider">
+                  <thead className="bg-[#F5F7FA]/80 border-b border-[#DCE4EF] text-[#65748A] font-mono font-bold uppercase tracking-wider">
                     <tr>
                       <th className="py-3 px-4 sm:px-6">User Details</th>
                       <th className="py-3 px-4">Role</th>
@@ -617,10 +617,10 @@ export const MainDashboards = () => {
                   <tbody className="divide-y divide-slate-100 font-medium">
                     {filteredUsers.length === 0 ? (
                       <tr>
-                        <td colSpan="6" className="py-12 text-center text-slate-500">
+                        <td colSpan="6" className="py-12 text-center text-[#65748A]">
                           <Users className="w-10 h-10 mx-auto text-slate-300 mb-3" />
                           <p className="font-semibold text-sm text-slate-700">No campus users found</p>
-                          <p className="text-xs text-slate-500 mt-1">
+                          <p className="text-xs text-[#65748A] mt-1">
                             Try adjusting your search query or role filter.
                           </p>
                           {(searchQuery || roleFilter !== 'All' || statusFilter !== 'All') && (
@@ -630,7 +630,7 @@ export const MainDashboards = () => {
                                 setRoleFilter('All');
                                 setStatusFilter('All');
                               }}
-                              className="mt-3 px-3 py-1.5 bg-emerald-50 text-[#1b4d3e] rounded-lg text-xs font-bold hover:bg-emerald-100 transition-colors"
+                              className="mt-3 px-3 py-1.5 bg-[#EDF2F9] text-[#355F97] rounded-lg text-xs font-bold hover:bg-[#D5E4F8] transition-colors"
                             >
                               Reset Filters
                             </button>
@@ -645,7 +645,7 @@ export const MainDashboards = () => {
                         return (
                           <tr
                             key={user.id}
-                            className={`hover:bg-slate-50/60 transition-colors ${
+                            className={`hover:bg-[#F5F7FA]/60 transition-colors ${
                               isSuspended ? 'bg-red-50/20' : ''
                             }`}
                           >
@@ -655,20 +655,20 @@ export const MainDashboards = () => {
                                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs ${
                                   isSuspended
                                     ? 'bg-amber-100 text-amber-800'
-                                    : 'bg-[#1b4d3e] text-emerald-100'
+                                    : 'bg-[#355F97] text-[#D5E4F8]'
                                 }`}>
                                   {firstInitial}
                                 </div>
                                 <div className="min-w-0">
                                   <div className="flex items-center gap-2">
-                                    <span className="font-bold text-slate-900 truncate">
+                                    <span className="font-bold text-[#293749] truncate">
                                       {user.name}
                                     </span>
-                                    <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.2 rounded">
+                                    <span className="text-[10px] font-mono text-slate-400 bg-[#EDF2F9] px-1.5 py-0.2 rounded">
                                       {user.id}
                                     </span>
                                   </div>
-                                  <div className="text-[11px] text-slate-500 truncate flex items-center gap-1">
+                                  <div className="text-[11px] text-[#65748A] truncate flex items-center gap-1">
                                     <Mail className="w-3 h-3 text-slate-400" />
                                     <span>{user.email}</span>
                                   </div>
@@ -687,7 +687,7 @@ export const MainDashboards = () => {
                                   ? 'bg-amber-50 text-amber-900 border-amber-200'
                                   : user.role === 'Mess Incharge'
                                   ? 'bg-orange-50 text-orange-900 border-orange-200'
-                                  : 'bg-emerald-50 text-[#1b4d3e] border-emerald-200/80'
+                                  : 'bg-[#EDF2F9] text-[#355F97] border-[#D5E4F8]/80'
                               }`}>
                                 {user.role}
                               </span>
@@ -695,7 +695,7 @@ export const MainDashboards = () => {
 
                             {/* Campus Assignment / Badge */}
                             <td className="py-3.5 px-4 hidden md:table-cell whitespace-nowrap text-slate-600">
-                              <span className="text-xs bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md font-medium">
+                              <span className="text-xs bg-[#EDF2F9] text-slate-700 px-2.5 py-1 rounded-md font-medium">
                                 {user.badge || 'Campus Member'}
                               </span>
                             </td>
@@ -708,10 +708,10 @@ export const MainDashboards = () => {
                                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer border ${
                                   isSuspended
                                     ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
-                                    : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+                                    : 'bg-[#EDF2F9] text-[#2B4F80] border-[#D5E4F8] hover:bg-[#D5E4F8]'
                                 }`}
                               >
-                                <span className={`w-1.5 h-1.5 rounded-full ${isSuspended ? 'bg-red-500' : 'bg-emerald-500'}`}></span>
+                                <span className={`w-1.5 h-1.5 rounded-full ${isSuspended ? 'bg-red-500' : 'bg-[#4573AC]'}`}></span>
                                 <span>{user.status || 'Active'}</span>
                               </button>
                             </td>
@@ -728,7 +728,7 @@ export const MainDashboards = () => {
                                 <button
                                   onClick={() => handleLoginAs(user)}
                                   title={`Switch portal session to ${user.name} (${user.role})`}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-[#1b4d3e] text-[#1b4d3e] hover:text-white rounded-lg text-[11px] font-bold transition-all border border-emerald-200/80 cursor-pointer shadow-2xs"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#EDF2F9] hover:bg-[#355F97] text-[#355F97] hover:text-white rounded-lg text-[11px] font-bold transition-all border border-[#D5E4F8]/80 cursor-pointer shadow-2xs"
                                 >
                                   <span>Portal</span>
                                   <ExternalLink className="w-3 h-3" />
@@ -738,7 +738,7 @@ export const MainDashboards = () => {
                                 <button
                                   onClick={() => openEditModal(user)}
                                   title="Edit user details"
-                                  className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                                  className="p-1.5 text-[#65748A] hover:text-[#293749] hover:bg-[#EDF2F9] rounded-lg transition-colors cursor-pointer"
                                 >
                                   <Edit2 className="w-3.5 h-3.5" />
                                 </button>
@@ -762,7 +762,7 @@ export const MainDashboards = () => {
               </div>
 
               {/* Table footer with count info */}
-              <div className="bg-slate-50/70 px-4 sm:px-6 py-3 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+              <div className="bg-[#F5F7FA]/70 px-4 sm:px-6 py-3 border-t border-[#DCE4EF] flex items-center justify-between text-xs text-[#65748A]">
                 <span>
                   Showing <b>{filteredUsers.length}</b> of <b>{totalUsersCount}</b> registered campus accounts
                 </span>
@@ -777,7 +777,7 @@ export const MainDashboards = () => {
         {/* MODAL: ADD NEW USER */}
         {showAddModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 relative animate-in fade-in zoom-in-95 duration-150">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-[#DCE4EF] relative animate-in fade-in zoom-in-95 duration-150">
               <button
                 onClick={() => setShowAddModal(false)}
                 className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 p-1 rounded-lg"
@@ -786,12 +786,12 @@ export const MainDashboards = () => {
               </button>
 
               <div className="flex items-center gap-3 mb-5">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#1b4d3e] flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-[#EDF2F9] text-[#355F97] flex items-center justify-center">
                   <UserPlus className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900">Provision Campus User</h3>
-                  <p className="text-xs text-slate-500">Create a new account with customized role and location</p>
+                  <h3 className="text-lg font-bold text-[#293749]">Provision Campus User</h3>
+                  <p className="text-xs text-[#65748A]">Create a new account with customized role and location</p>
                 </div>
               </div>
 
@@ -806,7 +806,7 @@ export const MainDashboards = () => {
                     placeholder="e.g. Rahul Varma"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-[#1b4d3e]"
+                    className="w-full px-3 py-2 text-sm rounded-xl border border-[#DCE4EF] focus:outline-none focus:ring-2 focus:ring-[#4573AC]/20 focus:border-[#355F97]"
                   />
                 </div>
 
@@ -820,7 +820,7 @@ export const MainDashboards = () => {
                     placeholder="e.g. rahul.varma@demo.edu"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-[#1b4d3e]"
+                    className="w-full px-3 py-2 text-sm rounded-xl border border-[#DCE4EF] focus:outline-none focus:ring-2 focus:ring-[#4573AC]/20 focus:border-[#355F97]"
                   />
                 </div>
 
@@ -832,7 +832,7 @@ export const MainDashboards = () => {
                     <select
                       value={formData.role}
                       onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                      className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-[#1b4d3e] bg-white cursor-pointer"
+                      className="w-full px-3 py-2 text-sm rounded-xl border border-[#DCE4EF] focus:outline-none focus:border-[#355F97] bg-white cursor-pointer"
                     >
                       {roleOptions.map((role) => (
                         <option key={role} value={role}>
@@ -849,7 +849,7 @@ export const MainDashboards = () => {
                     <select
                       value={formData.status}
                       onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                      className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-[#1b4d3e] bg-white cursor-pointer"
+                      className="w-full px-3 py-2 text-sm rounded-xl border border-[#DCE4EF] focus:outline-none focus:border-[#355F97] bg-white cursor-pointer"
                     >
                       <option value="Active">Active</option>
                       <option value="Suspended">Suspended</option>
@@ -866,7 +866,7 @@ export const MainDashboards = () => {
                     placeholder="e.g. Room D-101 • Block D (Optional)"
                     value={formData.badge}
                     onChange={(e) => setFormData({ ...formData, badge: e.target.value })}
-                    className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-[#1b4d3e]"
+                    className="w-full px-3 py-2 text-sm rounded-xl border border-[#DCE4EF] focus:outline-none focus:ring-2 focus:ring-[#4573AC]/20 focus:border-[#355F97]"
                   />
                   <p className="text-[11px] text-slate-400 mt-1">
                     Leave blank to auto-generate default badge for the selected role.
@@ -877,13 +877,13 @@ export const MainDashboards = () => {
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors"
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-[#EDF2F9] transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl text-xs font-bold bg-[#1b4d3e] hover:bg-[#153e32] text-white transition-colors shadow-xs"
+                    className="px-5 py-2 rounded-xl text-xs font-bold bg-[#355F97] hover:bg-[#2B4F80] text-white transition-colors shadow-xs"
                   >
                     Create User
                   </button>
@@ -896,7 +896,7 @@ export const MainDashboards = () => {
         {/* MODAL: EDIT USER */}
         {editingUser && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 relative animate-in fade-in zoom-in-95 duration-150">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-[#DCE4EF] relative animate-in fade-in zoom-in-95 duration-150">
               <button
                 onClick={() => setEditingUser(null)}
                 className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 p-1 rounded-lg"
@@ -905,12 +905,12 @@ export const MainDashboards = () => {
               </button>
 
               <div className="flex items-center gap-3 mb-5">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#1b4d3e] flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-[#EDF2F9] text-[#355F97] flex items-center justify-center">
                   <Edit2 className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900">Edit User Details</h3>
-                  <p className="text-xs text-slate-500">Modifying profile for {editingUser.name}</p>
+                  <h3 className="text-lg font-bold text-[#293749]">Edit User Details</h3>
+                  <p className="text-xs text-[#65748A]">Modifying profile for {editingUser.name}</p>
                 </div>
               </div>
 
@@ -924,7 +924,7 @@ export const MainDashboards = () => {
                     required
                     value={editFormData.name}
                     onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                    className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-[#1b4d3e]"
+                    className="w-full px-3 py-2 text-sm rounded-xl border border-[#DCE4EF] focus:outline-none focus:ring-2 focus:ring-[#4573AC]/20 focus:border-[#355F97]"
                   />
                 </div>
 
@@ -937,7 +937,7 @@ export const MainDashboards = () => {
                     required
                     value={editFormData.email}
                     onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
-                    className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-[#1b4d3e]"
+                    className="w-full px-3 py-2 text-sm rounded-xl border border-[#DCE4EF] focus:outline-none focus:ring-2 focus:ring-[#4573AC]/20 focus:border-[#355F97]"
                   />
                 </div>
 
@@ -949,7 +949,7 @@ export const MainDashboards = () => {
                     <select
                       value={editFormData.role}
                       onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
-                      className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-[#1b4d3e] bg-white cursor-pointer"
+                      className="w-full px-3 py-2 text-sm rounded-xl border border-[#DCE4EF] focus:outline-none focus:border-[#355F97] bg-white cursor-pointer"
                     >
                       {roleOptions.map((role) => (
                         <option key={role} value={role}>
@@ -966,7 +966,7 @@ export const MainDashboards = () => {
                     <select
                       value={editFormData.status}
                       onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
-                      className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-[#1b4d3e] bg-white cursor-pointer"
+                      className="w-full px-3 py-2 text-sm rounded-xl border border-[#DCE4EF] focus:outline-none focus:border-[#355F97] bg-white cursor-pointer"
                     >
                       <option value="Active">Active</option>
                       <option value="Suspended">Suspended</option>
@@ -982,7 +982,7 @@ export const MainDashboards = () => {
                     type="text"
                     value={editFormData.badge}
                     onChange={(e) => setEditFormData({ ...editFormData, badge: e.target.value })}
-                    className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-[#1b4d3e]"
+                    className="w-full px-3 py-2 text-sm rounded-xl border border-[#DCE4EF] focus:outline-none focus:ring-2 focus:ring-[#4573AC]/20 focus:border-[#355F97]"
                   />
                 </div>
 
@@ -990,13 +990,13 @@ export const MainDashboards = () => {
                   <button
                     type="button"
                     onClick={() => setEditingUser(null)}
-                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors"
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-[#EDF2F9] transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl text-xs font-bold bg-[#1b4d3e] hover:bg-[#153e32] text-white transition-colors shadow-xs"
+                    className="px-5 py-2 rounded-xl text-xs font-bold bg-[#355F97] hover:bg-[#2B4F80] text-white transition-colors shadow-xs"
                   >
                     Save Changes
                   </button>
@@ -1009,15 +1009,15 @@ export const MainDashboards = () => {
         {/* MODAL: DELETE CONFIRMATION */}
         {deletingUser && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-            <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-200 relative animate-in fade-in zoom-in-95 duration-150">
+            <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-[#DCE4EF] relative animate-in fade-in zoom-in-95 duration-150">
               <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto mb-4">
                 <ShieldAlert className="w-6 h-6" />
               </div>
 
-              <h3 className="text-center text-lg font-bold text-slate-900">
+              <h3 className="text-center text-lg font-bold text-[#293749]">
                 Delete User Account?
               </h3>
-              <p className="text-center text-xs text-slate-500 mt-1 leading-relaxed">
+              <p className="text-center text-xs text-[#65748A] mt-1 leading-relaxed">
                 Are you sure you want to permanently remove <b>{deletingUser.name}</b> ({deletingUser.email})? This action cannot be undone.
               </p>
 
@@ -1025,7 +1025,7 @@ export const MainDashboards = () => {
                 <button
                   type="button"
                   onClick={() => setDeletingUser(null)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-[#EDF2F9] transition-colors"
                 >
                   Cancel
                 </button>
@@ -1044,7 +1044,7 @@ export const MainDashboards = () => {
         {/* MODAL: ROOM LEAD SELECTION MODAL (8 ROOMS) */}
         {showRoomLeadModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 relative animate-in fade-in zoom-in-95 duration-150">
+            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-[#DCE4EF] relative animate-in fade-in zoom-in-95 duration-150">
               <button
                 onClick={() => setShowRoomLeadModal(false)}
                 className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
@@ -1053,14 +1053,14 @@ export const MainDashboards = () => {
               </button>
 
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-[#1b4d3e] text-emerald-100 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-[#355F97] text-[#D5E4F8] flex items-center justify-center">
                   <BedDouble className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-extrabold text-slate-900">
+                  <h3 className="text-lg font-extrabold text-[#293749]">
                     Select Room Lead Portal (8 Rooms)
                   </h3>
-                  <p className="text-xs text-slate-500 font-medium">
+                  <p className="text-xs text-[#65748A] font-medium">
                     40 students across 8 rooms (5 members per room) • Blocks D & E
                   </p>
                 </div>
@@ -1075,11 +1075,11 @@ export const MainDashboards = () => {
                   return (
                     <div
                       key={lead.id || lead.email}
-                      className="p-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-emerald-50/50 hover:border-emerald-300 transition-all flex flex-col justify-between"
+                      className="p-3 rounded-xl border border-[#DCE4EF] bg-[#F5F7FA]/50 hover:bg-[#EDF2F9]/50 hover:border-[#A9C3E4] transition-all flex flex-col justify-between"
                     >
                       <div>
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-black text-slate-900">{roomTitle}</span>
+                          <span className="text-xs font-black text-[#293749]">{roomTitle}</span>
                           <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded ${
                             isBlockD ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
                           }`}>
@@ -1089,7 +1089,7 @@ export const MainDashboards = () => {
                         <p className="text-xs font-semibold text-slate-800 mt-1 truncate">
                           {lead.name}
                         </p>
-                        <p className="text-[10px] text-slate-500 font-mono truncate">
+                        <p className="text-[10px] text-[#65748A] font-mono truncate">
                           {lead.email}
                         </p>
                       </div>
@@ -1101,7 +1101,7 @@ export const MainDashboards = () => {
                           setShowRoomLeadModal(false);
                           navigate('/room-lead');
                         }}
-                        className="mt-2.5 w-full bg-[#1b4d3e] hover:bg-[#163f33] text-white text-xs font-bold py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+                        className="mt-2.5 w-full bg-[#355F97] hover:bg-[#2B4F80] text-white text-xs font-bold py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
                       >
                         <span>Launch Dashboard</span>
                         <ArrowRight className="w-3.5 h-3.5" />
@@ -1112,11 +1112,11 @@ export const MainDashboards = () => {
               </div>
 
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                <span className="text-slate-500 font-medium">All 8 Room Leads configured</span>
+                <span className="text-[#65748A] font-medium">All 8 Room Leads configured</span>
                 <button
                   type="button"
                   onClick={() => setShowRoomLeadModal(false)}
-                  className="px-4 py-1.5 rounded-lg font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                  className="px-4 py-1.5 rounded-lg font-bold text-slate-600 hover:bg-[#EDF2F9] cursor-pointer"
                 >
                   Close
                 </button>

@@ -8,8 +8,7 @@ import { Navbar } from '../components/Navbar';
 // Import the left-hand navigation sidebar component
 import { Sidebar } from '../components/Sidebar';
 
-// Import application context to access global state and action handlers
-import { useApp, STUDENT_ROSTER } from '../context/AppContext';
+import { useApp, authFetch } from '../context/AppContext';
 
 // Import icons from lucide-react for buttons, tabs, status indicators, and alerts
 import {
@@ -82,7 +81,8 @@ export const RoomLeadDashboard = () => {
     addToast,                          // Action to trigger toast notifications
     menu,                              // Dynamic menu from Mess Incharge
     floorMealSheets = [],              // Floor meal sheets confirmed by Mess Kitchen
-    blockConsolidatedSent              // Block Coordinator consolidation status
+    blockConsolidatedSent,             // Block Coordinator consolidation status
+    aiAnomalies = []                   // AI anomaly alerts for this scope
   } = useApp();
 
   const navigate = useNavigate();
@@ -116,36 +116,39 @@ export const RoomLeadDashboard = () => {
     return AVAILABLE_ROOMS_HIERARCHY.find((r) => r.roomNo === selectedRoomNo) || AVAILABLE_ROOMS_HIERARCHY[0];
   }, [selectedRoomNo]);
 
-  // Dynamic Room Members (Uses live context state for Room D-101, or scoped STUDENT_ROSTER for other rooms)
+  const [scopedRoomMembers, setScopedRoomMembers] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchMembers = async () => {
+      try {
+        const cleanRoom = selectedRoomNo.includes('Room') ? selectedRoomNo : `Room ${selectedRoomNo}`;
+        const res = await authFetch(`/api/rooms/${encodeURIComponent(cleanRoom)}/members`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.members) && isMounted) {
+            setScopedRoomMembers(data.members);
+          }
+        }
+      } catch (err) {}
+    };
+    fetchMembers();
+    return () => { isMounted = false; };
+  }, [selectedRoomNo]);
+
+  // Dynamic Room Members (Uses live MongoDB data for selected room, with fallback to context)
   const roomMembers = useMemo(() => {
-    if (selectedRoomNo === 'Room D-101') {
-      return contextRoomMembers;
-    }
-    const roster = STUDENT_ROSTER.filter((s) => s.room.includes(selectedRoomNo));
-    if (roster.length > 0) {
-      return roster.map((s, idx) => ({
-        id: idx + 1,
-        name: s.name + (idx === 0 ? ' (Lead)' : ''),
-        status: idx < 4 ? 'Submitted' : 'Pending',
-        time: idx < 4 ? '09:30 AM' : 'Awaiting',
-        choices: {
-          b: idx === 3 ? 'No' : 'Yes',
-          l: 'Yes',
-          s: idx === 2 ? 'No' : 'Yes',
-          d: 'Yes'
-        },
-        rollNo: s.rollNo,
-        note: idx === 3 ? 'Observing fast / Late dinner' : ''
-      }));
+    if (scopedRoomMembers && scopedRoomMembers.length > 0) {
+      return scopedRoomMembers;
     }
     return contextRoomMembers;
-  }, [selectedRoomNo, contextRoomMembers]);
+  }, [scopedRoomMembers, contextRoomMembers]);
 
   // State: Currently active tab in the Room Lead Portal
   const [activeTab, setActiveTab] = useState('Dashboard');
 
-  // State: Theme dark mode support (defaults to false for crisp clean campus design)
-  const [darkMode, setDarkMode] = useState(false);
+  // Single permanent light theme — dark mode removed.
+  const darkMode = false;
 
   // State: Controls visibility of Floor Incharge Notifications modal/drawer
   const [showNotificationDrawer, setShowNotificationDrawer] = useState(false);
@@ -369,7 +372,7 @@ export const RoomLeadDashboard = () => {
 
   return (
     // Top-level container with clean unified styling
-    <div className="min-h-screen flex flex-col font-sans bg-slate-50/80 text-slate-900">
+    <div className="min-h-screen flex flex-col font-sans bg-[#F5F7FA]/80 text-[#293749]">
       {/* 1. Shared Universal Navigation Bar */}
       <Navbar
         currentRole="Room Lead"
@@ -392,34 +395,49 @@ export const RoomLeadDashboard = () => {
         {/* Right Main Content Area */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
 
+          {(aiAnomalies || []).length > 0 && (
+            <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+              <span className="text-lg leading-none">⚠️</span>
+              <div>
+                <p className="text-sm font-bold text-amber-900">
+                  {aiAnomalies.length} AI anomaly alert{aiAnomalies.length !== 1 ? 's' : ''} detected
+                </p>
+                <p className="text-xs text-amber-800 mt-0.5">
+                  {aiAnomalies[0].title}
+                  {aiAnomalies[0].description || aiAnomalies[0].desc ? ` — ${aiAnomalies[0].description || aiAnomalies[0].desc}` : ''}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* TAB 1: MAIN DASHBOARD & CARE OVERVIEW */}
           {activeTab === 'Dashboard' && (
             <>
               {/* ROOM LEAD HERO HEADER */}
               <div
-                className="p-6 sm:p-7 rounded-3xl border border-slate-200/90 bg-gradient-to-br from-white via-slate-50/50 to-white shadow-sm transition-all duration-300 relative overflow-hidden"
+                className="p-6 sm:p-7 rounded-3xl border border-[#DCE4EF]/90 bg-gradient-to-br from-white via-slate-50/50 to-white shadow-sm transition-all duration-300 relative overflow-hidden"
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
                   {/* Left Column: Room & Lead Information */}
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-bold px-3 py-1 rounded-full border bg-slate-100 text-slate-800 border-slate-200 flex items-center gap-1.5 shadow-xs">
+                      <span className="text-xs font-bold px-3 py-1 rounded-full border bg-[#EDF2F9] text-slate-800 border-[#DCE4EF] flex items-center gap-1.5 shadow-xs">
                         <ShieldCheck className="w-3.5 h-3.5 text-slate-700" />
                         Room Lead Portal
                       </span>
 
                       {/* Dynamic Room Allocation Hierarchy Badge: 1B -> 2F -> Rooms (Checklist #11) */}
-                      <div className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full border bg-emerald-50 border-emerald-200 text-emerald-900 shadow-xs">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full border bg-[#EDF2F9] border-[#D5E4F8] text-[#243F66] shadow-xs">
                         <span>🏛️ {activeRoomHierarchy.block} (1B)</span>
-                        <span className="text-emerald-400">→</span>
+                        <span className="text-[#6E93C4]">→</span>
                         <span>🏢 {activeRoomHierarchy.floor} (2F)</span>
-                        <span className="text-emerald-400">→</span>
+                        <span className="text-[#6E93C4]">→</span>
                         <span className="font-bold underline">🚪 {activeRoomHierarchy.roomNo}</span>
                       </div>
 
                       {/* Quick Interactive Room Switcher (Checklist #11) */}
                       <div className="flex items-center gap-1.5 text-xs ml-1">
-                        <span className="text-slate-500 font-medium">Room Assignment:</span>
+                        <span className="text-[#65748A] font-medium">Room Assignment:</span>
                         <select
                           value={selectedRoomNo}
                           onChange={(e) => setSelectedRoomNo(e.target.value)}
@@ -435,7 +453,7 @@ export const RoomLeadDashboard = () => {
                       </div>
                     </div>
 
-                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#293749]">
                       {activeRoomHierarchy.roomNo} Care & Compliance Hub
                     </h1>
 
@@ -451,10 +469,10 @@ export const RoomLeadDashboard = () => {
                     <button
                       type="button"
                       onClick={() => setActiveTab('Incharge Alerts')}
-                      className="p-2.5 rounded-2xl border bg-white border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+                      className="p-2.5 rounded-2xl border bg-white border-[#DCE4EF] text-slate-700 hover:bg-[#F5F7FA] text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
                       title="Floor Incharge Notifications"
                     >
-                      <Bell className={`w-4 h-4 ${unreadNotifCount > 0 ? 'text-slate-900 animate-bounce' : 'text-slate-500'}`} />
+                      <Bell className={`w-4 h-4 ${unreadNotifCount > 0 ? 'text-[#293749] animate-bounce' : 'text-[#65748A]'}`} />
                       <span className="hidden sm:inline">Incharge Alerts</span>
                       {unreadNotifCount > 0 && (
                         <span className="ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-black bg-slate-900 text-white">
@@ -467,7 +485,7 @@ export const RoomLeadDashboard = () => {
                     <button
                       type="button"
                       onClick={() => setShowBroadcastModal(true)}
-                      className="text-xs font-bold px-4 py-2.5 rounded-2xl border bg-white hover:bg-slate-50 text-slate-700 border-slate-200 flex items-center gap-2 transition-all cursor-pointer shadow-xs"
+                      className="text-xs font-bold px-4 py-2.5 rounded-2xl border bg-white hover:bg-[#F5F7FA] text-slate-700 border-[#DCE4EF] flex items-center gap-2 transition-all cursor-pointer shadow-xs"
                     >
                       <Share2 className="w-4 h-4 text-slate-700" />
                       <span>Room Broadcast</span>
@@ -502,12 +520,12 @@ export const RoomLeadDashboard = () => {
                 }`}>
                   <div className="flex items-center gap-2.5">
                     {isEditingWindowActive ? (
-                      <span className="flex items-center gap-1.5 font-bold text-white bg-slate-900 dark:bg-slate-100 dark:text-slate-950 px-2.5 py-1 rounded-xl shadow-xs">
-                        <Unlock className="w-3.5 h-3.5 text-white dark:text-slate-950" />
+                      <span className="flex items-center gap-1.5 font-bold text-white bg-slate-900   px-2.5 py-1 rounded-xl shadow-xs">
+                        <Unlock className="w-3.5 h-3.5 text-white " />
                         Lead Editing Window: OPEN (Until 10:00 PM Cutoff)
                       </span>
                     ) : (
-                      <span className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 px-2.5 py-1 rounded-xl">
+                      <span className="flex items-center gap-1.5 font-bold text-slate-700  bg-[#EDF2F9]  border border-slate-300  px-2.5 py-1 rounded-xl">
                         <Lock className="w-3.5 h-3.5 text-slate-600" />
                         Editing Window: LOCKED (Past Cutoff for Kitchen Prep)
                       </span>
@@ -517,12 +535,12 @@ export const RoomLeadDashboard = () => {
                       <button
                         type="button"
                         onClick={handleGrantEmergencyExtension}
-                        className="font-bold text-xs text-slate-800 dark:text-slate-200 hover:underline cursor-pointer flex items-center gap-1"
+                        className="font-bold text-xs text-slate-800  hover:underline cursor-pointer flex items-center gap-1"
                       >
                         Request 15-Min Extension
                       </button>
                     ) : (
-                      <span className={`text-[11px] ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <span className={`text-[11px] ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                         You can edit or submit roommate meal selections anytime during this window.
                       </span>
                     )}
@@ -531,7 +549,7 @@ export const RoomLeadDashboard = () => {
 
                   <div className="flex items-center gap-1.5 font-mono font-bold">
                     <span className={`px-2 py-0.5 rounded-md border ${
-                      darkMode ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-slate-100 border-slate-300 text-slate-800'
+                      darkMode ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-[#EDF2F9] border-slate-300 text-slate-800'
                     }`}>
                       {String(timeLeft.hours).padStart(2, '0')}h : {String(timeLeft.minutes).padStart(2, '0')}m : {String(timeLeft.seconds).padStart(2, '0')}s
                     </span>
@@ -547,12 +565,12 @@ export const RoomLeadDashboard = () => {
                 <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs ${
                   darkMode
                     ? 'bg-slate-800/80 border-slate-700 text-slate-100'
-                    : 'bg-slate-100 border-slate-300 text-slate-900'
+                    : 'bg-[#EDF2F9] border-slate-300 text-[#293749]'
                 }`}>
                   <div className="flex items-start sm:items-center gap-3">
-                    <Bell className="w-5 h-5 text-slate-900 dark:text-white shrink-0 mt-0.5 sm:mt-0 animate-bounce" />
+                    <Bell className="w-5 h-5 text-[#293749]  shrink-0 mt-0.5 sm:mt-0 animate-bounce" />
                     <div>
-                      <p className="font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white">
+                      <p className="font-bold text-xs uppercase tracking-wider text-[#293749] ">
                         New Reminder from Floor 2 Incharge (Prof. Sharma)
                       </p>
                       <p className="text-xs mt-0.5">
@@ -565,7 +583,7 @@ export const RoomLeadDashboard = () => {
                     <button
                       type="button"
                       onClick={() => markRoomLeadNotificationRead(roomLeadNotifications[0]?.id)}
-                      className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white text-white font-bold px-3.5 py-1.5 rounded-xl text-xs transition-all cursor-pointer shadow-xs active:scale-95"
+                      className="bg-slate-900 hover:bg-slate-800    text-white font-bold px-3.5 py-1.5 rounded-xl text-xs transition-all cursor-pointer shadow-xs active:scale-95"
                     >
                       Acknowledge & Mark Read
                     </button>
@@ -575,7 +593,7 @@ export const RoomLeadDashboard = () => {
                       className={`px-3 py-1.5 rounded-xl border text-xs font-semibold cursor-pointer shadow-xs transition-all ${
                         darkMode
                           ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300'
-                          : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
+                          : 'bg-white hover:bg-[#F5F7FA] border-[#DCE4EF] text-slate-700'
                       }`}
                       title="View Incharge Alerts Tab"
                     >
@@ -592,19 +610,19 @@ export const RoomLeadDashboard = () => {
                 <div
                   onClick={() => setActiveTab('Room Members')}
                   className={`p-5 rounded-2xl border shadow-sm cursor-pointer transition-all hover:scale-[1.01] ${
-                    darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'
+                    darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#DCE4EF]/90'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <span className={`text-xs font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <span className={`text-xs font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                       Room Members
                     </span>
-                    <span className={`p-2 rounded-xl ${darkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'}`}>
+                    <span className={`p-2 rounded-xl ${darkMode ? 'bg-slate-800 text-slate-300' : 'bg-[#EDF2F9] text-slate-700'}`}>
                       <Users className="w-4 h-4" />
                     </span>
                   </div>
                   <p className="text-2xl font-black">{totalMembers} Students</p>
-                  <p className={`text-xs mt-1 font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <p className={`text-xs mt-1 font-medium ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                     Assigned to Room D-101 →
                   </p>
                 </div>
@@ -613,24 +631,24 @@ export const RoomLeadDashboard = () => {
                 <div
                   onClick={() => setActiveTab('Room Members')}
                   className={`p-5 rounded-2xl border shadow-sm cursor-pointer transition-all hover:scale-[1.01] ${
-                    darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'
+                    darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#DCE4EF]/90'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <span className={`text-xs font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <span className={`text-xs font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                       Orders Submitted
                     </span>
-                    <span className={`p-2 rounded-xl ${darkMode ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-800'}`}>
+                    <span className={`p-2 rounded-xl ${darkMode ? 'bg-slate-800 text-slate-200' : 'bg-[#EDF2F9] text-slate-800'}`}>
                       <CheckCircle2 className="w-4 h-4" />
                     </span>
                   </div>
-                  <p className={`text-2xl font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  <p className={`text-2xl font-black ${darkMode ? 'text-white' : 'text-[#293749]'}`}>
                     {submittedCount}{' '}
-                    <span className={`text-sm font-normal ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                    <span className={`text-sm font-normal ${darkMode ? 'text-[#65748A]' : 'text-slate-400'}`}>
                       / {totalMembers} Completed
                     </span>
                   </p>
-                  <p className={`text-xs font-semibold mt-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <p className={`text-xs font-semibold mt-1 ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                     {submittedCount} verified orders
                   </p>
                 </div>
@@ -639,47 +657,47 @@ export const RoomLeadDashboard = () => {
                 <div
                   onClick={() => setActiveTab('Room Members')}
                   className={`p-5 rounded-2xl border shadow-sm cursor-pointer transition-all hover:scale-[1.01] ${
-                    darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'
+                    darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#DCE4EF]/90'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <span className={`text-xs font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <span className={`text-xs font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                       Pending Roommates
                     </span>
-                    <span className={`p-2 rounded-xl ${darkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'}`}>
+                    <span className={`p-2 rounded-xl ${darkMode ? 'bg-slate-800 text-slate-300' : 'bg-[#EDF2F9] text-slate-700'}`}>
                       <AlertCircle className="w-4 h-4" />
                     </span>
                   </div>
-                  <p className={`text-2xl font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  <p className={`text-2xl font-black ${darkMode ? 'text-white' : 'text-[#293749]'}`}>
                     {pendingCount}{' '}
-                    <span className={`text-sm font-normal ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                    <span className={`text-sm font-normal ${darkMode ? 'text-[#65748A]' : 'text-slate-400'}`}>
                       Awaiting Input
                     </span>
                   </p>
-                  <p className={`text-xs font-semibold mt-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <p className={`text-xs font-semibold mt-1 ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                     {pendingCount > 0 ? 'Action required by lead' : 'All 5 clear'}
                   </p>
                 </div>
 
                 {/* Card 4: Compliance Rate */}
                 <div className={`p-5 rounded-2xl border shadow-sm ${
-                  darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'
+                  darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#DCE4EF]/90'
                 }`}>
                   <div className="flex items-center justify-between mb-3">
-                    <span className={`text-xs font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <span className={`text-xs font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                       Compliance Rate
                     </span>
-                    <span className={`text-xs font-bold font-mono ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                    <span className={`text-xs font-bold font-mono ${darkMode ? 'text-white' : 'text-[#293749]'}`}>
                       {submissionRate}%
                     </span>
                   </div>
-                  <div className={`w-full rounded-full h-2 overflow-hidden mt-2 ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                  <div className={`w-full rounded-full h-2 overflow-hidden mt-2 ${darkMode ? 'bg-slate-800' : 'bg-[#EDF2F9]'}`}>
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${darkMode ? 'bg-white' : 'bg-slate-900'}`}
                       style={{ width: `${submissionRate}%` }}
                     ></div>
                   </div>
-                  <p className={`text-xs mt-2 font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <p className={`text-xs mt-2 font-medium ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                     Floor 2 minimum quota: 60%
                   </p>
                 </div>
@@ -691,63 +709,63 @@ export const RoomLeadDashboard = () => {
                 <div
                   onClick={() => setActiveTab('Room Members')}
                   className={`p-4 rounded-2xl border cursor-pointer transition-all hover:scale-[1.01] flex items-center justify-between shadow-xs ${
-                    darkMode ? 'bg-slate-900 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-200 hover:border-slate-300'
+                    darkMode ? 'bg-slate-900 border-slate-800 hover:border-slate-700' : 'bg-white border-[#DCE4EF] hover:border-slate-300'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 flex items-center justify-center font-bold">
+                    <div className="w-10 h-10 rounded-xl bg-[#EDF2F9]  text-slate-800  flex items-center justify-center font-bold">
                       <Users className="w-5 h-5" />
                     </div>
                     <div>
                       <h4 className="font-bold text-sm">Room Members Roster</h4>
-                      <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                         {pendingCount > 0 ? `${pendingCount} pending order to assist` : 'All 5 orders verified'}
                       </p>
                     </div>
                   </div>
-                  <span className="text-xs font-bold text-slate-900 dark:text-white">View Table →</span>
+                  <span className="text-xs font-bold text-[#293749] ">View Table →</span>
                 </div>
 
                 {/* Shortcut 2 */}
                 <div
                   onClick={() => setActiveTab('Incharge Alerts')}
                   className={`p-4 rounded-2xl border cursor-pointer transition-all hover:scale-[1.01] flex items-center justify-between shadow-xs ${
-                    darkMode ? 'bg-slate-900 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-200 hover:border-slate-300'
+                    darkMode ? 'bg-slate-900 border-slate-800 hover:border-slate-700' : 'bg-white border-[#DCE4EF] hover:border-slate-300'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 flex items-center justify-center font-bold">
+                    <div className="w-10 h-10 rounded-xl bg-[#EDF2F9]  text-slate-800  flex items-center justify-center font-bold">
                       <Bell className="w-5 h-5" />
                     </div>
                     <div>
                       <h4 className="font-bold text-sm">Floor Incharge Notices</h4>
-                      <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                         {unreadNotifCount} unread reminders from Prof. Sharma
                       </p>
                     </div>
                   </div>
-                  <span className="text-xs font-bold text-slate-900 dark:text-white">Open Alerts →</span>
+                  <span className="text-xs font-bold text-[#293749] ">Open Alerts →</span>
                 </div>
 
                 {/* Shortcut 3 */}
                 <div
                   onClick={() => setActiveTab('Kitchen Requisition')}
                   className={`p-4 rounded-2xl border cursor-pointer transition-all hover:scale-[1.01] flex items-center justify-between shadow-xs ${
-                    darkMode ? 'bg-slate-900 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-200 hover:border-slate-300'
+                    darkMode ? 'bg-slate-900 border-slate-800 hover:border-slate-700' : 'bg-white border-[#DCE4EF] hover:border-slate-300'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center font-bold">
+                    <div className="w-10 h-10 rounded-xl bg-[#EDF2F9]  text-slate-700  flex items-center justify-center font-bold">
                       <UtensilsCrossed className="w-5 h-5" />
                     </div>
                     <div>
                       <h4 className="font-bold text-sm">Kitchen Demand Requisition</h4>
-                      <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                         Aggregated room meal totals for tomorrow
                       </p>
                     </div>
                   </div>
-                  <span className="text-xs font-bold text-slate-900 dark:text-white">View Meals →</span>
+                  <span className="text-xs font-bold text-[#293749] ">View Meals →</span>
                 </div>
               </div>
 
@@ -757,17 +775,17 @@ export const RoomLeadDashboard = () => {
                 {/* Submission Breakdown Donut Chart (Strictly 2 Colors) */}
                 <div
                   className={`p-6 rounded-3xl border shadow-sm flex flex-col justify-between ${
-                    darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'
+                    darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#DCE4EF]/90'
                   }`}
                 >
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <h3 className="font-bold text-base sm:text-lg flex items-center gap-2">
-                        <ShieldCheck className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+                        <ShieldCheck className="w-5 h-5 text-slate-700 " />
                         Room D-101 Submission Status
                       </h3>
                     </div>
-                    <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                       Verified meal submissions vs pending roommates
                     </p>
                   </div>
@@ -806,7 +824,7 @@ export const RoomLeadDashboard = () => {
                     darkMode ? 'border-slate-800 text-slate-400' : 'border-slate-100 text-slate-600'
                   }`}>
                     <div className="flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-full bg-slate-900 dark:bg-white"></span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-slate-900 "></span>
                       <span>Submitted: <strong>{submittedCount}</strong></span>
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -819,24 +837,24 @@ export const RoomLeadDashboard = () => {
                 {/* Aggregated Room Meal Totals Bento Card */}
                 <div
                   className={`lg:col-span-2 p-6 rounded-3xl border shadow-sm flex flex-col justify-between ${
-                    darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'
+                    darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#DCE4EF]/90'
                   }`}
                 >
                   <div>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-100 ">
                       <div>
                         <h3 className="font-bold text-base sm:text-lg flex items-center gap-2">
-                          <Utensils className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+                          <Utensils className="w-5 h-5 text-slate-700 " />
                           Tomorrow's Room D-101 Kitchen Requisition
                         </h3>
-                        <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                        <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                           Total number of meals our room has requested from the hostel mess kitchen.
                         </p>
                       </div>
                       <button
                         onClick={() => setActiveTab('Kitchen Requisition')}
                         className={`text-xs font-bold px-3 py-1 rounded-full border cursor-pointer transition-all ${
-                          darkMode ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700' : 'bg-slate-100 text-slate-800 border-slate-300 hover:bg-slate-200'
+                          darkMode ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700' : 'bg-[#EDF2F9] text-slate-800 border-slate-300 hover:bg-slate-200'
                         }`}
                       >
                         Full Details →
@@ -851,25 +869,25 @@ export const RoomLeadDashboard = () => {
                           <div
                             key={item.meal}
                             className={`p-4 rounded-2xl border transition-all ${
-                              darkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-200/80'
+                              darkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-[#F5F7FA] border-[#DCE4EF]/80'
                             }`}
                           >
                             <div className="flex items-center justify-between mb-2">
                               <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                                darkMode ? 'text-slate-400' : 'text-slate-500'
+                                darkMode ? 'text-slate-400' : 'text-[#65748A]'
                               }`}>
                                 {item.meal}
                               </span>
-                              <Icon className="w-4 h-4 text-slate-700 dark:text-slate-300" />
+                              <Icon className="w-4 h-4 text-slate-700 " />
                             </div>
                             <p className="text-xl font-black">
                               {item.count}{' '}
-                              <span className={`text-xs font-normal ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                              <span className={`text-xs font-normal ${darkMode ? 'text-[#65748A]' : 'text-slate-400'}`}>
                                 / {totalMembers}
                               </span>
                             </p>
                             <p className={`text-[11px] font-medium mt-1 truncate ${
-                              darkMode ? 'text-slate-400' : 'text-slate-500'
+                              darkMode ? 'text-slate-400' : 'text-[#65748A]'
                             }`}>
                               {item.menuItem}
                             </p>
@@ -881,13 +899,13 @@ export const RoomLeadDashboard = () => {
 
                   {/* Kitchen Notification Subtext */}
                   <div className={`mt-5 pt-3 border-t text-xs flex items-center justify-between ${
-                    darkMode ? 'border-slate-800 text-slate-400' : 'border-slate-100 text-slate-500'
+                    darkMode ? 'border-slate-800 text-slate-400' : 'border-slate-100 text-[#65748A]'
                   }`}>
                     <span className="flex items-center gap-1.5">
                       <Info className="w-3.5 h-3.5 text-slate-400" />
                       Special diets or allergy notes are passed directly to the Mess Incharge.
                     </span>
-                    <span className="font-bold text-slate-700 dark:text-slate-300">
+                    <span className="font-bold text-slate-700 ">
                       Hostel Block D
                     </span>
                   </div>
@@ -899,24 +917,24 @@ export const RoomLeadDashboard = () => {
           {/* TAB 2: ROOM MEMBERS & FOOD SUBMISSIONS MANAGER */}
           {activeTab === 'Room Members' && (
             <section
-              className="p-6 rounded-3xl border border-slate-200/90 bg-white shadow-sm transition-all duration-300"
+              className="p-6 rounded-3xl border border-[#DCE4EF]/90 bg-white shadow-sm transition-all duration-300"
             >
               {/* Header with Title and Search/Filters/Leave Actions */}
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-100">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#EDF2F9] text-[#2B4F80] border border-[#D5E4F8]">
                       🏛️ {activeRoomHierarchy.block} (1B) → 🏢 {activeRoomHierarchy.floor} (2F) → 🚪 {activeRoomHierarchy.roomNo}
                     </span>
-                    <span className="text-[11px] font-semibold text-slate-500">
+                    <span className="text-[11px] font-semibold text-[#65748A]">
                       Lead: {currentUser?.name || 'Alex Rivers'}
                     </span>
                   </div>
-                  <h2 className="text-lg font-black tracking-tight flex items-center gap-2 text-slate-900">
+                  <h2 className="text-lg font-black tracking-tight flex items-center gap-2 text-[#293749]">
                     <Users className="w-5 h-5 text-slate-700" />
                     {activeRoomHierarchy.roomNo} Members & Tomorrow's Food Requirements
                   </h2>
-                  <p className="text-xs mt-0.5 text-slate-500">
+                  <p className="text-xs mt-0.5 text-[#65748A]">
                     View each roommate's breakfast, lunch, snacks, and dinner selections. Assist or edit during the active window.
                   </p>
                 </div>
@@ -930,7 +948,7 @@ export const RoomLeadDashboard = () => {
                       placeholder="Search member..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-slate-900"
+                      className="pl-8 pr-3 py-1.5 rounded-xl border border-[#DCE4EF] bg-[#F5F7FA] text-[#293749] text-xs focus:outline-none focus:ring-2 focus:ring-slate-900"
                     />
                   </div>
 
@@ -944,7 +962,7 @@ export const RoomLeadDashboard = () => {
                         className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all ${
                           memberFilter === f
                             ? 'bg-slate-900 text-white shadow-xs font-bold'
-                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            : 'bg-[#EDF2F9] text-slate-600 hover:bg-slate-200'
                         }`}
                       >
                         {f}
@@ -967,7 +985,7 @@ export const RoomLeadDashboard = () => {
                   <button
                     type="button"
                     onClick={() => setShowBroadcastModal(true)}
-                    className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    className="px-3 py-1.5 rounded-xl border border-[#DCE4EF] bg-white text-slate-700 hover:bg-[#F5F7FA] text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
                   >
                     <Share2 className="w-3.5 h-3.5 text-slate-700" />
                     <span>WhatsApp Nudge</span>
@@ -1011,7 +1029,7 @@ export const RoomLeadDashboard = () => {
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs sm:text-sm">
                   <thead>
-                    <tr className="border-b border-slate-200 font-bold uppercase text-[10px] tracking-wider text-slate-500">
+                    <tr className="border-b border-[#DCE4EF] font-bold uppercase text-[10px] tracking-wider text-[#65748A]">
                       <th className="pb-3.5 pl-2">Member</th>
                       <th className="pb-3.5">Status</th>
                       <th className="pb-3.5 text-center">Breakfast</th>
@@ -1039,24 +1057,24 @@ export const RoomLeadDashboard = () => {
                           <tr
                             key={member.id}
                             className={`transition-colors ${
-                              isPending ? 'bg-slate-50/70' : ''
-                            } hover:bg-slate-50/80`}
+                              isPending ? 'bg-[#F5F7FA]/70' : ''
+                            } hover:bg-[#F5F7FA]/80`}
                           >
                             {/* Member Name and Bed (Checklist #11 & Fix Invisible White Text) */}
                             <td className="py-4 pl-2 font-bold flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 bg-slate-100 text-slate-800 border border-slate-200">
+                              <div className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 bg-[#EDF2F9] text-slate-800 border border-[#DCE4EF]">
                                 {member.name.charAt(0)}
                               </div>
                               <div>
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-slate-900 font-bold text-sm tracking-tight">{member.name}</span>
+                                  <span className="text-[#293749] font-bold text-sm tracking-tight">{member.name}</span>
                                   {(member.name.includes('(You)') || member.name.includes('(Lead)')) && (
                                     <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-slate-900 text-white">
                                       Lead
                                     </span>
                                   )}
                                 </div>
-                                <span className="text-[11px] block font-mono text-slate-500">
+                                <span className="text-[11px] block font-mono text-[#65748A]">
                                   Bed {member.id} • {activeRoomHierarchy.roomNo}
                                 </span>
                               </div>
@@ -1071,8 +1089,8 @@ export const RoomLeadDashboard = () => {
                                 </span>
                               )}
                               {isPending && (
-                                <span className="inline-flex items-center gap-1 font-bold text-xs px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 border border-slate-300">
-                                  <AlertCircle className="w-3.5 h-3.5 text-slate-500" />
+                                <span className="inline-flex items-center gap-1 font-bold text-xs px-2.5 py-1 rounded-xl bg-[#EDF2F9] text-slate-700 border border-slate-300">
+                                  <AlertCircle className="w-3.5 h-3.5 text-[#65748A]" />
                                   Pending
                                 </span>
                               )}
@@ -1091,7 +1109,7 @@ export const RoomLeadDashboard = () => {
                                   type="button"
                                   onClick={() => handleToggleQuickMeal(member, 'b')}
                                   disabled={!isEditingWindowActive || isOnLeave}
-                                  className="font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1 rounded-xl shadow-xs inline-flex items-center gap-1 cursor-pointer transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="font-bold text-xs text-white bg-[#355F97] hover:bg-[#2F5488] px-2.5 py-1 rounded-xl shadow-xs inline-flex items-center gap-1 cursor-pointer transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                                   title="Click to toggle Skip"
                                 >
                                   <Check className="w-3 h-3" /> Eat
@@ -1126,7 +1144,7 @@ export const RoomLeadDashboard = () => {
                                   type="button"
                                   onClick={() => handleToggleQuickMeal(member, 'l')}
                                   disabled={!isEditingWindowActive || isOnLeave}
-                                  className="font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1 rounded-xl shadow-xs inline-flex items-center gap-1 cursor-pointer transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="font-bold text-xs text-white bg-[#355F97] hover:bg-[#2F5488] px-2.5 py-1 rounded-xl shadow-xs inline-flex items-center gap-1 cursor-pointer transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                                   title="Click to toggle Skip"
                                 >
                                   <Check className="w-3 h-3" /> Eat
@@ -1161,7 +1179,7 @@ export const RoomLeadDashboard = () => {
                                   type="button"
                                   onClick={() => handleToggleQuickMeal(member, 's')}
                                   disabled={!isEditingWindowActive || isOnLeave}
-                                  className="font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1 rounded-xl shadow-xs inline-flex items-center gap-1 cursor-pointer transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="font-bold text-xs text-white bg-[#355F97] hover:bg-[#2F5488] px-2.5 py-1 rounded-xl shadow-xs inline-flex items-center gap-1 cursor-pointer transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                                   title="Click to toggle Skip"
                                 >
                                   <Check className="w-3 h-3" /> Eat
@@ -1196,7 +1214,7 @@ export const RoomLeadDashboard = () => {
                                   type="button"
                                   onClick={() => handleToggleQuickMeal(member, 'd')}
                                   disabled={!isEditingWindowActive || isOnLeave}
-                                  className="font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1 rounded-xl shadow-xs inline-flex items-center gap-1 cursor-pointer transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="font-bold text-xs text-white bg-[#355F97] hover:bg-[#2F5488] px-2.5 py-1 rounded-xl shadow-xs inline-flex items-center gap-1 cursor-pointer transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                                   title="Click to toggle Skip"
                                 >
                                   <Check className="w-3 h-3" /> Eat
@@ -1235,7 +1253,7 @@ export const RoomLeadDashboard = () => {
                                 </span>
                               )}
                               {member.note && (
-                                <p className="text-[10px] text-slate-500 font-medium truncate max-w-[140px] mt-0.5">
+                                <p className="text-[10px] text-[#65748A] font-medium truncate max-w-[140px] mt-0.5">
                                   {member.note}
                                 </p>
                               )}
@@ -1251,7 +1269,7 @@ export const RoomLeadDashboard = () => {
                                   disabled={!isEditingWindowActive}
                                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs ${
                                     !isEditingWindowActive
-                                      ? 'opacity-50 cursor-not-allowed bg-slate-100 border border-slate-200 text-slate-400'
+                                      ? 'opacity-50 cursor-not-allowed bg-[#EDF2F9] border border-[#DCE4EF] text-slate-400'
                                       : 'bg-slate-900 hover:bg-slate-800 text-white cursor-pointer active:scale-95'
                                   }`}
                                   title={isEditingWindowActive ? 'Open Assisted Order Form' : 'Editing Locked after Cutoff'}
@@ -1283,8 +1301,8 @@ export const RoomLeadDashboard = () => {
                                   onClick={() => (isOnLeave ? handleRestoreFromLeave(member) : markMemberOnLeave(member.id))}
                                   className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 border shadow-xs ${
                                     isOnLeave
-                                      ? 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100'
-                                      : 'bg-white border-slate-200 text-slate-700 hover:bg-amber-50 hover:border-amber-200 hover:text-amber-800'
+                                      ? 'bg-[#EDF2F9] border-[#A9C3E4] text-[#2B4F80] hover:bg-[#D5E4F8]'
+                                      : 'bg-white border-[#DCE4EF] text-slate-700 hover:bg-amber-50 hover:border-amber-200 hover:text-amber-800'
                                   }`}
                                   title={isOnLeave ? 'Restore to hostel mess roster' : 'Mark as On Leave / Home Visit'}
                                 >
@@ -1308,16 +1326,16 @@ export const RoomLeadDashboard = () => {
             <div className="space-y-6">
               {/* Header Box */}
               <div className={`p-6 rounded-3xl border shadow-sm ${
-                darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'
+                darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#DCE4EF]/90'
               }`}>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 ">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 flex items-center justify-center font-bold">
+                    <div className="w-12 h-12 rounded-2xl bg-[#EDF2F9]  text-slate-800  flex items-center justify-center font-bold">
                       <Bell className="w-6 h-6" />
                     </div>
                     <div>
                       <h2 className="text-lg font-black tracking-tight">Floor Incharge Alerts & Notifications</h2>
-                      <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                         Direct communication channel between Floor Incharge (Prof. Sharma) and Room D-101 Lead.
                       </p>
                     </div>
@@ -1327,16 +1345,16 @@ export const RoomLeadDashboard = () => {
                     <button
                       type="button"
                       onClick={markAllRoomLeadNotificationsRead}
-                      className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white text-white text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 flex items-center gap-1.5"
+                      className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800    text-white text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 flex items-center gap-1.5"
                     >
-                      <CheckCheck className="w-3.5 h-3.5 text-slate-300 dark:text-slate-700" />
+                      <CheckCheck className="w-3.5 h-3.5 text-slate-300 " />
                       <span>Mark All Acknowledged</span>
                     </button>
                     <button
                       type="button"
                       onClick={clearRoomLeadNotifications}
                       className={`px-3 py-1.5 rounded-xl border text-xs font-semibold cursor-pointer ${
-                        darkMode ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
+                        darkMode ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-[#DCE4EF] text-slate-600 hover:bg-[#EDF2F9]'
                       }`}
                     >
                       Clear History
@@ -1350,7 +1368,7 @@ export const RoomLeadDashboard = () => {
                     <div className="text-center py-12">
                       <CheckCircle2 className="w-12 h-12 text-slate-400 mx-auto mb-2 opacity-70" />
                       <h3 className="font-bold text-sm">Inbox is all clear!</h3>
-                      <p className={`text-xs mt-1 max-w-sm mx-auto ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <p className={`text-xs mt-1 max-w-sm mx-auto ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                         No pending reminders from Floor Incharge. All notices sent to Room D-101 will appear here.
                       </p>
                     </div>
@@ -1371,10 +1389,10 @@ export const RoomLeadDashboard = () => {
                               : !notif.read
                               ? darkMode
                                 ? 'bg-slate-800/80 border-slate-700 shadow-xs'
-                                : 'bg-slate-100 border-slate-300 shadow-xs'
+                                : 'bg-[#EDF2F9] border-slate-300 shadow-xs'
                               : darkMode
                               ? 'bg-slate-800/40 border-slate-700/80 text-slate-300'
-                              : 'bg-white border-slate-200 text-slate-800'
+                              : 'bg-white border-[#DCE4EF] text-slate-800'
                           }`}
                         >
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
@@ -1385,7 +1403,7 @@ export const RoomLeadDashboard = () => {
                                 </span>
                               )}
                               {isBlock && (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white border border-emerald-500">
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#355F97] text-white border border-[#4573AC]">
                                   🏢 Block Coordinator
                                 </span>
                               )}
@@ -1395,7 +1413,7 @@ export const RoomLeadDashboard = () => {
                                 </span>
                               )}
                               {!isPrincipal && !isBlock && !isKitchen && (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950">
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-900 text-white  ">
                                   👨‍🏫 Floor Incharge
                                 </span>
                               )}
@@ -1404,7 +1422,7 @@ export const RoomLeadDashboard = () => {
                                   Unread
                                 </span>
                               )}
-                              <span className="font-bold text-sm text-slate-900 dark:text-white">
+                              <span className="font-bold text-sm text-[#293749] ">
                                 {notif.title}
                               </span>
                             </div>
@@ -1418,10 +1436,10 @@ export const RoomLeadDashboard = () => {
                           </p>
 
                           <div className={`mt-3 pt-2.5 border-t flex flex-wrap items-center justify-between gap-2 text-xs ${
-                            darkMode ? 'border-slate-700/60' : 'border-slate-200/80'
+                            darkMode ? 'border-slate-700/60' : 'border-[#DCE4EF]/80'
                           }`}>
-                            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-[11px]">
-                              <span>Dispatched by: <strong className="text-slate-800 dark:text-slate-200">{notif.sender || 'Prof. Sharma'}</strong></span>
+                            <div className="flex items-center gap-2 text-[#65748A]  text-[11px]">
+                              <span>Dispatched by: <strong className="text-slate-800 ">{notif.sender || 'Prof. Sharma'}</strong></span>
                               <span>•</span>
                               <span>Target: <strong>Room D-101</strong></span>
                             </div>
@@ -1431,14 +1449,14 @@ export const RoomLeadDashboard = () => {
                                 <button
                                   type="button"
                                   onClick={() => markRoomLeadNotificationRead(notif.id)}
-                                  className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white text-white font-bold px-3 py-1 rounded-xl text-xs flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
+                                  className="bg-slate-900 hover:bg-slate-800    text-white font-bold px-3 py-1 rounded-xl text-xs flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
                                 >
                                   <Check className="w-3.5 h-3.5" />
                                   <span>Acknowledge Notice</span>
                                 </button>
                               ) : (
-                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
+                                <span className="text-xs font-bold text-slate-700  flex items-center gap-1">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-slate-600 " />
                                   Acknowledged by Lead
                                 </span>
                               )}
@@ -1451,18 +1469,18 @@ export const RoomLeadDashboard = () => {
                 </div>
 
                 {/* Quick Reply to Incharge Box with Target Selector */}
-                <form onSubmit={handleSendQuickReply} className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800">
+                <form onSubmit={handleSendQuickReply} className="mt-6 pt-5 border-t border-slate-100 ">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    <label className="block text-xs font-bold text-slate-700 ">
                       Send Direct Response / Communication
                     </label>
                     <div className="flex items-center gap-2 text-xs font-semibold">
-                      <span className="text-slate-500 text-[11px]">Recipient:</span>
+                      <span className="text-[#65748A] text-[11px]">Recipient:</span>
                       <select
                         value={replyTarget}
                         onChange={(e) => setReplyTarget(e.target.value)}
                         className={`text-xs px-2.5 py-1 rounded-lg border font-semibold focus:outline-none cursor-pointer ${
-                          darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-100 border-slate-200 text-slate-800'
+                          darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-[#EDF2F9] border-[#DCE4EF] text-slate-800'
                         }`}
                       >
                         <option value="Floor Incharge (Prof. Sharma)">Floor Incharge (Prof. Sharma)</option>
@@ -1479,13 +1497,13 @@ export const RoomLeadDashboard = () => {
                       placeholder={`e.g. Verified with Room D-101 members, requirements locked!`}
                       value={quickReplyText}
                       onChange={(e) => setQuickReplyText(e.target.value)}
-                      className={`flex-1 p-2.5 rounded-xl border text-xs focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white ${
-                        darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                      className={`flex-1 p-2.5 rounded-xl border text-xs focus:outline-none focus:ring-2 focus:ring-slate-900  ${
+                        darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-[#F5F7FA] border-[#DCE4EF] text-[#293749]'
                       }`}
                     />
                     <button
                       type="submit"
-                      className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
+                      className="bg-slate-900 hover:bg-slate-800    text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
                     >
                       <Send className="w-3.5 h-3.5" />
                       <span>Send Reply</span>
@@ -1500,15 +1518,15 @@ export const RoomLeadDashboard = () => {
           {activeTab === 'Kitchen Requisition' && (
             <div className="space-y-6">
               <div className={`p-6 rounded-3xl border shadow-sm ${
-                darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'
+                darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#DCE4EF]/90'
               }`}>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 ">
                   <div>
                     <h2 className="text-lg font-black tracking-tight flex items-center gap-2">
-                      <UtensilsCrossed className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+                      <UtensilsCrossed className="w-5 h-5 text-slate-700 " />
                       Tomorrow's Room D-101 Kitchen Demand Requisition
                     </h2>
-                    <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                       Aggregated hostel mess meal portions requested by all 5 roommates in Room D-101 for tomorrow.
                     </p>
                   </div>
@@ -1517,7 +1535,7 @@ export const RoomLeadDashboard = () => {
                     <button
                       type="button"
                       onClick={() => addToast('Room D-101 culinary requisition slip exported!', 'success')}
-                      className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
+                      className="bg-slate-900 hover:bg-slate-800    text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
                     >
                       <Download className="w-3.5 h-3.5" />
                       <span>Download Slip</span>
@@ -1529,8 +1547,8 @@ export const RoomLeadDashboard = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
                   <div className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 ${
                     isKitchenConfirmed
-                      ? 'bg-emerald-50/80 border-emerald-200 text-emerald-900 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-200'
-                      : 'bg-amber-50/80 border-amber-200 text-amber-900 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-200'
+                      ? 'bg-[#EDF2F9]/80 border-[#D5E4F8] text-[#243F66]   '
+                      : 'bg-amber-50/80 border-amber-200 text-amber-900   '
                   }`}>
                     <div className="flex items-center gap-2.5">
                       <CookingPot className="w-5 h-5 shrink-0" />
@@ -1545,15 +1563,15 @@ export const RoomLeadDashboard = () => {
                         </span>
                       </div>
                     </div>
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border bg-white/70 dark:bg-slate-900/70">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border bg-white/70 ">
                       {isKitchenConfirmed ? 'Confirmed' : 'Pending'}
                     </span>
                   </div>
 
                   <div className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 ${
                     blockConsolidatedSent
-                      ? 'bg-emerald-50/80 border-emerald-200 text-emerald-900 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-200'
-                      : 'bg-slate-50 border-slate-200 text-slate-700 dark:bg-slate-800/40 dark:border-slate-700 dark:text-slate-300'
+                      ? 'bg-[#EDF2F9]/80 border-[#D5E4F8] text-[#243F66]   '
+                      : 'bg-[#F5F7FA] border-[#DCE4EF] text-slate-700   '
                   }`}>
                     <div className="flex items-center gap-2.5">
                       <Layers className="w-5 h-5 shrink-0" />
@@ -1568,7 +1586,7 @@ export const RoomLeadDashboard = () => {
                         </span>
                       </div>
                     </div>
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border bg-white/70 dark:bg-slate-900/70">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border bg-white/70 ">
                       {blockConsolidatedSent ? 'Forwarded' : 'In Progress'}
                     </span>
                   </div>
@@ -1582,30 +1600,30 @@ export const RoomLeadDashboard = () => {
                       <div
                         key={item.meal}
                         className={`p-5 rounded-2xl border flex flex-col justify-between ${
-                          darkMode ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-200/80'
+                          darkMode ? 'bg-slate-800/40 border-slate-700' : 'bg-[#F5F7FA] border-[#DCE4EF]/80'
                         }`}
                       >
                         <div>
                           <div className="flex items-center justify-between mb-3">
-                            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            <span className="text-xs font-bold uppercase tracking-wider text-[#65748A] ">
                               {item.meal}
                             </span>
-                            <span className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                            <span className="p-2 rounded-xl bg-[#EDF2F9]  text-slate-700 ">
                               <Icon className="w-4 h-4" />
                             </span>
                           </div>
-                          <p className="text-3xl font-black text-slate-900 dark:text-white">
+                          <p className="text-3xl font-black text-[#293749] ">
                             {item.count}{' '}
                             <span className="text-sm font-normal text-slate-400">
                               / {totalMembers} Meals
                             </span>
                           </p>
-                          <p className="text-xs font-semibold mt-2 text-slate-700 dark:text-slate-300">
+                          <p className="text-xs font-semibold mt-2 text-slate-700 ">
                             {item.menuItem}
                           </p>
                         </div>
-                        <div className={`mt-4 pt-3 border-t text-[11px] font-mono text-slate-500 ${
-                          darkMode ? 'border-slate-700' : 'border-slate-200'
+                        <div className={`mt-4 pt-3 border-t text-[11px] font-mono text-[#65748A] ${
+                          darkMode ? 'border-slate-700' : 'border-[#DCE4EF]'
                         }`}>
                           Serving: {item.timing}
                         </div>
@@ -1616,43 +1634,43 @@ export const RoomLeadDashboard = () => {
 
                 {/* Live Mess Incharge Published Menu Strip */}
                 <div className={`mt-6 p-4 rounded-2xl border ${
-                  darkMode ? 'bg-slate-800/30 border-slate-700 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-700'
+                  darkMode ? 'bg-slate-800/30 border-slate-700 text-slate-300' : 'bg-[#F5F7FA] border-[#DCE4EF] text-slate-700'
                 }`}>
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <h4 className="font-bold text-xs uppercase tracking-wider flex items-center gap-1.5">
-                      <ChefHat className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <ChefHat className="w-4 h-4 text-[#355F97] " />
                       Mess Incharge Published Dishes for Tomorrow
                     </h4>
-                    <span className="text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full dark:bg-emerald-950/60 dark:text-emerald-300">
+                    <span className="text-[10px] font-mono font-bold bg-[#EDF2F9] text-[#2B4F80] border border-[#D5E4F8] px-2 py-0.5 rounded-full  ">
                       Live Kitchen Sync
                     </span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs mt-2">
-                    <div className="p-2.5 rounded-xl border bg-white/60 dark:bg-slate-900/60">
+                    <div className="p-2.5 rounded-xl border bg-white/60 ">
                       <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block mb-0.5">Breakfast</span>
-                      <strong className="block text-slate-800 dark:text-slate-200">{menu?.breakfast || 'Masala Dosa / Poha with Chai'}</strong>
+                      <strong className="block text-slate-800 ">{menu?.breakfast || 'Masala Dosa / Poha with Chai'}</strong>
                     </div>
-                    <div className="p-2.5 rounded-xl border bg-white/60 dark:bg-slate-900/60">
+                    <div className="p-2.5 rounded-xl border bg-white/60 ">
                       <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block mb-0.5">Lunch</span>
-                      <strong className="block text-slate-800 dark:text-slate-200">{menu?.lunch || 'Rajma Chawal Thali & Paneer'}</strong>
+                      <strong className="block text-slate-800 ">{menu?.lunch || 'Rajma Chawal Thali & Paneer'}</strong>
                     </div>
-                    <div className="p-2.5 rounded-xl border bg-white/60 dark:bg-slate-900/60">
+                    <div className="p-2.5 rounded-xl border bg-white/60 ">
                       <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block mb-0.5">Snacks</span>
-                      <strong className="block text-slate-800 dark:text-slate-200">{menu?.snacks || 'Samosa & Hot Chai'}</strong>
+                      <strong className="block text-slate-800 ">{menu?.snacks || 'Samosa & Hot Chai'}</strong>
                     </div>
-                    <div className="p-2.5 rounded-xl border bg-white/60 dark:bg-slate-900/60">
+                    <div className="p-2.5 rounded-xl border bg-white/60 ">
                       <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block mb-0.5">Dinner</span>
-                      <strong className="block text-slate-800 dark:text-slate-200">{menu?.dinner || 'Roti, Dal, Rice & Chicken/Paneer'}</strong>
+                      <strong className="block text-slate-800 ">{menu?.dinner || 'Roti, Dal, Rice & Chicken/Paneer'}</strong>
                     </div>
                   </div>
                 </div>
 
                 {/* Dietary & Allergies Advisory Box */}
                 <div className={`mt-4 p-4 rounded-2xl border ${
-                  darkMode ? 'bg-slate-800/30 border-slate-700 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-700'
+                  darkMode ? 'bg-slate-800/30 border-slate-700 text-slate-300' : 'bg-[#F5F7FA] border-[#DCE4EF] text-slate-700'
                 }`}>
                   <h4 className="font-bold text-xs uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                    <Info className="w-4 h-4 text-slate-700 dark:text-slate-300" />
+                    <Info className="w-4 h-4 text-slate-700 " />
                     Special Dietary Notes for Room D-101
                   </h4>
                   <p className="text-xs leading-relaxed">
@@ -1667,15 +1685,15 @@ export const RoomLeadDashboard = () => {
           {activeTab === 'Editing Window' && (
             <div className="space-y-6">
               <div className={`p-6 rounded-3xl border shadow-sm ${
-                darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'
+                darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#DCE4EF]/90'
               }`}>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 ">
                   <div>
                     <h2 className="text-lg font-black tracking-tight flex items-center gap-2">
-                      <Clock className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+                      <Clock className="w-5 h-5 text-slate-700 " />
                       Room Lead Cutoff & Editing Window Rules
                     </h2>
-                    <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                       Lead privilege window allows Room D-101 lead to submit or modify roommate meal choices until 10:00 PM.
                     </p>
                   </div>
@@ -1683,10 +1701,10 @@ export const RoomLeadDashboard = () => {
                   <div className="flex items-center gap-2">
                     <span className={`text-xs font-bold px-3 py-1.5 rounded-xl border flex items-center gap-1.5 ${
                       isEditingWindowActive
-                        ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950 border-transparent shadow-xs'
-                        : 'bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+                        ? 'bg-slate-900 text-white   border-transparent shadow-xs'
+                        : 'bg-[#EDF2F9] text-slate-800 border-slate-300   '
                     }`}>
-                      {isEditingWindowActive ? <Unlock className="w-3.5 h-3.5 text-white dark:text-slate-950" /> : <Lock className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />}
+                      {isEditingWindowActive ? <Unlock className="w-3.5 h-3.5 text-white " /> : <Lock className="w-3.5 h-3.5 text-slate-600 " />}
                       {isEditingWindowActive ? 'Window Active' : 'Window Locked'}
                     </span>
                   </div>
@@ -1694,12 +1712,12 @@ export const RoomLeadDashboard = () => {
 
                 {/* Big Live Countdown Banner */}
                 <div className={`my-6 p-6 rounded-2xl border text-center ${
-                  darkMode ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-200'
+                  darkMode ? 'bg-slate-800/40 border-slate-700' : 'bg-[#F5F7FA] border-[#DCE4EF]'
                 }`}>
-                  <p className="text-xs uppercase tracking-widest font-bold text-slate-500 mb-1">
+                  <p className="text-xs uppercase tracking-widest font-bold text-[#65748A] mb-1">
                     Live Cutoff Countdown
                   </p>
-                  <p className="text-4xl sm:text-5xl font-mono font-black text-slate-900 dark:text-white my-2">
+                  <p className="text-4xl sm:text-5xl font-mono font-black text-[#293749]  my-2">
                     {String(timeLeft.hours).padStart(2, '0')} : {String(timeLeft.minutes).padStart(2, '0')} : {String(timeLeft.seconds).padStart(2, '0')}
                   </p>
                   <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
@@ -1709,29 +1727,29 @@ export const RoomLeadDashboard = () => {
 
                 {/* Timeline Milestones */}
                 <div className="space-y-3">
-                  <h4 className="font-bold text-xs uppercase tracking-wider text-slate-500">
+                  <h4 className="font-bold text-xs uppercase tracking-wider text-[#65748A]">
                     Hostel Mess Daily Cutoff Pipeline
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
-                    <div className={`p-3.5 rounded-xl border ${darkMode ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                      <span className="font-mono font-bold text-slate-500 block mb-0.5">06:00 PM</span>
-                      <strong className="block text-slate-800 dark:text-slate-200">Student Self-Booking</strong>
-                      <span className="text-[11px] text-slate-500">Individual student window closes</span>
+                    <div className={`p-3.5 rounded-xl border ${darkMode ? 'bg-slate-800/30 border-slate-700' : 'bg-[#F5F7FA] border-[#DCE4EF]'}`}>
+                      <span className="font-mono font-bold text-[#65748A] block mb-0.5">06:00 PM</span>
+                      <strong className="block text-slate-800 ">Student Self-Booking</strong>
+                      <span className="text-[11px] text-[#65748A]">Individual student window closes</span>
                     </div>
-                    <div className="p-3.5 rounded-xl border border-slate-700 bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950">
-                      <span className="font-mono font-bold text-slate-300 dark:text-slate-700 block mb-0.5">10:00 PM (Active)</span>
-                      <strong className="block text-white dark:text-slate-950">Room Lead Proxy Window</strong>
-                      <span className="text-[11px] text-slate-300 dark:text-slate-700">Assists and locks room roster</span>
+                    <div className="p-3.5 rounded-xl border border-slate-700 bg-slate-900 text-white  ">
+                      <span className="font-mono font-bold text-slate-300  block mb-0.5">10:00 PM (Active)</span>
+                      <strong className="block text-white ">Room Lead Proxy Window</strong>
+                      <span className="text-[11px] text-slate-300 ">Assists and locks room roster</span>
                     </div>
-                    <div className={`p-3.5 rounded-xl border ${darkMode ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                      <span className="font-mono font-bold text-slate-500 block mb-0.5">10:30 PM</span>
-                      <strong className="block text-slate-800 dark:text-slate-200">Floor Incharge Rollup</strong>
-                      <span className="text-[11px] text-slate-500">Prof. Sharma finalizes Floor 2</span>
+                    <div className={`p-3.5 rounded-xl border ${darkMode ? 'bg-slate-800/30 border-slate-700' : 'bg-[#F5F7FA] border-[#DCE4EF]'}`}>
+                      <span className="font-mono font-bold text-[#65748A] block mb-0.5">10:30 PM</span>
+                      <strong className="block text-slate-800 ">Floor Incharge Rollup</strong>
+                      <span className="text-[11px] text-[#65748A]">Prof. Sharma finalizes Floor 2</span>
                     </div>
-                    <div className={`p-3.5 rounded-xl border ${darkMode ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                      <span className="font-mono font-bold text-slate-500 block mb-0.5">11:00 PM</span>
-                      <strong className="block text-slate-800 dark:text-slate-200">Kitchen Production</strong>
-                      <span className="text-[11px] text-slate-500">Procurement & prep starts</span>
+                    <div className={`p-3.5 rounded-xl border ${darkMode ? 'bg-slate-800/30 border-slate-700' : 'bg-[#F5F7FA] border-[#DCE4EF]'}`}>
+                      <span className="font-mono font-bold text-[#65748A] block mb-0.5">11:00 PM</span>
+                      <strong className="block text-slate-800 ">Kitchen Production</strong>
+                      <span className="text-[11px] text-[#65748A]">Procurement & prep starts</span>
                     </div>
                   </div>
                 </div>
@@ -1744,15 +1762,15 @@ export const RoomLeadDashboard = () => {
       {/* MODAL 1: TIME-BOUNDED MEAL SUBMISSION EDITOR (LEAD PROXY & EDIT) */}
       {editingMember && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="max-w-md w-full rounded-3xl border border-slate-200 bg-white shadow-2xl p-6 text-slate-900 transition-all">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+          <div className="max-w-md w-full rounded-3xl border border-[#DCE4EF] bg-white shadow-2xl p-6 text-[#293749] transition-all">
+            <div className="flex items-center justify-between pb-4 border-b border-[#DCE4EF]">
               <div>
-                <h3 className="font-black text-lg flex items-center gap-2 text-slate-900">
+                <h3 className="font-black text-lg flex items-center gap-2 text-[#293749]">
                   <Edit3 className="w-5 h-5 text-slate-700" />
                   {editingMember.status === 'Submitted' ? 'Edit Meal Choices' : 'Assist Roommate Order'}
                 </h3>
-                <p className="text-xs mt-0.5 text-slate-500">
-                  Active Lead Window: Modifying order for <strong className="text-slate-900">{editingMember.name}</strong>
+                <p className="text-xs mt-0.5 text-[#65748A]">
+                  Active Lead Window: Modifying order for <strong className="text-[#293749]">{editingMember.name}</strong>
                 </p>
               </div>
               <button
@@ -1766,10 +1784,10 @@ export const RoomLeadDashboard = () => {
 
             <form onSubmit={handleSaveAssistedBooking} className="mt-5 space-y-4">
               {/* Breakfast Choice */}
-              <div className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between">
+              <div className="p-3.5 rounded-2xl border border-[#DCE4EF] bg-[#F5F7FA] flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-bold text-slate-900">Breakfast (07:30 - 09:30 AM)</p>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-xs font-bold text-[#293749]">Breakfast (07:30 - 09:30 AM)</p>
+                  <p className="text-[11px] text-[#65748A]">
                     Masala Dosa / Poha with Chai
                   </p>
                 </div>
@@ -1780,7 +1798,7 @@ export const RoomLeadDashboard = () => {
                     className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       assistedChoices.b === 'Yes'
                         ? 'bg-slate-900 text-white shadow-xs'
-                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                        : 'bg-white border border-[#DCE4EF] text-slate-600 hover:bg-[#EDF2F9]'
                     }`}
                   >
                     Eat
@@ -1791,7 +1809,7 @@ export const RoomLeadDashboard = () => {
                     className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       assistedChoices.b === 'No'
                         ? 'bg-slate-700 text-white shadow-xs'
-                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                        : 'bg-white border border-[#DCE4EF] text-slate-600 hover:bg-[#EDF2F9]'
                     }`}
                   >
                     Skip
@@ -1800,10 +1818,10 @@ export const RoomLeadDashboard = () => {
               </div>
 
               {/* Lunch Choice */}
-              <div className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between">
+              <div className="p-3.5 rounded-2xl border border-[#DCE4EF] bg-[#F5F7FA] flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-bold text-slate-900">Lunch (12:30 - 02:30 PM)</p>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-xs font-bold text-[#293749]">Lunch (12:30 - 02:30 PM)</p>
+                  <p className="text-[11px] text-[#65748A]">
                     Rajma Chawal Thali & Paneer
                   </p>
                 </div>
@@ -1814,7 +1832,7 @@ export const RoomLeadDashboard = () => {
                     className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       assistedChoices.l === 'Yes'
                         ? 'bg-slate-900 text-white shadow-xs'
-                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                        : 'bg-white border border-[#DCE4EF] text-slate-600 hover:bg-[#EDF2F9]'
                     }`}
                   >
                     Eat
@@ -1825,7 +1843,7 @@ export const RoomLeadDashboard = () => {
                     className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       assistedChoices.l === 'No'
                         ? 'bg-slate-700 text-white shadow-xs'
-                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                        : 'bg-white border border-[#DCE4EF] text-slate-600 hover:bg-[#EDF2F9]'
                     }`}
                   >
                     Skip
@@ -1834,10 +1852,10 @@ export const RoomLeadDashboard = () => {
               </div>
 
               {/* Snacks Choice */}
-              <div className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between">
+              <div className="p-3.5 rounded-2xl border border-[#DCE4EF] bg-[#F5F7FA] flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-bold text-slate-900">Evening Snacks (05:00 - 06:00 PM)</p>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-xs font-bold text-[#293749]">Evening Snacks (05:00 - 06:00 PM)</p>
+                  <p className="text-[11px] text-[#65748A]">
                     Samosa & Hot Chai
                   </p>
                 </div>
@@ -1848,7 +1866,7 @@ export const RoomLeadDashboard = () => {
                     className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       assistedChoices.s === 'Yes'
                         ? 'bg-slate-900 text-white shadow-xs'
-                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                        : 'bg-white border border-[#DCE4EF] text-slate-600 hover:bg-[#EDF2F9]'
                     }`}
                   >
                     Eat
@@ -1859,7 +1877,7 @@ export const RoomLeadDashboard = () => {
                     className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       assistedChoices.s === 'No'
                         ? 'bg-slate-700 text-white shadow-xs'
-                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                        : 'bg-white border border-[#DCE4EF] text-slate-600 hover:bg-[#EDF2F9]'
                     }`}
                   >
                     Skip
@@ -1868,10 +1886,10 @@ export const RoomLeadDashboard = () => {
               </div>
 
               {/* Dinner Choice */}
-              <div className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between">
+              <div className="p-3.5 rounded-2xl border border-[#DCE4EF] bg-[#F5F7FA] flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-bold text-slate-900">Dinner (07:30 - 09:30 PM)</p>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-xs font-bold text-[#293749]">Dinner (07:30 - 09:30 PM)</p>
+                  <p className="text-[11px] text-[#65748A]">
                     Roti, Dal, Rice & Chicken/Paneer
                   </p>
                 </div>
@@ -1882,7 +1900,7 @@ export const RoomLeadDashboard = () => {
                     className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       assistedChoices.d === 'Yes'
                         ? 'bg-slate-900 text-white shadow-xs'
-                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                        : 'bg-white border border-[#DCE4EF] text-slate-600 hover:bg-[#EDF2F9]'
                     }`}
                   >
                     Eat
@@ -1893,7 +1911,7 @@ export const RoomLeadDashboard = () => {
                     className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       assistedChoices.d === 'No'
                         ? 'bg-slate-700 text-white shadow-xs'
-                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                        : 'bg-white border border-[#DCE4EF] text-slate-600 hover:bg-[#EDF2F9]'
                     }`}
                   >
                     Skip
@@ -1911,16 +1929,16 @@ export const RoomLeadDashboard = () => {
                   placeholder="e.g. Requested via call, exam schedule, fasting..."
                   value={assistedNote}
                   onChange={(e) => setAssistedNote(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  className="w-full p-2.5 rounded-xl border border-[#DCE4EF] bg-[#F5F7FA] text-[#293749] text-xs focus:outline-none focus:ring-2 focus:ring-slate-900"
                 />
               </div>
 
               {/* Submit Action Buttons */}
-              <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
+              <div className="pt-3 border-t border-[#DCE4EF] flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setEditingMember(null)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#EDF2F9] hover:bg-slate-200 text-slate-700 cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -1940,8 +1958,8 @@ export const RoomLeadDashboard = () => {
       {/* MODAL 2: WHATSAPP ROOM BROADCAST NOTIFIER */}
       {showBroadcastModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="max-w-md w-full rounded-3xl border border-slate-200 bg-white shadow-2xl p-6 text-slate-900 transition-all">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+          <div className="max-w-md w-full rounded-3xl border border-[#DCE4EF] bg-white shadow-2xl p-6 text-[#293749] transition-all">
+            <div className="flex items-center justify-between pb-4 border-b border-[#DCE4EF]">
               <div className="flex items-center gap-2">
                 <Share2 className="w-5 h-5 text-slate-700" />
                 <h3 className="font-black text-lg">Room WhatsApp Nudge</h3>
@@ -1961,7 +1979,7 @@ export const RoomLeadDashboard = () => {
               </p>
 
               {/* Pre-formatted message card */}
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50 text-slate-800 font-mono text-xs whitespace-pre-wrap leading-relaxed">
+              <div className="p-4 rounded-2xl border border-[#DCE4EF] bg-[#F5F7FA] text-slate-800 font-mono text-xs whitespace-pre-wrap leading-relaxed">
                 {broadcastText}
               </div>
 
@@ -1969,7 +1987,7 @@ export const RoomLeadDashboard = () => {
                 <button
                   type="button"
                   onClick={() => setShowBroadcastModal(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#EDF2F9] hover:bg-slate-200 text-slate-700 cursor-pointer"
                 >
                   Close
                 </button>
@@ -1990,8 +2008,8 @@ export const RoomLeadDashboard = () => {
       {/* MODAL 3: QUICK MARK HOME LEAVE / RESUME (Checklist #13) */}
       {showQuickLeaveModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="max-w-md w-full rounded-3xl border border-slate-200 bg-white shadow-2xl p-6 text-slate-900 transition-all">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+          <div className="max-w-md w-full rounded-3xl border border-[#DCE4EF] bg-white shadow-2xl p-6 text-[#293749] transition-all">
+            <div className="flex items-center justify-between pb-4 border-b border-[#DCE4EF]">
               <div className="flex items-center gap-2">
                 <Home className="w-5 h-5 text-amber-600" />
                 <h3 className="font-black text-lg">Mark Roommate on Home Leave</h3>
@@ -2015,11 +2033,11 @@ export const RoomLeadDashboard = () => {
                 return (
                   <div
                     key={member.id}
-                    className="p-3 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between gap-3"
+                    className="p-3 rounded-2xl border border-[#DCE4EF] bg-[#F5F7FA] flex items-center justify-between gap-3"
                   >
                     <div>
-                      <p className="text-xs font-bold text-slate-900">{member.name}</p>
-                      <p className="text-[11px] font-mono text-slate-500">
+                      <p className="text-xs font-bold text-[#293749]">{member.name}</p>
+                      <p className="text-[11px] font-mono text-[#65748A]">
                         Bed {member.id} • Status: {member.status}
                       </p>
                     </div>
@@ -2030,7 +2048,7 @@ export const RoomLeadDashboard = () => {
                           handleRestoreFromLeave(member);
                           setShowQuickLeaveModal(false);
                         }}
-                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs cursor-pointer active:scale-95 transition-all"
+                        className="px-3 py-1.5 rounded-xl bg-[#355F97] hover:bg-[#2F5488] text-white font-bold text-xs shadow-xs cursor-pointer active:scale-95 transition-all"
                       >
                         Restore Present
                       </button>
@@ -2052,11 +2070,11 @@ export const RoomLeadDashboard = () => {
               })}
             </div>
 
-            <div className="mt-5 pt-3 border-t border-slate-200 flex justify-end">
+            <div className="mt-5 pt-3 border-t border-[#DCE4EF] flex justify-end">
               <button
                 type="button"
                 onClick={() => setShowQuickLeaveModal(false)}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-[#EDF2F9] hover:bg-slate-200 text-slate-700 cursor-pointer"
               >
                 Done
               </button>

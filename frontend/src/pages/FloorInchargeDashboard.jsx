@@ -66,23 +66,16 @@ export const FloorInchargeDashboard = () => {
   // State: Filter mode for rooms ('all', 'completed', 'pending', or 'low')
   const [roomFilter, setRoomFilter] = useState('all');
 
-  // State: Controls dark mode theme toggle (false = light theme, true = dark theme)
-  const [darkMode, setDarkMode] = useState(false);
+  // Single permanent light theme — dark mode removed.
+  const darkMode = false;
 
-  // Effect: Syncs document body background color whenever dark mode is toggled
+  // Effect: Keeps the document body on the shared light surface color.
   useEffect(() => {
-    // If dark mode is active, set background color to deep slate
-    if (darkMode) {
-      document.body.style.backgroundColor = '#0f172a';
-    } else {
-      // Otherwise, set background color to soft clean light slate
-      document.body.style.backgroundColor = '#f8fafc';
-    }
-    // Cleanup function: Reverts body background to default when component unmounts
+    document.body.style.backgroundColor = '#F5F7FA';
     return () => {
-      document.body.style.backgroundColor = '#f8fafc';
+      document.body.style.backgroundColor = '#F5F7FA';
     };
-  }, [darkMode]); // Dependency array: only re-run when darkMode changes
+  }, []);
 
   // Extract shared state and action functions from the AppContext
   const {
@@ -98,7 +91,8 @@ export const FloorInchargeDashboard = () => {
     dismissFloorAlert,        // Action to acknowledge/dismiss alert
     menu,                     // Published daily mess menu from kitchen
     sendFloorMealSheetToMess, // Action to submit floor headcount sheet to mess kitchen
-    floorMealSheets = []      // Floor meal sheets sent to mess kitchen
+    floorMealSheets = [],     // Floor meal sheets sent to mess kitchen
+    aiAnomalies = []          // AI anomaly alerts for this scope
   } = useApp();
 
   const navigate = useNavigate();
@@ -278,7 +272,7 @@ export const FloorInchargeDashboard = () => {
   // Render the visual interface
   return (
     // Top-level page container with minimum full screen height and dynamic dark/light background
-    <div className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50/80 text-slate-900'}`}>
+    <div className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-[#F5F7FA]/80 text-[#293749]'}`}>
 
       {/* 1. Universal Top Navigation Bar */}
       <Navbar
@@ -286,8 +280,6 @@ export const FloorInchargeDashboard = () => {
         activeTab={activeTab}                          // Passes currently selected tab
         onTabChange={setActiveTab}                     // Callback when user clicks a nav tab in header
         tabs={sidebarItems}
-        darkMode={darkMode}                            // Passes current dark mode state
-        onToggleDarkMode={() => setDarkMode((prev) => !prev)} // Callback to flip dark mode on/off
       />
 
       {/* Main body flex layout: Sidebar on the left (on desktop) and main content on the right */}
@@ -298,12 +290,26 @@ export const FloorInchargeDashboard = () => {
           items={sidebarItems}                         // Passes the 7 navigation tab definitions
           activeTab={activeTab}                        // Currently active tab to highlight with active styling
           onTabChange={setActiveTab}                   // Callback to switch tabs when user clicks an item
-          darkMode={darkMode}                          // Ensures sidebar matches current theme
           onLogout={handleSignOut}                     // Dispatches user sign-out to login
         />
 
         {/* 3. Main Dashboard Content Area */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
+
+          {(aiAnomalies || []).length > 0 && (
+            <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+              <span className="text-lg leading-none">⚠️</span>
+              <div>
+                <p className="text-sm font-bold text-amber-900">
+                  {aiAnomalies.length} AI anomaly alert{aiAnomalies.length !== 1 ? 's' : ''} detected
+                </p>
+                <p className="text-xs text-amber-800 mt-0.5">
+                  {aiAnomalies[0].title}
+                  {aiAnomalies[0].description || aiAnomalies[0].desc ? ` — ${aiAnomalies[0].description || aiAnomalies[0].desc}` : ''}
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Main Dashboard Hero Banner & 4 Primary KPI Metric Cards - Displayed on Room & Floor Monitoring */}
           {activeTab === 'Room & Floor Monitoring' || activeTab === 'Room Monitoring' || activeTab === 'Floor Overview' || activeTab === 'Dashboard' ? (
@@ -314,22 +320,22 @@ export const FloorInchargeDashboard = () => {
                   {floorInchargeAlerts.map((alert) => (
                     <div
                       key={alert.id}
-                      className="p-4 rounded-2xl bg-amber-500/10 border-2 border-amber-500/40 text-amber-950 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm"
+                      className="p-4 rounded-2xl bg-amber-500/10 border-2 border-amber-500/40 text-amber-950  flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm"
                     >
                       <div className="flex items-start sm:items-center gap-3">
-                        <div className="p-2 rounded-xl bg-amber-500/20 text-amber-700 dark:text-amber-300 shrink-0">
+                        <div className="p-2 rounded-xl bg-amber-500/20 text-amber-700  shrink-0">
                           <AlertTriangle className="w-5 h-5 animate-bounce" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-extrabold text-xs uppercase tracking-wide text-amber-800 dark:text-amber-300">
+                            <span className="font-extrabold text-xs uppercase tracking-wide text-amber-800 ">
                               🚨 Urgent Cutoff Alert from {alert.sender}
                             </span>
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-200/60 dark:bg-amber-900/60 text-amber-900 dark:text-amber-100 font-semibold">
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-200/60  text-amber-900  font-semibold">
                               {alert.time}
                             </span>
                           </div>
-                          <p className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
+                          <p className="text-xs sm:text-sm font-semibold text-slate-800  mt-0.5">
                             {alert.message}
                           </p>
                         </div>
@@ -351,7 +357,7 @@ export const FloorInchargeDashboard = () => {
               <div
                 className={`p-6 sm:p-7 rounded-3xl border shadow-sm transition-all duration-300 relative overflow-hidden ${darkMode
                     ? 'bg-gradient-to-br from-slate-900 via-slate-850 to-slate-900 border-slate-800'
-                    : 'bg-gradient-to-br from-white via-slate-50/50 to-white border-slate-200/90'
+                    : 'bg-gradient-to-br from-white via-slate-50/50 to-white border-[#DCE4EF]/90'
                   }`}
               >
                 {/* Flex container holding title info on left and action buttons on right */}
@@ -370,7 +376,7 @@ export const FloorInchargeDashboard = () => {
                             : 'bg-indigo-50 text-indigo-700 border-indigo-200'
                           }`}
                       >
-                        <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                        <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 " />
                         {assignedFloor}
                       </span>
 
@@ -378,15 +384,15 @@ export const FloorInchargeDashboard = () => {
                       <span
                         className={`text-xs font-medium px-3 py-1 rounded-full border ${darkMode
                             ? 'bg-slate-800 text-slate-300 border-slate-700'
-                            : 'bg-slate-100 text-slate-600 border-slate-200'
+                            : 'bg-[#EDF2F9] text-slate-600 border-[#DCE4EF]'
                           }`}
                       >
                         {assignedBlock}
                       </span>
 
                       {/* Badge 3: Current session indicator (Tomorrow's Meal Planning) */}
-                      <span className={`text-xs flex items-center gap-1 font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                        <Utensils className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" /> Tomorrow's Meal Planning
+                      <span className={`text-xs flex items-center gap-1 font-medium ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
+                        <Utensils className="w-3.5 h-3.5 text-slate-700 " /> Tomorrow's Meal Planning
                       </span>
                     </div>
 
@@ -396,7 +402,7 @@ export const FloorInchargeDashboard = () => {
                     </h1>
 
                     {/* Subtitle / Description */}
-                    <p className={`text-xs sm:text-sm max-w-2xl ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <p className={`text-xs sm:text-sm max-w-2xl ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                       Track room meal submissions, oversee dining participation, and coordinate tomorrow's mess orders for {assignedBlock}.
                     </p>
 
@@ -416,10 +422,10 @@ export const FloorInchargeDashboard = () => {
                           onClick={() => setActiveFloorScope(f.id)}
                           className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                             activeFloorScope === f.id
-                              ? 'bg-[#1b4d3e] text-white shadow-xs'
+                              ? 'bg-[#355F97] text-white shadow-xs'
                               : darkMode
                               ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                              : 'bg-[#EDF2F9] text-slate-600 hover:bg-slate-200'
                           }`}
                         >
                           {f.label}
@@ -435,9 +441,9 @@ export const FloorInchargeDashboard = () => {
                     {pendingRoomsCount > 0 && (
                       <button
                         onClick={handleRemindAllPending}
-                        className="bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:hover:bg-white dark:text-slate-950 font-bold px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 transition-all cursor-pointer shadow-sm active:scale-95"
+                        className="bg-slate-900 hover:bg-slate-800 text-white    font-bold px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 transition-all cursor-pointer shadow-sm active:scale-95"
                       >
-                        <Bell className="w-4 h-4 text-slate-300 dark:text-slate-700" />
+                        <Bell className="w-4 h-4 text-slate-300 " />
                         <span>Remind Pending Rooms ({pendingRoomsCount})</span>
                       </button>
                     )}
@@ -453,18 +459,6 @@ export const FloorInchargeDashboard = () => {
                       </button>
                     )}
 
-                    {/* Button 3: Theme Toggle Button (Light Mode / Dark Mode) */}
-                    <button
-                      onClick={() => setDarkMode((prev) => !prev)} // Toggles darkMode boolean
-                      className={`p-2.5 rounded-2xl border text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm ${darkMode
-                          ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700'
-                          : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
-                        }`}
-                      title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-                    >
-                      {/* Sun icon in dark mode, Moon icon in light mode */}
-                      {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                    </button>
                   </div>
                 </div>
               </div>
@@ -474,15 +468,15 @@ export const FloorInchargeDashboard = () => {
 
                 {/* Card 1: Assigned Floor Overview (Floor name, block, supervised rooms count) */}
                 <div
-                  className={`p-5 rounded-2xl border transition-all duration-200 shadow-sm ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'
+                  className={`p-5 rounded-2xl border transition-all duration-200 shadow-sm ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#DCE4EF]/90'
                     }`}
                 >
                   {/* Card top row: Category label and building icon */}
                   <div className="flex items-center justify-between mb-3">
-                    <span className={`text-xs font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <span className={`text-xs font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                       Assigned Floor
                     </span>
-                    <span className={`p-2 rounded-xl ${darkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'}`}>
+                    <span className={`p-2 rounded-xl ${darkMode ? 'bg-slate-800 text-slate-300' : 'bg-[#EDF2F9] text-slate-700'}`}>
                       <Building2 className="w-4 h-4" />
                     </span>
                   </div>
@@ -490,41 +484,41 @@ export const FloorInchargeDashboard = () => {
                   {/* Card middle row: Floor number & block title */}
                   <div className="flex items-baseline gap-2">
                     <p className="text-2xl font-black">Floor 2</p>
-                    <span className={`text-xs font-semibold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>• {assignedBlock}</span>
+                    <span className={`text-xs font-semibold ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>• {assignedBlock}</span>
                   </div>
 
                   {/* Card footer: Subtext indicating total rooms and student residents */}
-                  <p className={`text-xs mt-2 font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <p className={`text-xs mt-2 font-medium ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                     <strong className={darkMode ? 'text-slate-200' : 'text-slate-700'}>{totalRooms} Rooms</strong> under supervision ({totalStudents} residents)
                   </p>
                 </div>
 
                 {/* Card 2: Meal Submissions Progress (Submitted count, pending badge, animated progress bar) */}
                 <div
-                  className={`p-5 rounded-2xl border transition-all duration-200 shadow-sm ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'
+                  className={`p-5 rounded-2xl border transition-all duration-200 shadow-sm ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#DCE4EF]/90'
                     }`}
                 >
                   {/* Card top row: Label and check circle icon */}
                   <div className="flex items-center justify-between mb-3">
-                    <span className={`text-xs font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <span className={`text-xs font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                       Meal Submissions
                     </span>
-                    <span className="p-2 rounded-xl bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200">
+                    <span className="p-2 rounded-xl bg-[#EDF2F9] text-slate-800  ">
                       <CheckCircle2 className="w-4 h-4" />
                     </span>
                   </div>
 
                   {/* Card middle row: Submitted students / Total students + Status badge */}
                   <div className="flex items-baseline gap-2">
-                    <p className="text-2xl font-black text-slate-900 dark:text-white">
+                    <p className="text-2xl font-black text-[#293749] ">
                       {submittedStudents}{' '}
-                      <span className={`text-sm font-normal ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>/ {totalStudents}</span>
+                      <span className={`text-sm font-normal ${darkMode ? 'text-[#65748A]' : 'text-slate-400'}`}>/ {totalStudents}</span>
                     </p>
                     {/* Dark Status badge */}
                     <span
                       className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${pendingStudents === 0
-                          ? 'bg-slate-900 text-white border border-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:border-slate-200'
-                          : 'bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+                          ? 'bg-slate-900 text-white border border-slate-800   '
+                          : 'bg-[#EDF2F9] text-slate-700 border border-slate-300   '
                         }`}
                     >
                       {pendingStudents === 0 ? 'All Submitted' : `${pendingStudents} Pending`}
@@ -533,9 +527,9 @@ export const FloorInchargeDashboard = () => {
 
                   {/* Horizontal Progress Bar visually indicating completion percentage */}
                   <div className="mt-3">
-                    <div className={`w-full h-2 rounded-full overflow-hidden ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                    <div className={`w-full h-2 rounded-full overflow-hidden ${darkMode ? 'bg-slate-800' : 'bg-[#EDF2F9]'}`}>
                       <div
-                        className={`h-full rounded-full transition-all duration-500 ${pendingStudents === 0 ? 'bg-slate-900 dark:bg-white' : 'bg-slate-600 dark:bg-slate-400'
+                        className={`h-full rounded-full transition-all duration-500 ${pendingStudents === 0 ? 'bg-slate-900 ' : 'bg-slate-600 '
                           }`}
                         style={{ width: `${totalStudents > 0 ? (submittedStudents / totalStudents) * 100 : 0}%` }}
                       ></div>
@@ -545,56 +539,56 @@ export const FloorInchargeDashboard = () => {
 
                 {/* Card 3: Pending Meal Orders (Pending students count, pending rooms summary) */}
                 <div
-                  className={`p-5 rounded-2xl border transition-all duration-200 shadow-sm ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'
+                  className={`p-5 rounded-2xl border transition-all duration-200 shadow-sm ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#DCE4EF]/90'
                     }`}
                 >
                   {/* Card top row: Label and clock icon */}
                   <div className="flex items-center justify-between mb-3">
-                    <span className={`text-xs font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <span className={`text-xs font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                       Pending Orders
                     </span>
-                    <span className="p-2 rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                    <span className="p-2 rounded-xl bg-[#EDF2F9] text-slate-700  ">
                       <Clock className="w-4 h-4" />
                     </span>
                   </div>
 
                   {/* Card middle row: Count of students who haven't selected meals */}
                   <div className="flex items-baseline gap-2">
-                    <p className="text-2xl font-black text-slate-900 dark:text-white">{pendingStudents}</p>
-                    <span className={`text-xs font-semibold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Students Missing</span>
+                    <p className="text-2xl font-black text-[#293749] ">{pendingStudents}</p>
+                    <span className={`text-xs font-semibold ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>Students Missing</span>
                   </div>
 
                   {/* Card footer: Breakdown pill showing pending rooms count and completed rooms */}
                   <div className="flex items-center gap-2 mt-2 text-xs font-medium">
-                    <span className="text-slate-700 dark:text-slate-300 font-bold">{pendingRoomsCount} Rooms Pending</span>
+                    <span className="text-slate-700  font-bold">{pendingRoomsCount} Rooms Pending</span>
                     <span className={darkMode ? 'text-slate-600' : 'text-slate-300'}>•</span>
-                    <span className="text-slate-900 dark:text-white font-bold">{completedRoomsCount} Complete</span>
+                    <span className="text-[#293749]  font-bold">{completedRoomsCount} Complete</span>
                   </div>
                 </div>
 
                 {/* Card 4: Tomorrow's Kitchen Volume (Total meals booked across all sessions) */}
                 <div
-                  className={`p-5 rounded-2xl border transition-all duration-200 shadow-sm ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'
+                  className={`p-5 rounded-2xl border transition-all duration-200 shadow-sm ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#DCE4EF]/90'
                     }`}
                 >
                   {/* Card top row: Label and utensils food icon */}
                   <div className="flex items-center justify-between mb-3">
-                    <span className={`text-xs font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <span className={`text-xs font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                       Kitchen Requisitions
                     </span>
-                    <span className="p-2 rounded-xl bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200">
+                    <span className="p-2 rounded-xl bg-[#EDF2F9] text-slate-800  ">
                       <Utensils className="w-4 h-4" />
                     </span>
                   </div>
 
                   {/* Card middle row: Total booked meals count and badge */}
                   <div className="flex items-baseline gap-2">
-                    <p className="text-2xl font-black text-slate-900 dark:text-white">{totalMealsBooked}</p>
-                    <span className={`text-xs font-semibold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Total Meals Booked</span>
+                    <p className="text-2xl font-black text-[#293749] ">{totalMealsBooked}</p>
+                    <span className={`text-xs font-semibold ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>Total Meals Booked</span>
                   </div>
 
                   {/* Card footer: Breakdown across 4 meal sessions */}
-                  <p className={`text-xs mt-2 font-medium truncate ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <p className={`text-xs mt-2 font-medium truncate ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                     B: <strong className={darkMode ? 'text-slate-200' : 'text-slate-700'}>{mealReqs.breakfast.selected}</strong> • L: <strong className={darkMode ? 'text-slate-200' : 'text-slate-700'}>{mealReqs.lunch.selected}</strong> • S: <strong className={darkMode ? 'text-slate-200' : 'text-slate-700'}>{mealReqs.snacks.selected}</strong> • D: <strong className={darkMode ? 'text-slate-200' : 'text-slate-700'}>{mealReqs.dinner.selected}</strong>
                   </p>
                 </div>
@@ -603,18 +597,18 @@ export const FloorInchargeDashboard = () => {
           ) : (
             <div
               className={`p-5 rounded-2xl border transition-all duration-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
-                darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'
+                darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#DCE4EF]/90'
               }`}
             >
           <div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+            <div className="flex items-center gap-2 text-xs font-semibold text-[#65748A]  mb-1">
               <span>{assignedBlock}</span>
               <span>•</span>
               <span>{assignedFloor}</span>
               <span>/</span>
-              <span className="text-slate-900 dark:text-white font-bold">{activeTab}</span>
+              <span className="text-[#293749]  font-bold">{activeTab}</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-[#293749] ">
               {activeTab}
             </h1>
           </div>
@@ -624,20 +618,10 @@ export const FloorInchargeDashboard = () => {
               onClick={() => setActiveTab('Room & Floor Monitoring')}
               className={`px-3.5 py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${darkMode
                   ? 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700'
-                  : 'bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-200/80'
+                  : 'bg-[#EDF2F9] border-[#DCE4EF] text-slate-700 hover:text-[#293749] hover:bg-slate-200/80'
                 }`}
             >
               ← Back to Room & Floor Monitoring
-            </button>
-            <button
-              onClick={() => setDarkMode((prev) => !prev)}
-              className={`p-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${darkMode
-                  ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700'
-                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
-                }`}
-              title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            >
-              {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
           </div>
       </div>
@@ -646,19 +630,19 @@ export const FloorInchargeDashboard = () => {
       {/* MAIN SECTION: SMART ROOM MEAL SUBMISSIONS & MONITORING KEYCARDS (Combined Room & Floor Monitoring) */}
       {(activeTab === 'Room & Floor Monitoring' || activeTab === 'Room Monitoring' || activeTab === 'Floor Overview' || activeTab === 'Dashboard') && (
         <section
-          className={`p-6 rounded-3xl border shadow-sm transition-all duration-300 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'
+          className={`p-6 rounded-3xl border shadow-sm transition-all duration-300 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#DCE4EF]/90'
             }`}
         >
           {/* Section Header with Search & Filter Tabs */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-5 border-b border-slate-200/80 dark:border-slate-800">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-5 border-b border-[#DCE4EF]/80 ">
 
             {/* Left side: Section title and descriptive subtitle */}
             <div>
               <h2 className="text-lg font-black tracking-tight flex items-center gap-2">
-                <Users className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+                <Users className="w-5 h-5 text-slate-700 " />
                 {floorConfig.label} Room Meal Submissions
               </h2>
-              <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                 Real-time meal booking progress and student compliance status for all {scopedRooms.length} rooms.
               </p>
             </div>
@@ -668,7 +652,7 @@ export const FloorInchargeDashboard = () => {
 
               {/* Filter Pills container (All, Completed, Pending, Low Rate) */}
               <div
-                className={`flex items-center p-1 rounded-2xl border text-xs font-semibold ${darkMode ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-100 border-slate-200'
+                className={`flex items-center p-1 rounded-2xl border text-xs font-semibold ${darkMode ? 'bg-slate-800/80 border-slate-700' : 'bg-[#EDF2F9] border-[#DCE4EF]'
                   }`}
               >
                 {/* Map through filter tabs dynamically */}
@@ -684,10 +668,10 @@ export const FloorInchargeDashboard = () => {
                     className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${roomFilter === tab.id
                         ? darkMode
                           ? 'bg-slate-700 text-white shadow-xs'
-                          : 'bg-white text-slate-900 shadow-xs'
+                          : 'bg-white text-[#293749] shadow-xs'
                         : darkMode
                           ? 'text-slate-400 hover:text-white'
-                          : 'text-slate-600 hover:text-slate-900'
+                          : 'text-slate-600 hover:text-[#293749]'
                       }`}
                   >
                     {tab.label}
@@ -697,7 +681,7 @@ export const FloorInchargeDashboard = () => {
 
               {/* Real-time Search Input Box */}
               <div className="relative">
-                <Search className={`w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+                <Search className={`w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 ${darkMode ? 'text-[#65748A]' : 'text-slate-400'}`} />
                 <input
                   type="text"
                   placeholder="Search room or lead..."
@@ -705,14 +689,14 @@ export const FloorInchargeDashboard = () => {
                   onChange={(e) => setSearchTerm(e.target.value)} // Updates search term on keystroke
                   className={`pl-8 pr-7 py-1.5 rounded-xl border text-xs focus:outline-none focus:ring-2 focus:ring-slate-500 transition-all ${darkMode
                       ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500'
-                      : 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400'
+                      : 'bg-[#F5F7FA] border-[#DCE4EF] text-slate-800 placeholder-slate-400'
                     }`}
                 />
                 {/* Clear search 'X' button rendered when text is entered */}
                 {searchTerm && (
                   <button
                     onClick={() => setSearchTerm('')} // Resets search text
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 "
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -733,7 +717,7 @@ export const FloorInchargeDashboard = () => {
                   key={room.roomNo}
                   className={`p-5 rounded-2xl border text-left transition-all duration-200 flex flex-col justify-between hover:shadow-md ${darkMode
                       ? 'bg-slate-900 border-slate-800 hover:border-slate-700'
-                      : 'bg-white border-slate-200/90 hover:border-slate-300'
+                      : 'bg-white border-[#DCE4EF]/90 hover:border-slate-300'
                     }`}
                 >
                   {/* Top Bar: Room Number + Submission Status Badge (Dark High-Contrast Theme) */}
@@ -741,12 +725,12 @@ export const FloorInchargeDashboard = () => {
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         {/* Room Number Label */}
-                        <span className="font-mono font-black text-lg tracking-tight text-slate-900 dark:text-white">
+                        <span className="font-mono font-black text-lg tracking-tight text-[#293749] ">
                           {room.roomNo}
                         </span>
                         {/* Flag badge if flagged */}
                         {room.flagged && (
-                          <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
+                          <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-[#EDF2F9] text-slate-800 border border-slate-300   ">
                             Flagged
                           </span>
                         )}
@@ -754,13 +738,13 @@ export const FloorInchargeDashboard = () => {
 
                       {/* Dark High-Contrast Status badge: Slate-900 if 100% booked, Slate-100 if pending */}
                       {isCompleted ? (
-                        <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-900 text-white border border-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:border-slate-200">
-                          <CheckCircle2 className="w-3 h-3 text-white dark:text-slate-950" />
+                        <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-900 text-white border border-slate-800   ">
+                          <CheckCircle2 className="w-3 h-3 text-white " />
                           All Booked
                         </span>
                       ) : (
-                        <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">
-                          <Clock className="w-3 h-3 text-slate-600 dark:text-slate-400" />
+                        <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#EDF2F9] text-slate-700 border border-slate-300   ">
+                          <Clock className="w-3 h-3 text-slate-600 " />
                           {room.pending} Pending
                         </span>
                       )}
@@ -769,29 +753,29 @@ export const FloorInchargeDashboard = () => {
                     {/* Room Lead Avatar & Name */}
                     <div className="flex items-center gap-2.5 mb-3.5">
                       <div
-                        className={`w-7 h-7 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${darkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'
+                        className={`w-7 h-7 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${darkMode ? 'bg-slate-800 text-slate-300' : 'bg-[#EDF2F9] text-slate-700'
                           }`}
                       >
                         {room.lead ? room.lead.charAt(0) : 'R'}
                       </div>
                       <div className="overflow-hidden">
-                        <p className="text-xs font-bold truncate text-slate-900 dark:text-white">{room.lead}</p>
-                        <p className={`text-[10px] font-medium truncate ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                        <p className="text-xs font-bold truncate text-[#293749] ">{room.lead}</p>
+                        <p className={`text-[10px] font-medium truncate ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                           Room Lead • {room.members} Students
                         </p>
                       </div>
                     </div>
 
                     {/* Meal Booking Progress Bar & Numbers: Consistently styled with Dark Palette */}
-                    <div className={`p-3 rounded-xl mb-3 ${darkMode ? 'bg-slate-800/60' : 'bg-slate-50'}`}>
+                    <div className={`p-3 rounded-xl mb-3 ${darkMode ? 'bg-slate-800/60' : 'bg-[#F5F7FA]'}`}>
                       <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
                         <span className={darkMode ? 'text-slate-300' : 'text-slate-600'}>
                           <strong>{room.submitted}</strong> / {room.members} Submitted
                         </span>
                         <span
                           className={`text-[11px] font-bold ${isCompleted
-                              ? 'text-slate-900 dark:text-white font-extrabold'
-                              : 'text-slate-600 dark:text-slate-400'
+                              ? 'text-[#293749]  font-extrabold'
+                              : 'text-slate-600 '
                             }`}
                         >
                           {room.rate}%
@@ -799,7 +783,7 @@ export const FloorInchargeDashboard = () => {
                       </div>
                       <div className={`w-full h-1.5 rounded-full overflow-hidden ${darkMode ? 'bg-slate-700' : 'bg-slate-200'}`}>
                         <div
-                          className={`h-full rounded-full transition-all duration-300 ${isCompleted ? 'bg-slate-900 dark:bg-white' : 'bg-slate-500 dark:bg-slate-400'
+                          className={`h-full rounded-full transition-all duration-300 ${isCompleted ? 'bg-slate-900 ' : 'bg-slate-500 '
                             }`}
                           style={{ width: `${room.rate}%` }}
                         ></div>
@@ -808,8 +792,8 @@ export const FloorInchargeDashboard = () => {
                   </div>
 
                   {/* Card Footer: Clean subtitle & Quick Remind Action */}
-                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                    <span className={`text-[11px] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <div className="pt-3 border-t border-slate-100  flex items-center justify-between">
+                    <span className={`text-[11px] font-medium ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                       {isCompleted ? 'Target Satisfied' : `${room.pending} missing order${room.pending > 1 ? 's' : ''}`}
                     </span>
 
@@ -817,7 +801,7 @@ export const FloorInchargeDashboard = () => {
                     <button
                       type="button"
                       onClick={() => remindRoomLead(room.roomNo, room.lead)}
-                      className="text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
+                      className="text-xs font-semibold text-slate-600 hover:text-[#293749]   flex items-center gap-1 transition-colors cursor-pointer"
                       title={`Send reminder to ${room.lead}`}
                     >
                       <Bell className="w-3.5 h-3.5 text-slate-400" />
@@ -830,14 +814,14 @@ export const FloorInchargeDashboard = () => {
           </div>
 
           {filteredRooms.length === 0 && (
-            <div className={`p-8 text-center rounded-2xl border ${darkMode ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+            <div className={`p-8 text-center rounded-2xl border ${darkMode ? 'bg-slate-800/40 border-slate-700' : 'bg-[#F5F7FA] border-[#DCE4EF]'}`}>
               <p className="text-sm font-bold">No rooms found matching your search or filter.</p>
               <button
                 onClick={() => {
                   setSearchTerm('');
                   setRoomFilter('all');
                 }}
-                className="mt-2 text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-bold"
+                className="mt-2 text-xs text-indigo-600  hover:underline font-bold"
               >
                 Clear Filters
               </button>
@@ -850,32 +834,32 @@ export const FloorInchargeDashboard = () => {
       {/* Render if user is on 'Meal Requirement' tab */}
       {activeTab === 'Meal Requirement' && (
         <section
-          className={`p-6 rounded-3xl border shadow-sm transition-all duration-300 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'
+          className={`p-6 rounded-3xl border shadow-sm transition-all duration-300 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#DCE4EF]/90'
             }`}
         >
           {/* Section Header: Title & Transmit to Kitchen action */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
             <div>
               <h3 className="text-lg font-black tracking-tight flex items-center gap-2">
-                <Utensils className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+                <Utensils className="w-5 h-5 text-slate-700 " />
                 Tomorrow's Floor Meal Requirements ({floorConfig.label})
               </h3>
-              <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                 Consolidated meal bookings for {floorConfig.label} students sent directly to the Main Mess Kitchen for cooking preparation.
               </p>
             </div>
             
             <div className="flex items-center gap-2.5 flex-wrap">
               {floorMealSheets.some((s) => s.floor.includes(floorConfig.prefix || 'Floor 1') && s.status === 'Confirmed by Kitchen') ? (
-                <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200/80 flex items-center gap-1.5 shadow-2xs">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-[#EDF2F9] text-[#2B4F80] border border-[#D5E4F8]/80 flex items-center gap-1.5 shadow-2xs">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#355F97]" />
                   Kitchen Confirmed for Cooking
                 </span>
               ) : (
                 <button
                   type="button"
                   onClick={() => sendFloorMealSheetToMess(floorConfig.label, mealReqs)}
-                  className="px-3.5 py-1.5 rounded-xl bg-[#1b4d3e] hover:bg-[#143d31] text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all"
+                  className="px-3.5 py-1.5 rounded-xl bg-[#355F97] hover:bg-[#2B4F80] text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all"
                 >
                   <Send className="w-3.5 h-3.5 text-white" />
                   <span>Transmit Sheet to Mess Kitchen</span>
@@ -883,7 +867,7 @@ export const FloorInchargeDashboard = () => {
               )}
               {/* Total Residents pill */}
               <span
-                className={`text-xs font-bold px-3 py-1.5 rounded-full border w-fit ${darkMode ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-slate-100 text-slate-700 border-slate-200'
+                className={`text-xs font-bold px-3 py-1.5 rounded-full border w-fit ${darkMode ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-[#EDF2F9] text-slate-700 border-[#DCE4EF]'
                   }`}
               >
                 Floor Total: {totalStudents} Residents
@@ -935,21 +919,21 @@ export const FloorInchargeDashboard = () => {
               return (
                 <div
                   key={meal.name}
-                  className={`p-5 rounded-2xl border transition-all duration-300 hover:shadow-md flex flex-col justify-between ${darkMode ? 'bg-slate-850/60 border-slate-800' : 'bg-slate-50/60 border-slate-200/80'
+                  className={`p-5 rounded-2xl border transition-all duration-300 hover:shadow-md flex flex-col justify-between ${darkMode ? 'bg-slate-850/60 border-slate-800' : 'bg-[#F5F7FA]/60 border-[#DCE4EF]/80'
                     }`}
                 >
                   {/* Top Row: Meal Icon, Meal Name, Serving Schedule, and Donut Gauge */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div
-                        className={`w-10 h-10 rounded-2xl flex items-center justify-center border shadow-2xs ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+                        className={`w-10 h-10 rounded-2xl flex items-center justify-center border shadow-2xs ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-[#DCE4EF]'
                           }`}
                       >
                         <Icon className="w-5 h-5" style={{ color: meal.color }} />
                       </div>
                       <div>
                         <h4 className="font-extrabold text-sm">{meal.name}</h4>
-                        <p className={`text-[11px] font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                        <p className={`text-[11px] font-medium ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                           {meal.time}
                         </p>
                       </div>
@@ -989,18 +973,18 @@ export const FloorInchargeDashboard = () => {
                   {/* Middle Row: Selected meal booking headcount */}
                   <div className="flex items-baseline gap-1.5 mb-3">
                     <span className="text-2xl font-black">{meal.data.selected}</span>
-                    <span className={`text-xs font-semibold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <span className={`text-xs font-semibold ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                       / {totalStudents} booked
                     </span>
                   </div>
 
                   {/* Bottom Row: Opted out count and High Demand badge */}
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-200/60 dark:border-slate-800 text-[11px]">
-                    <span className={darkMode ? 'text-slate-400' : 'text-slate-500'}>{optedOut} opted out</span>
+                  <div className="flex items-center justify-between pt-3 border-t border-[#DCE4EF]/60  text-[11px]">
+                    <span className={darkMode ? 'text-slate-400' : 'text-[#65748A]'}>{optedOut} opted out</span>
                     <span
                       className={`font-bold px-2 py-0.5 rounded-full text-[10px] ${meal.data.percentage >= 70
-                          ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950'
-                          : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                          ? 'bg-slate-900 text-white  '
+                          : 'bg-[#EDF2F9] text-slate-700  '
                         }`}
                     >
                       {meal.data.percentage >= 70 ? 'High Demand' : 'Normal'}
@@ -1016,14 +1000,14 @@ export const FloorInchargeDashboard = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
               <div>
                 <h4 className="font-extrabold text-sm flex items-center gap-2">
-                  <ChefHat className="w-4 h-4 text-[#1b4d3e] dark:text-emerald-400" />
+                  <ChefHat className="w-4 h-4 text-[#355F97] " />
                   Tomorrow's Published Mess Menu (Live Kitchen Feed)
                 </h4>
-                <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                   Published dishes live from Chef Ramesh at the Main Mess Kitchen
                 </p>
               </div>
-              <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/70 w-fit">
+              <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-[#EDF2F9] text-[#2B4F80] border border-[#D5E4F8]/70 w-fit">
                 Live Kitchen Sync Active
               </span>
             </div>
@@ -1037,14 +1021,14 @@ export const FloorInchargeDashboard = () => {
               ].map((m) => (
                 <div
                   key={m.meal}
-                  className={`p-3.5 rounded-2xl border transition-colors ${darkMode ? 'bg-slate-850/70 border-slate-800' : 'bg-slate-50/80 border-slate-200/70'
+                  className={`p-3.5 rounded-2xl border transition-colors ${darkMode ? 'bg-slate-850/70 border-slate-800' : 'bg-[#F5F7FA]/80 border-[#DCE4EF]/70'
                     }`}
                 >
-                  <span className="font-mono font-bold text-[11px] text-slate-500 flex items-center gap-1.5 uppercase mb-1.5">
+                  <span className="font-mono font-bold text-[11px] text-[#65748A] flex items-center gap-1.5 uppercase mb-1.5">
                     <span>{m.icon}</span>
                     <span>{m.meal}</span>
                   </span>
-                  <p className="font-bold text-slate-900 dark:text-white leading-relaxed">
+                  <p className="font-bold text-[#293749]  leading-relaxed">
                     {m.items}
                   </p>
                 </div>
@@ -1058,23 +1042,23 @@ export const FloorInchargeDashboard = () => {
       {/* Render if activeTab is 'Room & Floor Monitoring' */}
       {(activeTab === 'Room & Floor Monitoring' || activeTab === 'Room Monitoring' || activeTab === 'Floor Overview' || activeTab === 'Dashboard') && (
         <section
-          className={`p-6 rounded-3xl border shadow-sm transition-all duration-300 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'
+          className={`p-6 rounded-3xl border shadow-sm transition-all duration-300 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#DCE4EF]/90'
             }`}
         >
           {/* Table Section Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
               <h3 className="text-lg font-black tracking-tight flex items-center gap-2">
-                <Users className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+                <Users className="w-5 h-5 text-slate-700 " />
                 Complete {floorConfig.label} Room Monitoring Matrix
               </h3>
-              <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                 Real-time meal booking and submission audit for all assigned rooms.
               </p>
             </div>
             {/* Total rooms count badge */}
             <div className="flex items-center gap-2">
-              <span className={`text-xs font-bold px-3 py-1.5 rounded-xl border ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-600'}`}>
+              <span className={`text-xs font-bold px-3 py-1.5 rounded-xl border ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-[#EDF2F9] border-[#DCE4EF] text-slate-600'}`}>
                 {scopedRooms.length} Total Rooms
               </span>
             </div>
@@ -1086,7 +1070,7 @@ export const FloorInchargeDashboard = () => {
               {/* Table Column Headings */}
               <thead>
                 <tr
-                  className={`border-b font-bold uppercase text-[11px] tracking-wider ${darkMode ? 'border-slate-800 text-slate-400' : 'border-slate-200 text-slate-500'
+                  className={`border-b font-bold uppercase text-[11px] tracking-wider ${darkMode ? 'border-slate-800 text-slate-400' : 'border-[#DCE4EF] text-[#65748A]'
                     }`}
                 >
                   <th className="pb-3.5 pl-2">Room</th>
@@ -1112,15 +1096,15 @@ export const FloorInchargeDashboard = () => {
                       className={`transition-colors ${isLow
                           ? darkMode
                             ? 'bg-slate-800/40'
-                            : 'bg-slate-50/70'
+                            : 'bg-[#F5F7FA]/70'
                           : ''
-                        } ${darkMode ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50/80'}`}
+                        } ${darkMode ? 'hover:bg-slate-800/50' : 'hover:bg-[#F5F7FA]/80'}`}
                     >
                       {/* Column 1: Room Number + FLAGGED badge if applicable */}
                       <td className="py-4 pl-2 font-black flex items-center gap-2">
                         <span>{room.roomNo}</span>
                         {room.flagged && (
-                          <span className="bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200 text-[10px] font-extrabold px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-600">
+                          <span className="bg-slate-200 text-slate-800   text-[10px] font-extrabold px-1.5 py-0.5 rounded border border-slate-300 ">
                             FLAGGED
                           </span>
                         )}
@@ -1130,26 +1114,26 @@ export const FloorInchargeDashboard = () => {
                         {room.lead}
                       </td>
                       {/* Column 3: Total members capacity */}
-                      <td className={`py-4 font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <td className={`py-4 font-medium ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                         {room.members}
                       </td>
                       {/* Column 4: Meal submissions count and percentage */}
                       <td className="py-4">
-                        <span className={`font-bold ${isComplete ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-600 dark:text-slate-400'}`}>
+                        <span className={`font-bold ${isComplete ? 'text-[#293749]  font-bold' : 'text-slate-600 '}`}>
                           {room.submitted}
                         </span>
-                        <span className={darkMode ? 'text-slate-400' : 'text-slate-500'}> / {room.members} ({room.rate}%)</span>
+                        <span className={darkMode ? 'text-slate-400' : 'text-[#65748A]'}> / {room.members} ({room.rate}%)</span>
                       </td>
                       {/* Column 5: Booking status chip */}
                       <td className="py-4">
                         {isComplete ? (
-                          <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-white dark:text-slate-950" />
+                          <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-slate-900 text-white  ">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-white " />
                             All {room.members} Booked
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">
-                            <Clock className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
+                          <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-[#EDF2F9] text-slate-700 border border-slate-300   ">
+                            <Clock className="w-3.5 h-3.5 text-slate-600 " />
                             {room.pending} Pending ({room.submitted}/{room.members})
                           </span>
                         )}
@@ -1158,8 +1142,8 @@ export const FloorInchargeDashboard = () => {
                       <td className="py-4">
                         <span
                           className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${room.rate >= 75
-                              ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950'
-                              : 'bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+                              ? 'bg-slate-900 text-white  '
+                              : 'bg-[#EDF2F9] text-slate-700 border border-slate-300   '
                             }`}
                         >
                           {room.rate >= 75 ? 'On Track' : 'Needs Action'}
@@ -1173,10 +1157,10 @@ export const FloorInchargeDashboard = () => {
                             onClick={() => remindRoomLead(room.roomNo, room.lead)}
                             className={`font-semibold px-3 py-1.5 rounded-xl text-xs border transition-colors flex items-center gap-1.5 cursor-pointer ${darkMode
                                 ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
-                                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                                : 'bg-[#EDF2F9] hover:bg-slate-200 text-slate-700 border-[#DCE4EF]'
                               }`}
                           >
-                            <Bell className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" />
+                            <Bell className="w-3.5 h-3.5 text-slate-700 " />
                             Remind Lead
                           </button>
                           {/* Flag or Unflag Room */}
@@ -1186,7 +1170,7 @@ export const FloorInchargeDashboard = () => {
                                 ? 'bg-rose-600 text-white border-rose-600'
                                 : darkMode
                                   ? 'bg-slate-800 text-slate-400 hover:text-rose-400 border-slate-700'
-                                  : 'bg-slate-100 text-slate-500 hover:text-rose-600 border-slate-200'
+                                  : 'bg-[#EDF2F9] text-[#65748A] hover:text-rose-600 border-[#DCE4EF]'
                               }`}
                             title="Flag Room"
                           >
@@ -1207,26 +1191,26 @@ export const FloorInchargeDashboard = () => {
       {/* Render if activeTab is 'Room & Floor Monitoring' */}
       {(activeTab === 'Room & Floor Monitoring' || activeTab === 'Room Monitoring' || activeTab === 'Floor Overview' || activeTab === 'Dashboard') && (
         <section
-          className={`p-6 rounded-3xl border shadow-sm transition-all duration-300 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'
+          className={`p-6 rounded-3xl border shadow-sm transition-all duration-300 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#DCE4EF]/90'
             }`}
         >
           {/* Analytics Header with Legend and Average */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
               <h3 className="text-lg font-black tracking-tight flex items-center gap-2">
-                <BarChart2 className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+                <BarChart2 className="w-5 h-5 text-slate-700 " />
                 Room Meal Participation Analytics (%)
               </h3>
-              <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                 Submission rate comparison across all {scopedRooms.length} rooms on {floorConfig.label}.
               </p>
             </div>
 
             {/* 2-Color Legend (Dark Solid: >=75%, Slate: <75%) */}
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              <div className={`flex items-center gap-3 px-3 py-1.5 rounded-xl border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+              <div className={`flex items-center gap-3 px-3 py-1.5 rounded-xl border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-[#F5F7FA] border-[#DCE4EF]'}`}>
                 <div className="flex items-center gap-1.5 font-medium text-[11px]">
-                  <span className="w-2.5 h-2.5 rounded-full bg-slate-900 dark:bg-white"></span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-slate-900 "></span>
                   <span className={darkMode ? 'text-slate-300' : 'text-slate-600'}>≥75% On Track</span>
                 </div>
                 <div className="flex items-center gap-1.5 font-medium text-[11px]">
@@ -1237,7 +1221,7 @@ export const FloorInchargeDashboard = () => {
 
               {/* Floor Average badge */}
               <span
-                className={`px-3 py-1.5 rounded-xl font-bold border text-[11px] ${darkMode ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-slate-100 text-slate-800 border-slate-300'
+                className={`px-3 py-1.5 rounded-xl font-bold border text-[11px] ${darkMode ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-[#EDF2F9] text-slate-800 border-slate-300'
                   }`}
               >
                 Floor Average: {participationPercentage}%
@@ -1289,25 +1273,25 @@ export const FloorInchargeDashboard = () => {
                       const data = payload[0].payload;
                       return (
                         <div
-                          className={`p-3.5 rounded-2xl shadow-xl border text-xs min-w-[170px] ${darkMode ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
+                          className={`p-3.5 rounded-2xl shadow-xl border text-xs min-w-[170px] ${darkMode ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-[#DCE4EF] text-[#293749]'
                             }`}
                         >
-                          <div className="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-slate-200 dark:border-slate-800">
+                          <div className="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-[#DCE4EF] ">
                             <span className="font-extrabold text-sm">{data.roomNo}</span>
                             <span
                               className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${data.rate >= 75
-                                  ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950'
-                                  : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
+                                  ? 'bg-slate-900 text-white  '
+                                  : 'bg-[#EDF2F9] text-slate-800  '
                                 }`}
                             >
                               {data.rate}%
                             </span>
                           </div>
-                          <p className={`text-[11px] mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                          <p className={`text-[11px] mb-1 ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                             Lead: <strong className={darkMode ? 'text-slate-200' : 'text-slate-700'}>{data.lead}</strong>
                           </p>
-                          <p className={`text-[11px] ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                            Submissions: <strong className="text-slate-900 dark:text-white font-bold">{data.submitted}</strong> / {data.members} Students
+                          <p className={`text-[11px] ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
+                            Submissions: <strong className="text-[#293749]  font-bold">{data.submitted}</strong> / {data.members} Students
                           </p>
                         </div>
                       );
@@ -1332,24 +1316,24 @@ export const FloorInchargeDashboard = () => {
       {/* Render if activeTab is 'Low Participation' */}
       {activeTab === 'Low Participation' && (
         <section
-          className={`p-6 rounded-3xl border shadow-sm transition-all duration-300 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'
+          className={`p-6 rounded-3xl border shadow-sm transition-all duration-300 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#DCE4EF]/90'
             }`}
         >
           {/* Header with Remind All Pending Leads button */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
             <div>
-              <h3 className="text-lg font-black tracking-tight text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+              <h3 className="text-lg font-black tracking-tight text-slate-800  flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-slate-700 " />
                 Low Participation Rooms (Action Required)
               </h3>
-              <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
                 Rooms on Floor 2 with submission rates below 60% or flagged for review.
               </p>
             </div>
             {/* Remind All Leads Button */}
             <button
               onClick={handleRemindAllLow}
-              className="bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:text-slate-950 font-bold px-4 py-2 rounded-2xl text-xs flex items-center gap-2 transition-all cursor-pointer shadow-sm active:scale-95"
+              className="bg-slate-900 hover:bg-slate-800 text-white   font-bold px-4 py-2 rounded-2xl text-xs flex items-center gap-2 transition-all cursor-pointer shadow-sm active:scale-95"
             >
               <Bell className="w-4 h-4" />
               Remind All Pending Leads
@@ -1359,10 +1343,10 @@ export const FloorInchargeDashboard = () => {
           {/* Conditional view: Success state if all rooms meet threshold, else list of warning cards */}
           {lowParticipationRooms.length === 0 ? (
             <div
-              className={`p-10 text-center rounded-2xl border ${darkMode ? 'bg-slate-800/60 border-slate-700 text-slate-300' : 'bg-slate-100 border-slate-300 text-slate-800'
+              className={`p-10 text-center rounded-2xl border ${darkMode ? 'bg-slate-800/60 border-slate-700 text-slate-300' : 'bg-[#EDF2F9] border-slate-300 text-slate-800'
                 }`}
             >
-              <CheckCircle2 className="w-10 h-10 text-slate-800 dark:text-slate-200 mx-auto mb-2" />
+              <CheckCircle2 className="w-10 h-10 text-slate-800  mx-auto mb-2" />
               <p className="font-extrabold text-base">All Rooms Meet Target!</p>
               <p className="text-xs mt-1">Every room on Floor 2 has satisfied the minimum submission quota.</p>
             </div>
@@ -1371,13 +1355,13 @@ export const FloorInchargeDashboard = () => {
               {lowParticipationRooms.map((room) => (
                 <div
                   key={room.roomNo}
-                  className={`p-5 rounded-2xl border transition-all duration-200 flex flex-col justify-between ${darkMode ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50/60 border-slate-200/90'
+                  className={`p-5 rounded-2xl border transition-all duration-200 flex flex-col justify-between ${darkMode ? 'bg-slate-800/40 border-slate-700' : 'bg-[#F5F7FA]/60 border-[#DCE4EF]/90'
                     }`}
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <span className="font-mono font-black text-lg">{room.roomNo}</span>
-                      <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-slate-800 text-white dark:bg-slate-700">
+                      <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-slate-800 text-white ">
                         {room.rate}% Rate
                       </span>
                     </div>
@@ -1388,11 +1372,11 @@ export const FloorInchargeDashboard = () => {
                   </div>
 
                   {/* Action buttons inside card */}
-                  <div className="pt-3 border-t border-slate-200/60 dark:border-slate-700 flex items-center gap-2">
+                  <div className="pt-3 border-t border-[#DCE4EF]/60  flex items-center gap-2">
                     {/* Remind Lead button */}
                     <button
                       onClick={() => remindRoomLead(room.roomNo, room.lead)}
-                      className="flex-1 bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:text-slate-950 font-bold py-2 px-3 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                      className="flex-1 bg-slate-900 hover:bg-slate-800 text-white   font-bold py-2 px-3 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
                     >
                       <Bell className="w-3.5 h-3.5" />
                       Remind Lead
@@ -1404,7 +1388,7 @@ export const FloorInchargeDashboard = () => {
                           ? 'bg-slate-800 text-white border-slate-800'
                           : darkMode
                             ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
-                            : 'bg-white hover:bg-slate-100 text-slate-600 border-slate-200'
+                            : 'bg-white hover:bg-[#EDF2F9] text-slate-600 border-[#DCE4EF]'
                         }`}
                       title="Flag Room"
                     >
@@ -1422,21 +1406,21 @@ export const FloorInchargeDashboard = () => {
       {/* Render if activeTab is 'Reports' */}
       {activeTab === 'Reports' && (
         <section
-          className={`p-8 rounded-3xl border shadow-sm text-center transition-all duration-300 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90'
+          className={`p-8 rounded-3xl border shadow-sm text-center transition-all duration-300 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#DCE4EF]/90'
             }`}
         >
           {/* Reports Icon */}
-          <div className="w-14 h-14 rounded-3xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 flex items-center justify-center mx-auto mb-4">
+          <div className="w-14 h-14 rounded-3xl bg-[#EDF2F9]  text-slate-800  flex items-center justify-center mx-auto mb-4">
             <FileText className="w-7 h-7" />
           </div>
           <h3 className="text-xl font-black">Floor 1 Meal Booking & Kitchen Requisitions</h3>
-          <p className={`text-xs sm:text-sm mt-1.5 max-w-md mx-auto ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+          <p className={`text-xs sm:text-sm mt-1.5 max-w-md mx-auto ${darkMode ? 'text-slate-400' : 'text-[#65748A]'}`}>
             Download and export daily student meal selections and tomorrow's dining preparation requisitions for Hostel Block D • Floor 1.
           </p>
           {/* Export Button */}
           <button
             onClick={() => addToast('Floor 1 Meal Requisition Report generated successfully!', 'success')}
-            className="mt-6 bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:text-slate-950 font-bold py-2.5 px-6 rounded-2xl text-xs transition-all shadow-md flex items-center gap-2 mx-auto cursor-pointer active:scale-95"
+            className="mt-6 bg-slate-900 hover:bg-slate-800 text-white   font-bold py-2.5 px-6 rounded-2xl text-xs transition-all shadow-md flex items-center gap-2 mx-auto cursor-pointer active:scale-95"
           >
             <Download className="w-4 h-4" />
             Export Meal Roster PDF / CSV

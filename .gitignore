@@ -38,6 +38,14 @@ backend/ai-service/__pycache__/
 backend/ai-service/.venv/
 backend/ai-service/venv/
 
+# Mess Guide model weights, RAG index & training artifacts
+backend/ai-service/models/
+backend/ai-service/index/
+backend/ai-service/training/.venv/
+backend/ai-service/training/outputs/
+backend/ai-service/training/data/
+*.gguf
+
 # Environment Variables & Secrets
 .env
 .env.local
@@ -46,6 +54,14 @@ backend/ai-service/venv/
 *.env.*
 frontend/.env
 backend/.env
+
+# Local Database Backups & Seed Datasets
+seed-data/
+db_backup_*/
+
+# Generated build caches & audit artifacts (not source)
+unsloth_compiled_cache
+/artifacts/
 
 # Temporary Files, Scratchpads & Runtime Logs
 *.log
@@ -73,6 +89,7 @@ screenshot.png
 *.commandcode
 commandcode/
 *.commandcode.*
+COMMANDS.md
 
 # IDE & Editor Settings
 .vscode/

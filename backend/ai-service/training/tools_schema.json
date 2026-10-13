@@ -1,0 +1,258 @@
+{
+  "assistant_name": "Mess Guide",
+  "system_prompt": "You are 'Mess Guide', the built-in assistant for the KIET Smart Mess & KFC Campus OS. You help students and campus staff understand and operate the platform.\n\nRULES:\n1. Always reply with a single strict JSON object and nothing else. No markdown fences, no prose around it.\n2. To answer a question, return: {\"type\":\"answer\",\"text\":\"<helpful reply>\"}\n3. To perform an action or fetch live data, return: {\"type\":\"action\",\"tool\":\"<tool_name>\",\"args\":{...}}\n4. Only use tool names listed in TOOLS. Never invent tools, URLs, or arguments.\n5. If a request needs information the tools cannot provide, use type \"answer\" and say so.\n6. Keep answers concise and specific to this project. Never expose secrets or full tokens.\n\nTOOLS:\n{tools}",
+  "response_contract": {
+    "answer": { "type": "answer", "text": "string" },
+    "action": { "type": "action", "tool": "string", "args": "object" }
+  },
+  "tools": [
+    {
+      "name": "get_menu",
+      "description": "Get the current mess menu (breakfast, lunch, snacks, dinner) published by the Mess Incharge.",
+      "kind": "read",
+      "requiredRole": null,
+      "http": { "method": "GET", "path": "/menu" },
+      "args": {},
+      "examples": [
+        { "instruction": "What is on the menu today?", "args": {} },
+        { "instruction": "Show me today's mess menu", "args": {} },
+        { "instruction": "What's for dinner?", "args": {} }
+      ]
+    },
+    {
+      "name": "get_forecast",
+      "description": "Get the AI headcount forecast for a meal, including predicted turnout, confidence, buffer portions, kitchen batch sizing and wastage metrics.",
+      "kind": "read",
+      "requiredRole": null,
+      "http": {
+        "method": "GET",
+        "path": "/ai/forecast/mess/{date}",
+        "pathParams": ["date"],
+        "query": ["meal", "scenario", "customSelected"]
+      },
+      "args": {
+        "date": { "type": "string", "description": "Forecast date as YYYY-MM-DD", "required": false },
+        "meal": { "type": "string", "enum": ["Breakfast", "Lunch", "Snacks", "Dinner"], "required": false },
+        "scenario": { "type": "string", "enum": ["standard", "rainy", "exam", "weekend_leave", "festival_feast"], "required": false },
+        "customSelected": { "type": "integer", "required": false }
+      },
+      "examples": [
+        { "instruction": "Predict tomorrow's lunch headcount", "args": { "meal": "Lunch" } },
+        { "instruction": "How many will eat dinner if it rains?", "args": { "meal": "Dinner", "scenario": "rainy" } },
+        { "instruction": "Forecast breakfast during exam week", "args": { "meal": "Breakfast", "scenario": "exam" } },
+        { "instruction": "Give me the headcount prediction for snacks", "args": { "meal": "Snacks" } }
+      ]
+    },
+    {
+      "name": "get_historical",
+      "description": "Get historical dining turnout records used to train the forecasting model.",
+      "kind": "read",
+      "requiredRole": null,
+      "http": { "method": "GET", "path": "/ai/historical-data", "query": ["meal"] },
+      "args": {
+        "meal": { "type": "string", "enum": ["Breakfast", "Lunch", "Snacks", "Dinner"], "required": false }
+      },
+      "examples": [
+        { "instruction": "Show me past lunch turnout data", "args": { "meal": "Lunch" } },
+        { "instruction": "What historical data do you have?", "args": {} }
+      ]
+    },
+    {
+      "name": "get_anomalies",
+      "description": "Get flagged dining anomalies (unusual turnout or wastage) that need attention. Restricted to Mess Incharge, Principal and Admin.",
+      "kind": "read",
+      "requiredRole": ["Mess Incharge", "Principal", "Admin"],
+      "http": { "method": "GET", "path": "/ai/anomalies" },
+      "args": {},
+      "examples": [
+        { "instruction": "Are there any anomalies in the kitchen today?", "args": {} },
+        { "instruction": "Show me flagged wastage issues", "args": {} }
+      ]
+    },
+    {
+      "name": "get_wastage",
+      "description": "Get campus wastage analytics and the food-waste reduction trend. Restricted to Mess Incharge, Principal and Admin.",
+      "kind": "read",
+      "requiredRole": ["Mess Incharge", "Principal", "Admin"],
+      "http": { "method": "GET", "path": "/analytics/wastage" },
+      "args": {},
+      "examples": [
+        { "instruction": "How much wastage did we save this week?", "args": {} },
+        { "instruction": "Show the wastage analytics", "args": {} }
+      ]
+    },
+    {
+      "name": "get_kfc_menu",
+      "description": "Get the KFC Express canteen menu with prices and live stock availability.",
+      "kind": "read",
+      "requiredRole": null,
+      "http": { "method": "GET", "path": "/kfc/menu" },
+      "args": {},
+      "examples": [
+        { "instruction": "What is available at KFC right now?", "args": {} },
+        { "instruction": "Show the KFC menu and stock", "args": {} }
+      ]
+    },
+    {
+      "name": "get_kfc_orders",
+      "description": "Get KFC Express orders. Requires the caller to be signed in.",
+      "kind": "read",
+      "requiredRole": null,
+      "http": { "method": "GET", "path": "/kfc/orders" },
+      "args": {},
+      "examples": [
+        { "instruction": "Show the KFC order queue", "args": {} },
+        { "instruction": "What KFC orders are pending?", "args": {} }
+      ]
+    },
+    {
+      "name": "get_headcount",
+      "description": "Get the consolidated meal headcount for a date from the aggregation service. Restricted to Mess Incharge, Principal, Admin and Block Coordinator.",
+      "kind": "read",
+      "requiredRole": ["Mess Incharge", "Principal", "Admin", "Block Coordinator"],
+      "http": { "method": "GET", "path": "/aggregations/mess/{date}", "pathParams": ["date"] },
+      "args": {
+        "date": { "type": "string", "description": "Date as YYYY-MM-DD", "required": false }
+      },
+      "examples": [
+        { "instruction": "What is the consolidated headcount for tomorrow?", "args": {} },
+        { "instruction": "Show me today's block headcount", "args": {} }
+      ]
+    },
+    {
+      "name": "get_block_performance",
+      "description": "Get per-block dining performance and rankings (participation, submission rates) so you can tell which block is highest or lowest. Restricted to Mess Incharge, Block Coordinator, Principal and Admin.",
+      "kind": "read",
+      "requiredRole": ["Mess Incharge", "Block Coordinator", "Principal", "Admin"],
+      "http": { "method": "GET", "path": "/analytics/block-performance" },
+      "args": {},
+      "examples": [
+        { "instruction": "Which block has the highest participation?", "args": {} },
+        { "instruction": "Compare Block D and Block E performance", "args": {} }
+      ]
+    },
+    {
+      "name": "get_principal_analytics",
+      "description": "Get campus-wide executive analytics: average wastage, mess rating, KFC revenue, predicted-vs-actual trends and escalations. Restricted to Principal and Admin.",
+      "kind": "read",
+      "requiredRole": ["Principal", "Admin"],
+      "http": { "method": "GET", "path": "/analytics/principal" },
+      "args": {},
+      "examples": [
+        { "instruction": "Give me the campus overview", "args": {} },
+        { "instruction": "How is the mess performing overall?", "args": {} }
+      ]
+    },
+    {
+      "name": "navigate",
+      "description": "Open a page in the app for the user. Frontend-only; no backend call is made.",
+      "kind": "ui",
+      "requiredRole": null,
+      "args": {
+        "page": {
+          "type": "string",
+          "required": true,
+          "description": "App route to open",
+          "enum": ["/", "/login", "/dashboards", "/student", "/room-lead", "/floor-incharge", "/block-coordinator", "/mess-incharge", "/principal", "/kfc-staff"]
+        }
+      },
+      "examples": [
+        { "instruction": "Take me to the student portal", "args": { "page": "/student" } },
+        { "instruction": "Open the mess incharge dashboard", "args": { "page": "/mess-incharge" } },
+        { "instruction": "Go to the KFC staff console", "args": { "page": "/kfc-staff" } }
+      ]
+    },
+    {
+      "name": "set_meal_selection",
+      "description": "Opt a student in or out of a meal for a date. Students may only change their own selection.",
+      "kind": "write",
+      "requiredRole": ["Student", "Room Lead", "Admin"],
+      "http": { "method": "POST", "path": "/selections" },
+      "args": {
+        "meal": { "type": "string", "enum": ["breakfast", "lunch", "snacks", "dinner"], "required": true },
+        "selected": { "type": "boolean", "required": true },
+        "date": { "type": "string", "required": false }
+      },
+      "examples": [
+        { "instruction": "Opt me out of tomorrow's breakfast", "args": { "meal": "breakfast", "selected": false } },
+        { "instruction": "I will eat lunch tomorrow", "args": { "meal": "lunch", "selected": true } }
+      ]
+    },
+    {
+      "name": "place_kfc_order",
+      "description": "Place a KFC Express order for the current student. Max 5 orders per day and one active order at a time.",
+      "kind": "write",
+      "requiredRole": ["Student", "Room Lead", "Admin"],
+      "http": { "method": "POST", "path": "/kfc/orders" },
+      "args": {
+        "items": { "type": "array", "required": true, "description": "Array of { name, qty, price }" },
+        "totalAmount": { "type": "number", "required": false }
+      },
+      "examples": [
+        { "instruction": "Order one veg burger", "args": { "items": [{ "name": "Veg Burger", "qty": 1 }] } },
+        { "instruction": "Place a KFC order for two chicken rolls", "args": { "items": [{ "name": "Chicken Roll", "qty": 2 }] } }
+      ]
+    },
+    {
+      "name": "cancel_kfc_order",
+      "description": "Cancel a KFC order within the 2-minute cancellation window.",
+      "kind": "write",
+      "requiredRole": ["Student", "Room Lead", "KFC Staff", "Admin"],
+      "http": { "method": "PATCH", "path": "/kfc/orders/{id}/status", "pathParams": ["id"] },
+      "args": {
+        "id": { "type": "string", "required": true },
+        "status": { "type": "string", "const": "Cancelled" }
+      },
+      "examples": [
+        { "instruction": "Cancel my KFC order", "args": { "id": "KFC-D101-42", "status": "Cancelled" } }
+      ]
+    }
+  ],
+  "scopes": {
+    "home": {
+      "label": "Project Home",
+      "focus": "explaining the Smart Mess & KFC platform, its roles, features and how it works",
+      "tools": ["get_menu", "get_kfc_menu", "get_forecast", "navigate"]
+    },
+    "student": {
+      "label": "Student Dining Portal",
+      "focus": "the student's own meals, the mess menu, KFC/canteen ordering, canteen item prices (cheapest and priciest), order status and meal selections",
+      "tools": ["get_menu", "get_kfc_menu", "get_forecast", "get_kfc_orders", "set_meal_selection", "place_kfc_order", "cancel_kfc_order", "navigate"]
+    },
+    "room-lead": {
+      "label": "Room Lead Hub",
+      "focus": "verifying room members' meal preferences and the room's submission status",
+      "tools": ["get_menu", "get_headcount", "navigate"]
+    },
+    "floor-incharge": {
+      "label": "Floor Incharge Console",
+      "focus": "floor-level room participation, rooms with pending submissions and cutoff alerts",
+      "tools": ["get_menu", "get_headcount", "navigate"]
+    },
+    "block-coordinator": {
+      "label": "Block Coordinator Hub",
+      "focus": "consolidated Block D and Block E headcounts, per-block performance and which block is highest or lowest",
+      "tools": ["get_headcount", "get_block_performance", "navigate"]
+    },
+    "mess": {
+      "label": "Mess Incharge Production Centre",
+      "focus": "kitchen headcount, AI turnout forecasting, food wastage (yesterday, this week, or the last 2 months), batch sizing, the menu and dining anomalies",
+      "tools": ["get_menu", "get_forecast", "get_historical", "get_anomalies", "get_wastage", "get_headcount", "get_block_performance", "navigate"]
+    },
+    "principal": {
+      "label": "Principal Executive Dashboard",
+      "focus": "campus-wide analytics, wastage trends, meal participation, block performance, anomalies and executive directives",
+      "tools": ["get_wastage", "get_headcount", "get_block_performance", "get_anomalies", "get_principal_analytics", "navigate"]
+    },
+    "kfc": {
+      "label": "KFC Express Console",
+      "focus": "the KFC Express menu, item prices, stock levels and the live order queue",
+      "tools": ["get_kfc_menu", "get_kfc_orders", "navigate"]
+    },
+    "admin": {
+      "label": "Campus Admin",
+      "focus": "overall operation across every dashboard, role and module",
+      "tools": ["*"]
+    }
+  }
+}

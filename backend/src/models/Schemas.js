@@ -33,6 +33,8 @@ const MealSelectionSchema = new mongoose.Schema({
   dinner: { type: String, enum: ['will_eat', 'will_not_eat'], default: 'will_eat' }
 }, { timestamps: true });
 
+MealSelectionSchema.index({ studentId: 1, date: 1 }, { unique: true });
+
 const MenuSchema = new mongoose.Schema({
   date: { type: String, required: true },
   breakfast: String,
@@ -45,11 +47,17 @@ const KFCOrderSchema = new mongoose.Schema({
   orderId: { type: String, required: true, unique: true },
   token: { type: String, required: true },
   studentName: { type: String, required: true },
+  studentRoll: { type: String },
   room: { type: String, required: true },
   items: [{ name: String, qty: Number, price: Number }],
   totalAmount: Number,
   orderTime: String,
-  status: { type: String, enum: ['Pending', 'Preparing', 'Ready', 'Collected', 'Archived'], default: 'Pending' }
+  status: { type: String, enum: ['Pending', 'Preparing', 'Ready', 'Collected', 'Archived', 'Cancelled'], default: 'Pending' },
+  feedback: {
+    rating: Number,
+    comment: String,
+    submittedAt: Date
+  }
 }, { timestamps: true });
 
 const KFCMenuItemSchema = new mongoose.Schema({
@@ -118,6 +126,8 @@ const AttendanceSchema = new mongoose.Schema({
   event: String
 }, { timestamps: true });
 
+AttendanceSchema.index({ date: 1, meal: 1 }, { unique: true });
+
 const AggregationSchema = new mongoose.Schema({
   scope: { type: String, enum: ['room', 'floor', 'block', 'mess'], required: true },
   scopeId: { type: String, required: true },
@@ -138,6 +148,31 @@ const AnomalySchema = new mongoose.Schema({
   severity: { type: String, enum: ['low', 'medium', 'high', 'critical'] }
 }, { timestamps: true });
 
+const FloorRequisitionSchema = new mongoose.Schema({
+  floor: { type: String, required: true },
+  floorId: { type: String },
+  incharge: { type: String, required: true },
+  requirements: {
+    breakfast: { type: Number, default: 0 },
+    lunch: { type: Number, default: 0 },
+    snacks: { type: Number, default: 0 },
+    dinner: { type: Number, default: 0 }
+  },
+  timestamp: String,
+  status: { type: String, default: 'Pending Verification' },
+  date: { type: String, default: () => new Date().toISOString().split('T')[0] }
+}, { timestamps: true });
+
+const DietaryRequestSchema = new mongoose.Schema({
+  studentId: { type: String, required: true },
+  studentName: { type: String, required: true },
+  room: { type: String, required: true },
+  option: { type: String, required: true },
+  details: { type: String },
+  date: { type: String, default: () => new Date().toISOString().split('T')[0] },
+  status: { type: String, default: 'Submitted' }
+}, { timestamps: true });
+
 export const Student = mongoose.models.Student || mongoose.model('Student', StudentSchema);
 export const Room = mongoose.models.Room || mongoose.model('Room', RoomSchema);
 export const MealSelection = mongoose.models.MealSelection || mongoose.model('MealSelection', MealSelectionSchema);
@@ -151,3 +186,5 @@ export const BlockPerformance = mongoose.models.BlockPerformance || mongoose.mod
 export const Attendance = mongoose.models.Attendance || mongoose.model('Attendance', AttendanceSchema);
 export const Aggregation = mongoose.models.Aggregation || mongoose.model('Aggregation', AggregationSchema);
 export const Anomaly = mongoose.models.Anomaly || mongoose.model('Anomaly', AnomalySchema);
+export const FloorRequisition = mongoose.models.FloorRequisition || mongoose.model('FloorRequisition', FloorRequisitionSchema);
+export const DietaryRequest = mongoose.models.DietaryRequest || mongoose.model('DietaryRequest', DietaryRequestSchema);

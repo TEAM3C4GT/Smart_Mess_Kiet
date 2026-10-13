@@ -1,6 +1,5 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { MainDashboards } from './pages/MainDashboards';
 import { StudentDashboard } from './pages/StudentDashboard';
@@ -13,14 +12,15 @@ import { KfcStaffDashboard } from './pages/KfcStaffDashboard';
 import { ToastContainer } from './components/ToastContainer';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { ChatWidget } from './components/ChatWidget';
 
 export const App = () => {
   return (
     <ErrorBoundary>
       <ToastContainer />
       <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<HomePage />} />
+        {/* Public route */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
 
         {/* Switchboard & Portals Directory */}
@@ -93,6 +93,7 @@ export const App = () => {
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
+      <ChatWidget />
     </ErrorBoundary>
   );
 };

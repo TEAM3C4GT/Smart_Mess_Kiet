@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="t">
+  <title id="t">KIET emblem</title>
+  <defs>
+    <linearGradient id="shield" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#22604c"/>
+      <stop offset="1" stop-color="#123227"/>
+    </linearGradient>
+  </defs>
+  <path d="M64 5 L113 19 V63 c0 31-21 50-49 60 C36 113 15 94 15 63 V19 Z"
+        fill="url(#shield)" stroke="#a97c2f" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M64 15 L104 27 V63 c0 25-17 42-40 51 C41 105 24 88 24 63 V27 Z"
+        fill="none" stroke="#d8b970" stroke-width="1.4" opacity=".75"/>
+  <text x="64" y="68" text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif" font-size="31" font-weight="700"
+        fill="#f2e6c8" letter-spacing="1.5">KIET</text>
+  <text x="64" y="88" text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif" font-size="9.5"
+        fill="#d8b970" letter-spacing="1.4">KAKINADA</text>
+  <rect x="43" y="96" width="42" height="2" rx="1" fill="#d8b970" opacity=".85"/>
+</svg>

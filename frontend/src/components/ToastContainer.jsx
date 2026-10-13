@@ -15,33 +15,38 @@ export const ToastContainer = () => {
         const isError = toast.type === 'error';
         const isInfo = toast.type === 'info' || (!isSuccess && !isWarning && !isError);
 
+        const borderClass = isSuccess
+          ? 'border-[#c9e6d6]'
+          : isError
+          ? 'border-[#f3cdd8]'
+          : isWarning
+          ? 'border-[#f2e2c0]'
+          : 'border-[#dce4ef]';
+
+        const iconClass = isSuccess
+          ? 'text-[#2f855a]'
+          : isError
+          ? 'text-[#c63352]'
+          : isWarning
+          ? 'text-[#b7791f]'
+          : 'text-[#355f97]';
+
         return (
           <div
             key={toast.id}
-            className={`pointer-events-auto flex items-center justify-between gap-3 p-4 rounded-xl shadow-xl border animate-fade-in transition-all ${
-              isSuccess
-                ? 'bg-slate-900 border-slate-800 text-white shadow-slate-950/20'
-                : isError
-                ? 'bg-rose-600 border-rose-500 text-white shadow-rose-900/20'
-                : isWarning
-                ? 'bg-amber-500 border-amber-400 text-slate-950 shadow-amber-900/10'
-                : 'bg-white border-slate-200 text-slate-900 shadow-slate-500/10'
-            }`}
+            role="status"
+            className={`pointer-events-auto flex items-center justify-between gap-3 p-4 rounded-xl shadow-lg border bg-white text-[#293749] animate-fade-in transition-all ${borderClass}`}
           >
             <div className="flex items-center gap-3">
-              {isSuccess && <CheckCircle2 className="w-5 h-5 text-white shrink-0" />}
-              {isError && <AlertTriangle className="w-5 h-5 text-white shrink-0" />}
-              {isWarning && <AlertTriangle className="w-5 h-5 text-slate-900 shrink-0" />}
-              {isInfo && <Info className="w-5 h-5 text-slate-600 shrink-0" />}
+              {isSuccess && <CheckCircle2 className={`w-5 h-5 shrink-0 ${iconClass}`} />}
+              {isError && <AlertTriangle className={`w-5 h-5 shrink-0 ${iconClass}`} />}
+              {isWarning && <AlertTriangle className={`w-5 h-5 shrink-0 ${iconClass}`} />}
+              {isInfo && <Info className={`w-5 h-5 shrink-0 ${iconClass}`} />}
               <p className="text-xs sm:text-sm font-semibold">{toast.message}</p>
             </div>
             <button
               onClick={() => removeToast(toast.id)}
-              className={`p-1 rounded-lg transition-colors ${
-                isSuccess || isError
-                  ? 'text-white/70 hover:text-white hover:bg-white/10'
-                  : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
-              }`}
+              className="p-1 rounded-lg text-[#8494ab] hover:text-[#293749] hover:bg-[#edf2f9] transition-colors"
               aria-label="Dismiss notification"
             >
               <X className="w-4 h-4" />

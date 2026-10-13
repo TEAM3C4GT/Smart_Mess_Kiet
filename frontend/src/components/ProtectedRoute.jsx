@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useApp, STAFF_ACCOUNTS, DEFAULT_CAMPUS_USERS } from '../context/AppContext';
+import { useApp } from '../context/AppContext';
 
 /**
  * Route protection and role-based authorization guard.
@@ -14,8 +14,10 @@ export const ProtectedRoute = ({ children, allowedRoles }) => {
   const { currentUser, loginAsUser, users = [] } = useApp();
   const location = useLocation();
 
-  // If role does not match allowedRoles, auto-align session to the portal's designated staff account
+  // In development mode only: auto-align session for quick UI exploration
   useEffect(() => {
+    if (!import.meta.env.DEV) return;
+
     if (
       currentUser &&
       currentUser.role !== 'Admin' &&
@@ -24,10 +26,7 @@ export const ProtectedRoute = ({ children, allowedRoles }) => {
       allowedRoles.length > 0 &&
       !allowedRoles.includes(currentUser.role)
     ) {
-      const matchingAccount =
-        (Array.isArray(STAFF_ACCOUNTS) && STAFF_ACCOUNTS.find((st) => allowedRoles.includes(st.role))) ||
-        (Array.isArray(users) && users.find((u) => allowedRoles.includes(u.role))) ||
-        (Array.isArray(DEFAULT_CAMPUS_USERS) && DEFAULT_CAMPUS_USERS.find((u) => allowedRoles.includes(u.role)));
+      const matchingAccount = Array.isArray(users) && users.find((u) => allowedRoles.includes(u.role));
 
       if (matchingAccount && loginAsUser) {
         loginAsUser(matchingAccount);
@@ -50,15 +49,14 @@ export const ProtectedRoute = ({ children, allowedRoles }) => {
     return children;
   }
 
-  // 4. User role is different (e.g. Student directly visiting /room-lead or /block-coordinator):
-  // Check if a matching demo account exists to allow immediate exploration
-  const hasMatchingAccount =
-    (Array.isArray(STAFF_ACCOUNTS) && STAFF_ACCOUNTS.some((st) => allowedRoles.includes(st.role))) ||
-    (Array.isArray(users) && users.some((u) => allowedRoles.includes(u.role)));
+  // 4. In development only: allow demo explore if a matching account exists
+  if (import.meta.env.DEV) {
+    const hasMatchingAccount =
+      (Array.isArray(users) && users.some((u) => allowedRoles.includes(u.role)));
 
-  if (hasMatchingAccount) {
-    // Render the portal immediately while the session aligns cleanly
-    return children;
+    if (hasMatchingAccount) {
+      return children;
+    }
   }
 
   // 5. Fallback redirect avoiding redirect-to-self loops

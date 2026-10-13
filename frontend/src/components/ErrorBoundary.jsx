@@ -34,8 +34,8 @@ export class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans text-slate-900">
-          <div className="max-w-lg w-full bg-white rounded-3xl border border-slate-200/90 shadow-xl p-6 sm:p-8 space-y-6 text-center">
+        <div className="min-h-screen bg-[#F5F7FA] flex items-center justify-center p-4 font-sans text-[#293749]">
+          <div className="max-w-lg w-full bg-white rounded-3xl border border-[#DCE4EF]/90 shadow-xl p-6 sm:p-8 space-y-6 text-center">
             <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center mx-auto shadow-inner">
               <AlertTriangle className="w-8 h-8" />
             </div>
@@ -44,16 +44,16 @@ export class ErrorBoundary extends React.Component {
               <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-slate-400">
                 KIET Smart Mess OS • Recovery Shield
               </span>
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+              <h2 className="text-2xl font-black text-[#293749] tracking-tight">
                 Temporary View Glitch Detected
               </h2>
-              <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-sm mx-auto">
+              <p className="text-xs sm:text-sm text-[#65748A] leading-relaxed max-w-sm mx-auto">
                 An unexpected state prevented this screen from rendering normally. Your saved data is intact.
               </p>
             </div>
 
             {this.state.error && (
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-left overflow-x-auto text-[11px] font-mono text-slate-700 max-h-32">
+              <div className="bg-[#F5F7FA] border border-[#DCE4EF] rounded-xl p-3 text-left overflow-x-auto text-[11px] font-mono text-slate-700 max-h-32">
                 {this.state.error.toString()}
               </div>
             )}
@@ -61,7 +61,7 @@ export class ErrorBoundary extends React.Component {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
               <button
                 onClick={this.handleReload}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#1b4d3e] hover:bg-[#143d31] text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 cursor-pointer"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#355F97] hover:bg-[#2B4F80] text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 cursor-pointer"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>Reload Page</span>
@@ -69,7 +69,7 @@ export class ErrorBoundary extends React.Component {
 
               <button
                 onClick={this.handleResetState}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-2xs active:scale-95 cursor-pointer"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white hover:bg-[#EDF2F9] border border-[#DCE4EF] text-slate-700 font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-2xs active:scale-95 cursor-pointer"
                 title="Clears temporary cached room state and reloads"
               >
                 <RotateCcw className="w-3.5 h-3.5 text-amber-600" />
@@ -78,7 +78,7 @@ export class ErrorBoundary extends React.Component {
 
               <a
                 href="/"
-                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#EDF2F9] hover:bg-slate-200 border border-[#DCE4EF] text-slate-700 font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95"
               >
                 <Home className="w-3.5 h-3.5" />
                 <span>Home</span>

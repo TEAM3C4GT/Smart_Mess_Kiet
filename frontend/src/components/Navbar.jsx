@@ -32,9 +32,7 @@ export const Navbar = ({
   onTabChange,
   activeStudentTab,
   onStudentTabChange,
-  tabs: propTabs,
-  darkMode = false,
-  onToggleDarkMode
+  tabs: propTabs
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -206,30 +204,30 @@ export const Navbar = ({
   };
 
   return (
-    <header className="sticky top-0 z-30 px-4 lg:px-8 py-2.5 flex items-center justify-between backdrop-blur-md bg-white/95 border-b border-slate-200/80 transition-colors duration-300">
+    <header className="sticky top-0 z-30 px-4 lg:px-8 py-2.5 flex items-center justify-between backdrop-blur-md bg-white/95 border-b border-[#DCE4EF]/80 transition-colors duration-300">
       {/* Brand Logo */}
       <div className="flex items-center gap-3">
         <Link
           to="/login"
           className="flex items-center gap-2.5 group transition-all"
         >
-          <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform">
+          <div className="w-9 h-9 rounded-xl bg-[#355F97] flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform">
             <UtensilsCrossed className="w-4 h-4 text-slate-200" />
           </div>
           <div>
             <span className="text-[10px] font-mono tracking-widest uppercase font-semibold text-slate-400 block leading-tight">
               CAMPUS OS
             </span>
-            <span className="text-sm font-extrabold tracking-tight leading-tight text-slate-900">
+            <span className="text-sm font-extrabold tracking-tight leading-tight text-[#293749]">
               Smart Mess • KFC
             </span>
           </div>
         </Link>
 
         {!isStudentPortal && !isAdminPortal && currentRole && (
-          <div className="hidden sm:flex items-center gap-2 pl-2 sm:pl-4 border-l border-slate-200 text-slate-400">
+          <div className="hidden sm:flex items-center gap-2 pl-2 sm:pl-4 border-l border-[#DCE4EF] text-slate-400">
             <ChevronRight className="w-4 h-4" />
-            <span className="text-xs sm:text-sm font-semibold px-3 py-1 rounded-full border bg-slate-100 text-slate-800 border-slate-300">
+            <span className="text-xs sm:text-sm font-semibold px-3 py-1 rounded-full border bg-[#EDF2F9] text-slate-800 border-slate-300">
               {currentRole}
             </span>
           </div>
@@ -238,7 +236,7 @@ export const Navbar = ({
 
       {/* CENTER: Universal Nav Tabs (Dynamic across all roles & synced with sidebar) */}
       {resolvedTabs && resolvedTabs.length > 0 && currentTabChangeHandler && (
-        <nav className="hidden md:flex items-center gap-1 bg-slate-50/90 p-1 rounded-2xl border border-slate-200/80 max-w-[48vw] xl:max-w-2xl overflow-x-auto scrollbar-none shadow-2xs">
+        <nav className="hidden md:flex items-center gap-1 bg-[#F5F7FA]/90 p-1 rounded-2xl border border-[#DCE4EF]/80 max-w-[48vw] xl:max-w-2xl overflow-x-auto scrollbar-none shadow-2xs">
           {resolvedTabs
             .filter((tab) => !tab.isHeader)
             .map((tab) => {
@@ -266,14 +264,14 @@ export const Navbar = ({
                   onClick={() => currentTabChangeHandler(tabId)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                     isActive
-                      ? 'bg-[#1b4d3e] text-white font-bold shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                      ? 'bg-[#355F97] text-white font-bold shadow-xs'
+                      : 'text-slate-600 hover:text-[#293749] hover:bg-white/80'
                   }`}
                 >
                   {Icon && (
                     <Icon
                       className={`w-3.5 h-3.5 shrink-0 ${
-                        isActive ? 'text-white' : 'text-slate-500'
+                        isActive ? 'text-white' : 'text-[#65748A]'
                       }`}
                     />
                   )}
@@ -303,12 +301,12 @@ export const Navbar = ({
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="relative p-2 rounded-xl transition-colors cursor-pointer text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+            className="relative p-2 rounded-xl transition-colors cursor-pointer text-[#65748A] hover:text-slate-700 hover:bg-[#EDF2F9]"
             title="Notifications"
           >
             <Bell className="w-4 h-4" />
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-slate-900 text-white font-black text-[9px] flex items-center justify-center ring-2 ring-white animate-pulse">
+              <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-[#355F97] text-white font-black text-[9px] flex items-center justify-center ring-2 ring-white animate-pulse">
                 {unreadCount}
               </span>
             )}
@@ -316,14 +314,14 @@ export const Navbar = ({
 
           {/* Notifications Dropdown Popover */}
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl shadow-2xl border p-4 z-50 animate-fade-in bg-white border-slate-200/90 text-slate-900">
+            <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl shadow-2xl border p-4 z-50 animate-fade-in bg-white border-[#DCE4EF]/90 text-[#293749]">
               {/* Header */}
-              <div className="flex items-center justify-between pb-3 border-b border-slate-200/80">
+              <div className="flex items-center justify-between pb-3 border-b border-[#DCE4EF]/80">
                 <div className="flex items-center gap-2">
                   <Bell className="w-4 h-4 text-slate-700" />
                   <span className="font-bold text-xs">Notifications</span>
                   {unreadCount > 0 && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-800">
+                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-[#EDF2F9] text-slate-800">
                       {unreadCount} unread
                     </span>
                   )}
@@ -342,7 +340,7 @@ export const Navbar = ({
               <div className="my-2.5 max-h-72 overflow-y-auto space-y-2">
                 {activeNotifications.length === 0 ? (
                   <div className="py-6 text-center text-xs text-slate-400">
-                    <p className="font-semibold text-slate-500">No new notifications</p>
+                    <p className="font-semibold text-[#65748A]">No new notifications</p>
                     <p className="text-[11px] mt-0.5">You're completely up to date!</p>
                   </div>
                 ) : (
@@ -356,13 +354,13 @@ export const Navbar = ({
                       }}
                       className={`p-3 rounded-xl border text-xs transition-all ${
                         !notif.read
-                          ? 'bg-slate-100 border-slate-300'
-                          : 'bg-slate-50/80 border-slate-100 text-slate-600'
+                          ? 'bg-[#EDF2F9] border-slate-300'
+                          : 'bg-[#F5F7FA]/80 border-slate-100 text-slate-600'
                       }`}
                     >
                       <div className="flex items-center justify-between gap-1 mb-1">
-                        <span className="font-bold text-slate-900 flex items-center gap-1.5">
-                          {!notif.read && <span className="w-2 h-2 rounded-full bg-slate-900 animate-pulse"></span>}
+                        <span className="font-bold text-[#293749] flex items-center gap-1.5">
+                          {!notif.read && <span className="w-2 h-2 rounded-full bg-[#355F97] animate-pulse"></span>}
                           {notif.title}
                         </span>
                         <span className="text-[10px] text-slate-400 font-mono">{notif.time}</span>
@@ -370,8 +368,8 @@ export const Navbar = ({
                       <p className="text-[11px] leading-relaxed text-slate-600">
                         {notif.message}
                       </p>
-                      <div className="mt-2 pt-2 border-t border-slate-200/60 flex items-center justify-between">
-                        <span className="text-[10px] text-slate-500 font-medium">
+                      <div className="mt-2 pt-2 border-t border-[#DCE4EF]/60 flex items-center justify-between">
+                        <span className="text-[10px] text-[#65748A] font-medium">
                           From: <strong className="text-slate-700">{notif.sender || 'Floor Incharge'}</strong>
                         </span>
                         {isRoomLeadPortal && (
@@ -382,7 +380,7 @@ export const Navbar = ({
                                 e.stopPropagation();
                                 if (markRoomLeadNotificationRead) markRoomLeadNotificationRead(notif.id);
                               }}
-                              className="px-2 py-0.5 rounded-lg bg-slate-900 text-white text-[10px] font-bold hover:bg-slate-800 cursor-pointer shadow-xs active:scale-95"
+                              className="px-2 py-0.5 rounded-lg bg-[#355F97] text-white text-[10px] font-bold hover:bg-slate-800 cursor-pointer shadow-xs active:scale-95"
                             >
                               Acknowledge
                             </button>
@@ -399,7 +397,7 @@ export const Navbar = ({
               </div>
 
               {/* Footer */}
-              <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between text-[11px]">
+              <div className="pt-2 border-t border-[#DCE4EF]/80 flex items-center justify-between text-[11px]">
                 <button
                   onClick={handleClearAll}
                   className="text-slate-400 hover:text-slate-600 cursor-pointer"
@@ -408,7 +406,7 @@ export const Navbar = ({
                 </button>
                 <button
                   onClick={() => setShowNotifications(false)}
-                  className="font-bold text-slate-600 hover:text-slate-900 cursor-pointer"
+                  className="font-bold text-slate-600 hover:text-[#293749] cursor-pointer"
                 >
                   Close
                 </button>
@@ -421,9 +419,9 @@ export const Navbar = ({
         <div className="relative">
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-xl transition-all cursor-pointer text-left hover:bg-slate-100"
+            className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-xl transition-all cursor-pointer text-left hover:bg-[#EDF2F9]"
           >
-            <div className="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold shrink-0">
+            <div className="w-7 h-7 rounded-full bg-[#355F97] text-white flex items-center justify-center text-xs font-bold shrink-0">
               {userInitial}
             </div>
             <div className="hidden sm:block">
@@ -438,24 +436,13 @@ export const Navbar = ({
 
           {/* User Dropdown */}
           {showUserMenu && (
-            <div className="absolute right-0 mt-2 w-56 rounded-2xl shadow-xl border py-2 z-50 animate-fade-in bg-white border-slate-200/90">
+            <div className="absolute right-0 mt-2 w-56 rounded-2xl shadow-xl border py-2 z-50 animate-fade-in bg-white border-[#DCE4EF]/90">
               <div className="px-3 py-2 border-b border-slate-100">
-                <p className="text-xs font-bold text-slate-900">{userName}</p>
-                <p className="text-[11px] font-mono text-slate-500">{currentUser?.email || 'user@demo.edu'}</p>
+                <p className="text-xs font-bold text-[#293749]">{userName}</p>
+                <p className="text-[11px] font-mono text-[#65748A]">{currentUser?.email || 'user@demo.edu'}</p>
               </div>
 
-              <div className="py-1">
-                <Link
-                  to="/dashboards"
-                  onClick={() => setShowUserMenu(false)}
-                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  <LayoutGrid className="w-3.5 h-3.5 text-slate-500" />
-                  All Portals
-                </Link>
-              </div>
-
-              <div className="pt-1 border-t border-slate-100">
+              <div className="pt-1">
                 <button
                   onClick={handleSignOut}
                   className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 text-left cursor-pointer"

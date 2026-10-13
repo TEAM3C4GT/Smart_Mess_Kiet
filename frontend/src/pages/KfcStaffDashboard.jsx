@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar } from '../components/Navbar';
 import { Sidebar } from '../components/Sidebar';
 import { useApp } from '../context/AppContext';
@@ -76,6 +76,18 @@ export const KfcStaffDashboard = () => {
     addToast
   } = useApp();
 
+  useEffect(() => {
+    if (refreshKfcOrders) {
+      refreshKfcOrders(true);
+    }
+    const interval = setInterval(() => {
+      if (refreshKfcOrders) {
+        refreshKfcOrders(true);
+      }
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [refreshKfcOrders]);
+
   const handleSaveEditItem = (e) => {
     e.preventDefault();
     if (!editingMenuItem || !editingMenuItem.name.trim()) {
@@ -142,7 +154,9 @@ export const KfcStaffDashboard = () => {
   const preparingOrders = validStaffOrders.filter((o) => o.status === 'Preparing');
   const readyOrders = validStaffOrders.filter((o) => o.status === 'Ready');
   const collectedOrders = validStaffOrders.filter((o) => o.status === 'Collected');
-  const activeStaffOrders = pendingOrders.concat(preparingOrders, readyOrders);
+  const activeStaffOrders = pendingOrders
+    .concat(preparingOrders, readyOrders)
+    .sort((a, b) => (a.placedAt || a.timestamp || 0) - (b.placedAt || b.timestamp || 0));
   const activeOrdersCount = pendingOrders.length + preparingOrders.length;
 
   const sidebarItems = [
@@ -269,11 +283,11 @@ export const KfcStaffDashboard = () => {
         key={order.id}
         className={`bg-white rounded-2xl border transition-all p-5 shadow-xs flex flex-col justify-between ${
           order.status === 'Ready'
-            ? 'border-emerald-400 ring-2 ring-emerald-500/15 shadow-md shadow-emerald-500/5'
+            ? 'border-[#6E93C4] ring-2 ring-[#4573AC]/15 shadow-md shadow-[#4573AC]/5'
             : order.status === 'Preparing'
             ? 'border-blue-400 ring-2 ring-blue-500/15 shadow-md shadow-blue-500/5'
             : order.status === 'Collected'
-            ? 'border-slate-200 bg-slate-50/40 opacity-80'
+            ? 'border-[#DCE4EF] bg-[#F5F7FA]/40 opacity-80'
             : isCancelled
             ? 'border-rose-200 bg-rose-50/20 opacity-70'
             : 'border-amber-400 ring-2 ring-amber-500/15 shadow-md shadow-amber-500/5'
@@ -283,7 +297,7 @@ export const KfcStaffDashboard = () => {
           {/* Card Header: Token & Status */}
           <div className="flex items-center justify-between gap-2 mb-3">
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-slate-900 text-lg bg-slate-100 px-2.5 py-1 rounded-lg font-mono">
+              <span className="font-extrabold text-[#293749] text-lg bg-[#EDF2F9] px-2.5 py-1 rounded-lg font-mono">
                 #{order.token}
               </span>
               <span className="text-[11px] font-semibold text-slate-400 font-mono">
@@ -294,18 +308,18 @@ export const KfcStaffDashboard = () => {
             <span
               className={`text-xs font-bold px-2.5 py-1 rounded-full border font-mono flex items-center gap-1 ${
                 order.status === 'Ready'
-                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300 animate-pulse'
+                  ? 'bg-[#D5E4F8] text-[#2B4F80] border-[#A9C3E4] animate-pulse'
                   : order.status === 'Preparing'
                   ? 'bg-blue-100 text-blue-800 border-blue-200'
                   : order.status === 'Collected'
-                  ? 'bg-slate-100 text-slate-700 border-slate-300'
+                  ? 'bg-[#EDF2F9] text-slate-700 border-slate-300'
                   : isCancelled
                   ? 'bg-rose-100 text-rose-800 border-rose-300'
                   : 'bg-amber-100 text-amber-800 border-amber-300 animate-pulse'
               }`}
             >
               {order.status === 'Ready' ? (
-                <BellRing className="w-3 h-3 text-emerald-700" />
+                <BellRing className="w-3 h-3 text-[#2F5488]" />
               ) : order.status === 'Preparing' ? (
                 <Flame className="w-3 h-3 text-blue-700" />
               ) : isCancelled ? (
@@ -319,13 +333,13 @@ export const KfcStaffDashboard = () => {
 
           {/* Student Meta */}
           <div className="mb-3 pb-3 border-b border-slate-100">
-            <p className="text-sm font-bold text-slate-900">{order.studentName}</p>
-            <p className="text-xs text-[#1b4d3e] font-semibold">{order.room}{order.room?.includes('Block') ? '' : ' • Campus Hostel'}</p>
+            <p className="text-sm font-bold text-[#293749]">{order.studentName}</p>
+            <p className="text-xs text-[#355F97] font-semibold">{order.room}{order.room?.includes('Block') ? '' : ' • Campus Hostel'}</p>
           </div>
 
           {/* Checklist #9: Visual Order Tracking Timeline Stepper for Staff */}
           {!isCancelled && (
-            <div className="mb-4 bg-slate-50/70 p-2.5 rounded-xl border border-slate-100">
+            <div className="mb-4 bg-[#F5F7FA]/70 p-2.5 rounded-xl border border-slate-100">
               <span className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
                 Kitchen Stage Timeline
               </span>
@@ -343,9 +357,9 @@ export const KfcStaffDashboard = () => {
                       <div
                         className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
                           isDone
-                            ? 'bg-[#1b4d3e] text-white'
-                            : 'bg-slate-200 text-slate-500'
-                        } ${isCurrent ? 'ring-2 ring-emerald-300' : ''}`}
+                            ? 'bg-[#355F97] text-white'
+                            : 'bg-slate-200 text-[#65748A]'
+                        } ${isCurrent ? 'ring-2 ring-[#A9C3E4]' : ''}`}
                       >
                         {isDone ? '✓' : st.num}
                       </div>
@@ -368,10 +382,10 @@ export const KfcStaffDashboard = () => {
             {order.items.map((item, idx) => (
               <div key={idx} className="flex items-center justify-between text-xs">
                 <span className="font-semibold text-slate-800">
-                  <span className="font-bold text-[#1b4d3e] mr-1.5">{item.qty}x</span>
+                  <span className="font-bold text-[#355F97] mr-1.5">{item.qty}x</span>
                   {item.name}
                 </span>
-                <span className="font-bold text-slate-500 font-mono">₹{item.price * item.qty}</span>
+                <span className="font-bold text-[#65748A] font-mono">₹{item.price * item.qty}</span>
               </div>
             ))}
           </div>
@@ -397,9 +411,9 @@ export const KfcStaffDashboard = () => {
           <div className="flex items-center justify-between mb-3">
             <div>
               <span className="text-[10px] font-bold text-slate-400 uppercase block font-mono">Total Due</span>
-              <span className="text-lg font-extrabold text-slate-900 font-mono">₹{order.totalAmount}</span>
+              <span className="text-lg font-extrabold text-[#293749] font-mono">₹{order.totalAmount}</span>
             </div>
-            <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/70">
+            <span className="text-[10px] font-bold text-[#2B4F80] bg-[#EDF2F9] px-2 py-0.5 rounded border border-[#D5E4F8]/70">
               Cash at Counter
             </span>
           </div>
@@ -407,7 +421,7 @@ export const KfcStaffDashboard = () => {
           {/* Action Progression Button */}
           {order.status === 'Pending' && (
             <button
-              onClick={() => advanceKfcOrderStatus(order.id)}
+              onClick={() => advanceKfcOrderStatus(order.token || order.id || order.orderId)}
               className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Flame className="w-3.5 h-3.5" />
@@ -417,8 +431,8 @@ export const KfcStaffDashboard = () => {
 
           {order.status === 'Preparing' && (
             <button
-              onClick={() => advanceKfcOrderStatus(order.id)}
-              className="w-full bg-[#1b4d3e] hover:bg-[#143d31] text-white font-bold py-2.5 px-3 rounded-xl text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+              onClick={() => advanceKfcOrderStatus(order.token || order.id || order.orderId)}
+              className="w-full bg-[#355F97] hover:bg-[#2B4F80] text-white font-bold py-2.5 px-3 rounded-xl text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <BellRing className="w-3.5 h-3.5" />
               Mark Ready for Pickup
@@ -427,8 +441,8 @@ export const KfcStaffDashboard = () => {
 
           {order.status === 'Ready' && (
             <button
-              onClick={() => advanceKfcOrderStatus(order.id)}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition-all shadow-md shadow-emerald-600/20 flex items-center justify-center gap-1.5 cursor-pointer"
+              onClick={() => advanceKfcOrderStatus(order.token || order.id || order.orderId)}
+              className="w-full bg-[#355F97] hover:bg-[#2F5488] text-white font-bold py-2.5 px-3 rounded-xl text-xs transition-all shadow-md shadow-[#355F97]/20 flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
               Mark Paid & Delivered
@@ -436,8 +450,8 @@ export const KfcStaffDashboard = () => {
           )}
 
           {order.status === 'Collected' && (
-            <div className="w-full text-center py-2 rounded-xl bg-slate-100 text-slate-500 text-xs font-bold flex items-center justify-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+            <div className="w-full text-center py-2 rounded-xl bg-[#EDF2F9] text-[#65748A] text-xs font-bold flex items-center justify-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#4573AC]" />
               Order Collected & Settled
             </div>
           )}
@@ -454,7 +468,7 @@ export const KfcStaffDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F5F7FA] flex flex-col font-sans">
       <Navbar
         currentRole="KFC Staff"
         activeTab={activeTab}
@@ -477,12 +491,12 @@ export const KfcStaffDashboard = () => {
                       <Flame className="w-3.5 h-3.5 text-amber-600" />
                       KIET Food Court Terminal
                     </span>
-                    <span className="text-xs font-mono font-bold text-slate-500">Counter 01 • Cash on Pickup</span>
+                    <span className="text-xs font-mono font-bold text-[#65748A]">Counter 01 • Cash on Pickup</span>
                   </div>
-                  <h1 className="text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
+                  <h1 className="text-2xl lg:text-3xl font-extrabold text-[#293749] tracking-tight mt-1">
                     KFC Staff & Order Operations
                   </h1>
-                  <p className="text-xs sm:text-sm text-slate-500 mt-0.5 font-medium">
+                  <p className="text-xs sm:text-sm text-[#65748A] mt-0.5 font-medium">
                     Live pre-order fulfillment terminal, student token callout, and inventory availability management.
                   </p>
                 </div>
@@ -490,9 +504,9 @@ export const KfcStaffDashboard = () => {
                 <div className="flex items-center gap-2 self-start sm:self-auto">
                   <button
                     onClick={() => refreshKfcOrders(false)}
-                    className="bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                    className="bg-white hover:bg-[#EDF2F9] border border-[#DCE4EF] text-slate-700 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
                   >
-                    <RefreshCw className="w-3.5 h-3.5 text-[#1b4d3e]" />
+                    <RefreshCw className="w-3.5 h-3.5 text-[#355F97]" />
                     Sync Queue
                   </button>
                 </div>
@@ -500,68 +514,68 @@ export const KfcStaffDashboard = () => {
 
               {/* Operational KPI Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
+                <div className="bg-white rounded-2xl p-5 border border-[#DCE4EF]/80 shadow-xs">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">Active Queue</span>
                     <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
                       <Flame className="w-5 h-5" />
                     </div>
                   </div>
-                  <p className="text-2xl font-extrabold text-slate-900 mt-2">{activeOrdersCount}</p>
+                  <p className="text-2xl font-extrabold text-[#293749] mt-2">{activeOrdersCount}</p>
                   <p className="text-xs font-semibold text-amber-700 mt-1">
                     {pendingOrders.length} Pending • {preparingOrders.length} Preparing
                   </p>
                 </div>
 
-                <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
+                <div className="bg-white rounded-2xl p-5 border border-[#DCE4EF]/80 shadow-xs">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">Ready for Pickup</span>
-                    <div className="w-9 h-9 rounded-xl bg-emerald-50 text-[#1b4d3e] flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-xl bg-[#EDF2F9] text-[#355F97] flex items-center justify-center">
                       <BellRing className="w-5 h-5" />
                     </div>
                   </div>
-                  <p className="text-2xl font-extrabold text-[#1b4d3e] mt-2">{readyOrders.length}</p>
-                  <p className="text-xs font-semibold text-emerald-700 mt-1">
+                  <p className="text-2xl font-extrabold text-[#355F97] mt-2">{readyOrders.length}</p>
+                  <p className="text-xs font-semibold text-[#2F5488] mt-1">
                     Tokens on Display Counter
                   </p>
                 </div>
 
                 <div
                   onClick={() => setActiveTab('Order History')}
-                  className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs cursor-pointer hover:border-emerald-300 hover:ring-2 hover:ring-emerald-500/10 transition-all"
+                  className="bg-white rounded-2xl p-5 border border-[#DCE4EF]/80 shadow-xs cursor-pointer hover:border-[#A9C3E4] hover:ring-2 hover:ring-[#4573AC]/10 transition-all"
                   title="Click to view full Order History and Student Selections"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">Student Items Selected</span>
-                    <div className="w-9 h-9 rounded-xl bg-emerald-50 text-[#1b4d3e] flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-xl bg-[#EDF2F9] text-[#355F97] flex items-center justify-center">
                       <ShoppingBag className="w-5 h-5" />
                     </div>
                   </div>
-                  <p className="text-2xl font-extrabold text-[#1b4d3e] mt-2">{totalItemsOrderedCount} Items</p>
-                  <p className="text-xs font-semibold text-emerald-700 mt-1 flex items-center gap-1">
+                  <p className="text-2xl font-extrabold text-[#355F97] mt-2">{totalItemsOrderedCount} Items</p>
+                  <p className="text-xs font-semibold text-[#2F5488] mt-1 flex items-center gap-1">
                     <CheckCircle2 className="w-3.5 h-3.5" /> Across {validStaffOrders.length} student orders →
                   </p>
                 </div>
 
-                <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
+                <div className="bg-white rounded-2xl p-5 border border-[#DCE4EF]/80 shadow-xs">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">Cash in Drawer</span>
-                    <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-xl bg-[#EDF2F9] text-[#355F97] flex items-center justify-center">
                       <Receipt className="w-5 h-5" />
                     </div>
                   </div>
-                  <p className="text-2xl font-extrabold text-emerald-600 mt-2 font-mono">₹{collectedCashTotal}</p>
-                  <p className="text-xs font-semibold text-slate-500 mt-1">
+                  <p className="text-2xl font-extrabold text-[#355F97] mt-2 font-mono">₹{collectedCashTotal}</p>
+                  <p className="text-xs font-semibold text-[#65748A] mt-1">
                     {collectedOrders.length} Paid & Collected • ₹{pendingCashTotal} In Queue
                   </p>
                 </div>
               </div>
 
               {/* Student Items Selected Bar - Quick Popularity Bar */}
-              <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="bg-white rounded-2xl border border-[#DCE4EF]/90 p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#1b4d3e] bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#355F97] bg-[#EDF2F9] border border-[#D5E4F8]/60 px-2 py-0.5 rounded">
                       Items Selected by Students
                     </span>
                     <span className="text-xs font-bold text-slate-700 font-mono">
@@ -572,10 +586,10 @@ export const KfcStaffDashboard = () => {
                     {studentItemsList.slice(0, 5).map((item) => (
                       <span
                         key={item.name}
-                        className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800"
+                        className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-[#F5F7FA] border border-[#DCE4EF] text-slate-800"
                       >
                         <span>{item.image}</span>
-                        <span className="font-bold text-[#1b4d3e] font-mono">{item.qty}x</span>
+                        <span className="font-bold text-[#355F97] font-mono">{item.qty}x</span>
                         <span className="truncate max-w-[120px]">{item.name}</span>
                       </span>
                     ))}
@@ -587,7 +601,7 @@ export const KfcStaffDashboard = () => {
 
                 <button
                   onClick={() => setActiveTab('Order History')}
-                  className="bg-[#1b4d3e] hover:bg-[#143d31] text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
+                  className="bg-[#355F97] hover:bg-[#2B4F80] text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
                 >
                   <History className="w-3.5 h-3.5" />
                   View Orders History ({validStaffOrders.length})
@@ -595,7 +609,7 @@ export const KfcStaffDashboard = () => {
               </div>
 
               {/* Filter and Search Bar */}
-              <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="bg-white rounded-2xl border border-[#DCE4EF]/90 p-4 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
                 {/* Search */}
                 <div className="relative w-full md:w-80">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -604,7 +618,7 @@ export const KfcStaffDashboard = () => {
                     placeholder="Search by Token, Student, Room, or Item..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full text-xs pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-600 font-medium"
+                    className="w-full text-xs pl-9 pr-4 py-2.5 rounded-xl bg-[#F5F7FA] border border-[#DCE4EF] focus:outline-none focus:ring-2 focus:ring-[#355F97] font-medium"
                   />
                 </div>
 
@@ -621,8 +635,8 @@ export const KfcStaffDashboard = () => {
                       onClick={() => setStatusFilter(st.label)}
                       className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
                         statusFilter === st.label
-                          ? 'bg-[#1b4d3e] text-white shadow-xs'
-                          : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                          ? 'bg-[#355F97] text-white shadow-xs'
+                          : 'bg-[#EDF2F9] hover:bg-slate-200 text-slate-600'
                       }`}
                     >
                       {st.label} ({st.count})
@@ -633,8 +647,8 @@ export const KfcStaffDashboard = () => {
 
               {/* Order Cards Grid */}
               {filteredOrders.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 shadow-xs">
-                  <ShoppingBag className="w-12 h-12 mx-auto mb-3 opacity-40 text-[#1b4d3e]" />
+                <div className="bg-white rounded-2xl border border-[#DCE4EF] p-12 text-center text-slate-400 shadow-xs">
+                  <ShoppingBag className="w-12 h-12 mx-auto mb-3 opacity-40 text-[#355F97]" />
                   <h3 className="text-base font-bold text-slate-700">No active orders in queue</h3>
                   <p className="text-xs text-slate-400 mt-1">Live student pre-orders will pop up here in real time as they are placed.</p>
                 </div>
@@ -653,22 +667,22 @@ export const KfcStaffDashboard = () => {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#1b4d3e] bg-emerald-50 border border-emerald-200/70 px-2.5 py-0.5 rounded-md flex items-center gap-1">
-                      <Flame className="w-3.5 h-3.5 text-[#1b4d3e]" />
+                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#355F97] bg-[#EDF2F9] border border-[#D5E4F8]/70 px-2.5 py-0.5 rounded-md flex items-center gap-1">
+                      <Flame className="w-3.5 h-3.5 text-[#355F97]" />
                       Kitchen Station
                     </span>
-                    <span className="text-xs font-mono font-bold text-slate-500">Active Kitchen Orders</span>
+                    <span className="text-xs font-mono font-bold text-[#65748A]">Active Kitchen Orders</span>
                   </div>
-                  <h1 className="text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
+                  <h1 className="text-2xl lg:text-3xl font-extrabold text-[#293749] tracking-tight mt-1">
                     Preparing Queue
                   </h1>
-                  <p className="text-xs sm:text-sm text-slate-500 mt-0.5 font-medium">
+                  <p className="text-xs sm:text-sm text-[#65748A] mt-0.5 font-medium">
                     Orders currently being prepared in the kitchen. Mark ready when preparation is complete.
                   </p>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-[#1b4d3e] bg-emerald-50 border border-emerald-200/70 px-3 py-1.5 rounded-xl font-mono">
+                  <span className="text-xs font-bold text-[#355F97] bg-[#EDF2F9] border border-[#D5E4F8]/70 px-3 py-1.5 rounded-xl font-mono">
                     {preparingOrders.length} In Preparation
                   </span>
                 </div>
@@ -676,7 +690,7 @@ export const KfcStaffDashboard = () => {
 
               {/* Order Cards Grid */}
               {preparingOrders.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 shadow-xs">
+                <div className="bg-white rounded-2xl border border-[#DCE4EF] p-12 text-center text-slate-400 shadow-xs">
                   <Flame className="w-12 h-12 mx-auto mb-3 opacity-40 text-amber-600" />
                   <h3 className="text-base font-bold text-slate-700">No orders in preparation</h3>
                   <p className="text-xs text-slate-400 mt-1">Kitchen queue is clear. New incoming orders will appear here when preparation begins.</p>
@@ -696,22 +710,22 @@ export const KfcStaffDashboard = () => {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 border border-emerald-200/70 px-2.5 py-0.5 rounded-md flex items-center gap-1">
-                      <BellRing className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#2B4F80] bg-[#D5E4F8] border border-[#D5E4F8]/70 px-2.5 py-0.5 rounded-md flex items-center gap-1">
+                      <BellRing className="w-3.5 h-3.5 text-[#355F97]" />
                       Pickup Counter
                     </span>
-                    <span className="text-xs font-mono font-bold text-slate-500">Ready for Collection</span>
+                    <span className="text-xs font-mono font-bold text-[#65748A]">Ready for Collection</span>
                   </div>
-                  <h1 className="text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
+                  <h1 className="text-2xl lg:text-3xl font-extrabold text-[#293749] tracking-tight mt-1">
                     Ready for Pickup
                   </h1>
-                  <p className="text-xs sm:text-sm text-slate-500 mt-0.5 font-medium">
+                  <p className="text-xs sm:text-sm text-[#65748A] mt-0.5 font-medium">
                     Orders ready at the counter. Verify student token, collect cash payment, and deliver order.
                   </p>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-emerald-800 bg-emerald-100 border border-emerald-200/70 px-3 py-1.5 rounded-xl font-mono">
+                  <span className="text-xs font-bold text-[#2B4F80] bg-[#D5E4F8] border border-[#D5E4F8]/70 px-3 py-1.5 rounded-xl font-mono">
                     {readyOrders.length} Ready for Collection
                   </span>
                 </div>
@@ -719,8 +733,8 @@ export const KfcStaffDashboard = () => {
 
               {/* Order Cards Grid */}
               {readyOrders.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 shadow-xs">
-                  <BellRing className="w-12 h-12 mx-auto mb-3 opacity-40 text-emerald-600" />
+                <div className="bg-white rounded-2xl border border-[#DCE4EF] p-12 text-center text-slate-400 shadow-xs">
+                  <BellRing className="w-12 h-12 mx-auto mb-3 opacity-40 text-[#355F97]" />
                   <h3 className="text-base font-bold text-slate-700">No orders ready for pickup</h3>
                   <p className="text-xs text-slate-400 mt-1">All prepared orders have been handed over to students.</p>
                 </div>
@@ -739,16 +753,16 @@ export const KfcStaffDashboard = () => {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#1b4d3e] bg-emerald-50 border border-emerald-200/70 px-2.5 py-0.5 rounded-md flex items-center gap-1">
-                      <History className="w-3.5 h-3.5 text-[#1b4d3e]" />
+                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#355F97] bg-[#EDF2F9] border border-[#D5E4F8]/70 px-2.5 py-0.5 rounded-md flex items-center gap-1">
+                      <History className="w-3.5 h-3.5 text-[#355F97]" />
                       Audit & Records
                     </span>
-                    <span className="text-xs font-mono font-bold text-slate-500">Student Selections & Fulfillment</span>
+                    <span className="text-xs font-mono font-bold text-[#65748A]">Student Selections & Fulfillment</span>
                   </div>
-                  <h1 className="text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
+                  <h1 className="text-2xl lg:text-3xl font-extrabold text-[#293749] tracking-tight mt-1">
                     Order History & Student Selections
                   </h1>
-                  <p className="text-xs sm:text-sm text-slate-500 mt-0.5 font-medium">
+                  <p className="text-xs sm:text-sm text-[#65748A] mt-0.5 font-medium">
                     Comprehensive audit trail showing item selection volume bars and complete order history logs.
                   </p>
                 </div>
@@ -756,9 +770,9 @@ export const KfcStaffDashboard = () => {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => refreshKfcOrders(false)}
-                    className="bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                    className="bg-white hover:bg-[#EDF2F9] border border-[#DCE4EF] text-slate-700 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
                   >
-                    <RefreshCw className="w-3.5 h-3.5 text-[#1b4d3e]" />
+                    <RefreshCw className="w-3.5 h-3.5 text-[#355F97]" />
                     Refresh History
                   </button>
                 </div>
@@ -766,72 +780,72 @@ export const KfcStaffDashboard = () => {
 
               {/* 4 Summary KPI Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
+                <div className="bg-white rounded-2xl p-5 border border-[#DCE4EF]/80 shadow-xs">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">Total Orders</span>
-                    <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-xl bg-[#EDF2F9] text-slate-700 flex items-center justify-center">
                       <ShoppingBag className="w-5 h-5" />
                     </div>
                   </div>
-                  <p className="text-2xl font-extrabold text-slate-900 mt-2">{validStaffOrders.length}</p>
-                  <p className="text-xs font-semibold text-slate-500 mt-1">
+                  <p className="text-2xl font-extrabold text-[#293749] mt-2">{validStaffOrders.length}</p>
+                  <p className="text-xs font-semibold text-[#65748A] mt-1">
                     All lifetime logged orders
                   </p>
                 </div>
 
-                <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
+                <div className="bg-white rounded-2xl p-5 border border-[#DCE4EF]/80 shadow-xs">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">Items Selected</span>
-                    <div className="w-9 h-9 rounded-xl bg-emerald-50 text-[#1b4d3e] flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-xl bg-[#EDF2F9] text-[#355F97] flex items-center justify-center">
                       <Package className="w-5 h-5" />
                     </div>
                   </div>
-                  <p className="text-2xl font-extrabold text-[#1b4d3e] mt-2">{totalItemsOrderedCount} Items</p>
-                  <p className="text-xs font-semibold text-emerald-700 mt-1">
+                  <p className="text-2xl font-extrabold text-[#355F97] mt-2">{totalItemsOrderedCount} Items</p>
+                  <p className="text-xs font-semibold text-[#2F5488] mt-1">
                     Selected across all students
                   </p>
                 </div>
 
-                <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
+                <div className="bg-white rounded-2xl p-5 border border-[#DCE4EF]/80 shadow-xs">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">Delivered & Settled</span>
-                    <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-xl bg-[#EDF2F9] text-[#355F97] flex items-center justify-center">
                       <CheckCircle2 className="w-5 h-5" />
                     </div>
                   </div>
-                  <p className="text-2xl font-extrabold text-emerald-600 mt-2">{collectedOrders.length}</p>
-                  <p className="text-xs font-semibold text-emerald-700 mt-1">
+                  <p className="text-2xl font-extrabold text-[#355F97] mt-2">{collectedOrders.length}</p>
+                  <p className="text-xs font-semibold text-[#2F5488] mt-1">
                     Completed pickups
                   </p>
                 </div>
 
-                <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
+                <div className="bg-white rounded-2xl p-5 border border-[#DCE4EF]/80 shadow-xs">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">Revenue Collected</span>
-                    <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-xl bg-[#EDF2F9] text-[#2F5488] flex items-center justify-center">
                       <Receipt className="w-5 h-5" />
                     </div>
                   </div>
-                  <p className="text-2xl font-extrabold text-slate-900 mt-2 font-mono">₹{collectedCashTotal}</p>
-                  <p className="text-xs font-semibold text-slate-500 mt-1">
+                  <p className="text-2xl font-extrabold text-[#293749] mt-2 font-mono">₹{collectedCashTotal}</p>
+                  <p className="text-xs font-semibold text-[#65748A] mt-1">
                     Cash received at counter
                   </p>
                 </div>
               </div>
 
               {/* SECTION: ITEMS SELECTED BY STUDENTS (VOLUME & POPULARITY BARS) */}
-              <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs">
+              <div className="bg-white rounded-2xl border border-[#DCE4EF]/90 p-5 shadow-xs">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-4 border-b border-slate-100">
                   <div>
-                    <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                    <h2 className="text-base font-extrabold text-[#293749] flex items-center gap-2">
                       <Flame className="w-4 h-4 text-amber-500" />
                       Items Selected by Students (Popularity & Frequency Bar)
                     </h2>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <p className="text-xs text-[#65748A] mt-0.5">
                       How many items were selected by students across all canteen orders with visual volume bars
                     </p>
                   </div>
-                  <span className="text-xs font-mono font-bold text-[#1b4d3e] bg-emerald-50 border border-emerald-200/70 px-2.5 py-1 rounded-lg self-start sm:self-auto">
+                  <span className="text-xs font-mono font-bold text-[#355F97] bg-[#EDF2F9] border border-[#D5E4F8]/70 px-2.5 py-1 rounded-lg self-start sm:self-auto">
                     {studentItemsList.length} Unique Menu Items Selected
                   </span>
                 </div>
@@ -848,26 +862,26 @@ export const KfcStaffDashboard = () => {
                       const percentage = Math.round((item.qty / maxItemQty) * 100);
                       const shareOfTotal = Math.round((item.qty / (totalItemsOrderedCount || 1)) * 100);
                       return (
-                        <div key={item.name} className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-100 hover:border-slate-200 transition-all">
+                        <div key={item.name} className="p-3.5 rounded-xl bg-[#F5F7FA]/70 border border-slate-100 hover:border-[#DCE4EF] transition-all">
                           <div className="flex items-center justify-between gap-3 mb-2">
                             <div className="flex items-center gap-2.5 min-w-0">
                               <span className="text-xl flex-shrink-0">{item.image}</span>
                               <div className="truncate">
                                 <div className="flex items-center gap-2">
-                                  <span className="font-extrabold text-sm text-slate-900 truncate">{item.name}</span>
-                                  <span className="text-[10px] font-mono font-bold text-[#1b4d3e] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60 shrink-0">
+                                  <span className="font-extrabold text-sm text-[#293749] truncate">{item.name}</span>
+                                  <span className="text-[10px] font-mono font-bold text-[#355F97] bg-[#EDF2F9] px-2 py-0.5 rounded border border-[#D5E4F8]/60 shrink-0">
                                     {item.category}
                                   </span>
                                 </div>
-                                <p className="text-[11px] text-slate-500 mt-0.5">
+                                <p className="text-[11px] text-[#65748A] mt-0.5">
                                   Ordered in <span className="font-semibold text-slate-700">{item.ordersCount}</span> student orders • Total Value: <span className="font-mono font-bold text-slate-800">₹{item.revenue}</span>
                                 </p>
                               </div>
                             </div>
                             <div className="text-right shrink-0">
                               <div className="flex items-baseline gap-1 justify-end">
-                                <span className="text-lg font-black text-[#1b4d3e] font-mono">{item.qty}</span>
-                                <span className="text-xs font-bold text-slate-500">items</span>
+                                <span className="text-lg font-black text-[#355F97] font-mono">{item.qty}</span>
+                                <span className="text-xs font-bold text-[#65748A]">items</span>
                               </div>
                               <span className="text-[10px] font-mono font-semibold text-slate-400 block">
                                 {shareOfTotal}% volume share
@@ -878,7 +892,7 @@ export const KfcStaffDashboard = () => {
                           {/* Volume Progress Bar */}
                           <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
                             <div
-                              className="h-full bg-gradient-to-r from-emerald-600 to-teal-500 rounded-full transition-all duration-500"
+                              className="h-full bg-gradient-to-r from-[#355F97] to-[#4573AC] rounded-full transition-all duration-500"
                               style={{ width: `${Math.max(percentage, 6)}%` }}
                             />
                           </div>
@@ -890,14 +904,14 @@ export const KfcStaffDashboard = () => {
               </div>
 
               {/* SECTION: COMPLETE ORDERS HISTORY LOG & FILTER */}
-              <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-4">
+              <div className="bg-white rounded-2xl border border-[#DCE4EF]/90 p-5 shadow-xs space-y-4">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-3 border-b border-slate-100">
                   <div>
-                    <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                      <History className="w-4 h-4 text-[#1b4d3e]" />
+                    <h2 className="text-base font-extrabold text-[#293749] flex items-center gap-2">
+                      <History className="w-4 h-4 text-[#355F97]" />
                       Student Orders History Log
                     </h2>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <p className="text-xs text-[#65748A] mt-0.5">
                       Detailed chronological log of student orders, items list, room numbers, and fulfillment status
                     </p>
                   </div>
@@ -910,7 +924,7 @@ export const KfcStaffDashboard = () => {
                       placeholder="Search Token, Student, Room, Item..."
                       value={historySearchQuery}
                       onChange={(e) => setHistorySearchQuery(e.target.value)}
-                      className="w-full text-xs pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-600 font-medium"
+                      className="w-full text-xs pl-9 pr-4 py-2 rounded-xl bg-[#F5F7FA] border border-[#DCE4EF] focus:outline-none focus:ring-2 focus:ring-[#355F97] font-medium"
                     />
                   </div>
                 </div>
@@ -929,8 +943,8 @@ export const KfcStaffDashboard = () => {
                       onClick={() => setHistoryStatusFilter(st.label)}
                       className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
                         historyStatusFilter === st.label
-                          ? 'bg-[#1b4d3e] text-white shadow-xs'
-                          : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                          ? 'bg-[#355F97] text-white shadow-xs'
+                          : 'bg-[#EDF2F9] hover:bg-slate-200 text-slate-600'
                       }`}
                     >
                       {st.label} ({st.count})
@@ -952,16 +966,16 @@ export const KfcStaffDashboard = () => {
                       return (
                         <div
                           key={ord.id || ord.token}
-                          className="p-4 rounded-xl border border-slate-200/80 bg-white hover:border-slate-300 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs"
+                          className="p-4 rounded-xl border border-[#DCE4EF]/80 bg-white hover:border-slate-300 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs"
                         >
                           <div className="flex items-start sm:items-center gap-3">
-                            <span className="font-extrabold text-slate-900 text-base bg-slate-100 px-2.5 py-1 rounded-lg font-mono">
+                            <span className="font-extrabold text-[#293749] text-base bg-[#EDF2F9] px-2.5 py-1 rounded-lg font-mono">
                               #{ord.token}
                             </span>
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="font-bold text-slate-900 text-sm">{ord.studentName}</span>
-                                <span className="text-[11px] font-semibold text-[#1b4d3e] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
+                                <span className="font-bold text-[#293749] text-sm">{ord.studentName}</span>
+                                <span className="text-[11px] font-semibold text-[#355F97] bg-[#EDF2F9] px-2 py-0.5 rounded border border-[#D5E4F8]/60">
                                   {ord.room}
                                 </span>
                               </div>
@@ -976,9 +990,9 @@ export const KfcStaffDashboard = () => {
                             {(ord.items || []).map((item, iIdx) => (
                               <span
                                 key={iIdx}
-                                className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 border border-slate-200"
+                                className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg bg-[#EDF2F9] text-slate-800 border border-[#DCE4EF]"
                               >
-                                <span className="font-extrabold text-[#1b4d3e]">{item.qty}x</span>
+                                <span className="font-extrabold text-[#355F97]">{item.qty}x</span>
                                 {item.name}
                               </span>
                             ))}
@@ -988,17 +1002,17 @@ export const KfcStaffDashboard = () => {
                           <div className="flex items-center justify-between md:justify-end gap-4 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
                             <div className="text-right">
                               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block font-mono">Total</span>
-                              <span className="text-base font-black text-slate-900 font-mono">₹{ord.totalAmount}</span>
+                              <span className="text-base font-black text-[#293749] font-mono">₹{ord.totalAmount}</span>
                             </div>
 
                             <span
                               className={`text-xs font-bold px-3 py-1 rounded-full border font-mono ${
                                 ord.status === 'Ready'
-                                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                  ? 'bg-[#D5E4F8] text-[#2B4F80] border-[#A9C3E4]'
                                   : ord.status === 'Preparing'
                                   ? 'bg-blue-100 text-blue-800 border-blue-200'
                                   : ord.status === 'Collected'
-                                  ? 'bg-slate-100 text-slate-700 border-slate-300'
+                                  ? 'bg-[#EDF2F9] text-slate-700 border-slate-300'
                                   : 'bg-amber-100 text-amber-800 border-amber-300'
                               }`}
                             >
@@ -1008,7 +1022,7 @@ export const KfcStaffDashboard = () => {
                             {ord.status !== 'Collected' && (
                               <button
                                 onClick={() => advanceKfcOrderStatus(ord.id || ord.token)}
-                                className="text-xs font-bold px-3 py-1.5 rounded-xl bg-[#1b4d3e] hover:bg-[#143d31] text-white shadow-xs transition-all cursor-pointer"
+                                className="text-xs font-bold px-3 py-1.5 rounded-xl bg-[#355F97] hover:bg-[#2B4F80] text-white shadow-xs transition-all cursor-pointer"
                               >
                                 {ord.status === 'Pending' ? 'Start' : ord.status === 'Preparing' ? 'Ready' : 'Deliver'}
                               </button>
@@ -1028,16 +1042,16 @@ export const KfcStaffDashboard = () => {
               <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#1b4d3e] bg-emerald-50 border border-emerald-200/70 px-2.5 py-0.5 rounded-md flex items-center gap-1">
-                      <Tag className="w-3.5 h-3.5 text-[#1b4d3e]" />
+                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#355F97] bg-[#EDF2F9] border border-[#D5E4F8]/70 px-2.5 py-0.5 rounded-md flex items-center gap-1">
+                      <Tag className="w-3.5 h-3.5 text-[#355F97]" />
                       Inventory Control
                     </span>
-                    <span className="text-xs font-mono font-bold text-slate-500">Live Canteen Stock</span>
+                    <span className="text-xs font-mono font-bold text-[#65748A]">Live Canteen Stock</span>
                   </div>
-                  <h1 className="text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
+                  <h1 className="text-2xl lg:text-3xl font-extrabold text-[#293749] tracking-tight mt-1">
                     Menu & Stock
                   </h1>
-                  <p className="text-xs sm:text-sm text-slate-500 mt-0.5 font-medium">
+                  <p className="text-xs sm:text-sm text-[#65748A] mt-0.5 font-medium">
                     Manage canteen inventory, live stock counts, and instant availability. Stock adjustments and Sold-Out statuses sync immediately with student ordering screens.
                   </p>
                 </div>
@@ -1045,14 +1059,14 @@ export const KfcStaffDashboard = () => {
                 <div className="flex items-center gap-2.5">
                   <button
                     onClick={() => restockAllKfcItems(20)}
-                    className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold px-3.5 py-2.5 rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                    className="bg-white hover:bg-[#F5F7FA] border border-[#DCE4EF] text-slate-700 text-xs font-bold px-3.5 py-2.5 rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
                   >
-                    <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                    <RotateCcw className="w-3.5 h-3.5 text-[#65748A]" />
                     Replenish All (+20)
                   </button>
                   <button
                     onClick={() => setShowAddModal(true)}
-                    className="bg-[#1b4d3e] hover:bg-[#143d31] text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+                    className="bg-[#355F97] hover:bg-[#2B4F80] text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
                   >
                     <Plus className="w-4 h-4" />
                     Add Menu Item
@@ -1062,23 +1076,23 @@ export const KfcStaffDashboard = () => {
 
               {/* 4 Inventory Metric Cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs">
+                <div className="bg-white rounded-2xl border border-[#DCE4EF]/90 p-4 shadow-xs">
                   <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
                     Total Menu Items
                   </span>
                   <div className="flex items-baseline gap-2 mt-1">
-                    <p className="text-2xl font-black text-slate-900 font-mono">{kfcMenu.length}</p>
-                    <span className="text-[11px] text-slate-500 font-medium">configured</span>
+                    <p className="text-2xl font-black text-[#293749] font-mono">{kfcMenu.length}</p>
+                    <span className="text-[11px] text-[#65748A] font-medium">configured</span>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-2xl border border-emerald-200/80 bg-emerald-50/20 p-4 shadow-xs">
-                  <span className="text-[10px] font-mono font-bold text-emerald-800 uppercase tracking-wider block">
+                <div className="bg-white rounded-2xl border border-[#D5E4F8]/80 bg-[#EDF2F9]/20 p-4 shadow-xs">
+                  <span className="text-[10px] font-mono font-bold text-[#2B4F80] uppercase tracking-wider block">
                     In Stock
                   </span>
                   <div className="flex items-baseline gap-2 mt-1">
-                    <p className="text-2xl font-black text-emerald-700 font-mono">{inStockItemsCount}</p>
-                    <span className="text-[11px] text-emerald-600 font-medium">ready to order</span>
+                    <p className="text-2xl font-black text-[#2F5488] font-mono">{inStockItemsCount}</p>
+                    <span className="text-[11px] text-[#355F97] font-medium">ready to order</span>
                   </div>
                 </div>
 
@@ -1104,7 +1118,7 @@ export const KfcStaffDashboard = () => {
               </div>
 
               {/* Main Inventory Card */}
-              <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs">
+              <div className="bg-white rounded-2xl border border-[#DCE4EF]/90 p-5 sm:p-6 shadow-xs">
                 {/* Search & Category Filter Toolbar */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-100">
                   {/* Search */}
@@ -1115,7 +1129,7 @@ export const KfcStaffDashboard = () => {
                       placeholder="Search menu or category..."
                       value={menuSearchQuery}
                       onChange={(e) => setMenuSearchQuery(e.target.value)}
-                      className="w-full text-xs pl-9 pr-8 py-2 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1b4d3e] focus:border-transparent font-medium"
+                      className="w-full text-xs pl-9 pr-8 py-2 rounded-xl border border-[#DCE4EF] bg-[#F5F7FA]/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#355F97] focus:border-transparent font-medium"
                     />
                     {menuSearchQuery && (
                       <button
@@ -1137,8 +1151,8 @@ export const KfcStaffDashboard = () => {
                           onClick={() => setMenuSelectedCategory(cat)}
                           className={`text-xs font-bold px-3 py-1.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
                             isSelected
-                              ? 'bg-[#1b4d3e] text-white shadow-xs'
-                              : 'bg-slate-100 hover:bg-slate-200/70 text-slate-700'
+                              ? 'bg-[#355F97] text-white shadow-xs'
+                              : 'bg-[#EDF2F9] hover:bg-slate-200/70 text-slate-700'
                           }`}
                         >
                           {cat}
@@ -1151,7 +1165,7 @@ export const KfcStaffDashboard = () => {
                 {/* Items Grid */}
                 {filteredMenu.length === 0 ? (
                   <div className="p-12 text-center text-slate-400">
-                    <Package className="w-12 h-12 mx-auto mb-3 opacity-30 text-slate-500" />
+                    <Package className="w-12 h-12 mx-auto mb-3 opacity-30 text-[#65748A]" />
                     <h3 className="text-base font-bold text-slate-700">No menu items match your filter</h3>
                     <p className="text-xs text-slate-400 mt-1">Try clearing your search query or category filter.</p>
                     <button
@@ -1159,7 +1173,7 @@ export const KfcStaffDashboard = () => {
                         setMenuSearchQuery('');
                         setMenuSelectedCategory('All');
                       }}
-                      className="mt-3 text-xs font-bold text-[#1b4d3e] hover:underline cursor-pointer"
+                      className="mt-3 text-xs font-bold text-[#355F97] hover:underline cursor-pointer"
                     >
                       Clear Filters
                     </button>
@@ -1177,14 +1191,14 @@ export const KfcStaffDashboard = () => {
                               ? 'bg-red-50/20 border-red-200/80'
                               : isLowStock
                               ? 'bg-amber-50/20 border-amber-200/80'
-                              : 'bg-white border-slate-200/90 hover:border-slate-300'
+                              : 'bg-white border-[#DCE4EF]/90 hover:border-slate-300'
                           }`}
                         >
                           {/* Item Top Info */}
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex items-center gap-3">
                               {/* Thumbnail / Emoji with Sold Out Indicator */}
-                              <div className="relative w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden shrink-0 border border-slate-200/80">
+                              <div className="relative w-12 h-12 rounded-xl bg-[#EDF2F9] flex items-center justify-center overflow-hidden shrink-0 border border-[#DCE4EF]/80">
                                 {item.imageUrl ? (
                                   <img
                                     src={item.imageUrl}
@@ -1205,7 +1219,7 @@ export const KfcStaffDashboard = () => {
 
                               <div>
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="text-[10px] font-mono font-bold text-[#1b4d3e] bg-emerald-50 border border-emerald-200/60 px-1.5 py-0.5 rounded">
+                                  <span className="text-[10px] font-mono font-bold text-[#355F97] bg-[#EDF2F9] border border-[#D5E4F8]/60 px-1.5 py-0.5 rounded">
                                     {item.category}
                                   </span>
                                   {isSoldOut ? (
@@ -1219,14 +1233,14 @@ export const KfcStaffDashboard = () => {
                                       Low Stock
                                     </span>
                                   ) : (
-                                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 border border-emerald-200 px-1.5 py-0.5 rounded flex items-center gap-1">
-                                      <Check className="w-3 h-3 text-emerald-600" />
+                                    <span className="text-[10px] font-bold text-[#2F5488] bg-[#D5E4F8]/80 border border-[#D5E4F8] px-1.5 py-0.5 rounded flex items-center gap-1">
+                                      <Check className="w-3 h-3 text-[#355F97]" />
                                       In Stock
                                     </span>
                                   )}
                                 </div>
-                                <h4 className="font-bold text-slate-900 text-sm mt-1 line-clamp-1">{item.name}</h4>
-                                <p className="text-xs font-black text-[#1b4d3e] font-mono mt-0.5">₹{item.price}</p>
+                                <h4 className="font-bold text-[#293749] text-sm mt-1 line-clamp-1">{item.name}</h4>
+                                <p className="text-xs font-black text-[#355F97] font-mono mt-0.5">₹{item.price}</p>
                               </div>
                             </div>
 
@@ -1234,7 +1248,7 @@ export const KfcStaffDashboard = () => {
                               <button
                                 onClick={() => setEditingMenuItem({ ...item })}
                                 title="Edit item name, price, or stock"
-                                className="p-1.5 text-slate-400 hover:text-[#1b4d3e] hover:bg-emerald-50 rounded-lg transition-all cursor-pointer"
+                                className="p-1.5 text-slate-400 hover:text-[#355F97] hover:bg-[#EDF2F9] rounded-lg transition-all cursor-pointer"
                               >
                                 <Edit className="w-3.5 h-3.5" />
                               </button>
@@ -1251,12 +1265,12 @@ export const KfcStaffDashboard = () => {
                           {/* Inventory Stock Controls */}
                           <div className="pt-2.5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             {/* Stock Counter Controls & Checklist #17 Direct Manual Entry */}
-                            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2 py-1 rounded-xl">
+                            <div className="flex items-center gap-1.5 bg-[#F5F7FA] border border-[#DCE4EF] px-2 py-1 rounded-xl">
                               <button
                                 onClick={() => updateKfcItemStock(item.id, -1)}
                                 disabled={!item.stock || item.stock <= 0}
                                 title="Decrease stock by 1"
-                                className="w-6 h-6 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer shadow-2xs"
+                                className="w-6 h-6 rounded-lg bg-white border border-[#DCE4EF] flex items-center justify-center text-slate-700 hover:bg-[#EDF2F9] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer shadow-2xs"
                               >
                                 <Minus className="w-3 h-3" />
                               </button>
@@ -1267,7 +1281,7 @@ export const KfcStaffDashboard = () => {
                                   min="0"
                                   value={item.stock ?? 0}
                                   onChange={(e) => setKfcItemStockDirect(item.id, e.target.value)}
-                                  className="w-12 text-center text-xs font-mono font-black text-slate-900 bg-white border border-slate-200 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-[#1b4d3e]"
+                                  className="w-12 text-center text-xs font-mono font-black text-[#293749] bg-white border border-[#DCE4EF] rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-[#355F97]"
                                   title="Enter manual stock quantity directly"
                                 />
                                 <span className="text-[9px] text-slate-400 font-mono">qty</span>
@@ -1276,14 +1290,14 @@ export const KfcStaffDashboard = () => {
                               <button
                                 onClick={() => updateKfcItemStock(item.id, 5)}
                                 title="Restock +5 units"
-                                className="px-2 py-0.5 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-[#1b4d3e] hover:border-emerald-300 text-[10px] font-bold cursor-pointer shadow-2xs font-mono"
+                                className="px-2 py-0.5 rounded-lg bg-white border border-[#DCE4EF] text-slate-700 hover:bg-[#EDF2F9] hover:text-[#355F97] hover:border-[#A9C3E4] text-[10px] font-bold cursor-pointer shadow-2xs font-mono"
                               >
                                 +5
                               </button>
                               <button
                                 onClick={() => setKfcItemStockDirect(item.id, 50)}
                                 title="Set full stock (50 units)"
-                                className="px-2 py-0.5 rounded-lg bg-emerald-50 border border-emerald-200 text-[#1b4d3e] hover:bg-emerald-100 text-[10px] font-bold cursor-pointer shadow-2xs font-mono"
+                                className="px-2 py-0.5 rounded-lg bg-[#EDF2F9] border border-[#D5E4F8] text-[#355F97] hover:bg-[#D5E4F8] text-[10px] font-bold cursor-pointer shadow-2xs font-mono"
                               >
                                 Full (50)
                               </button>
@@ -1294,13 +1308,13 @@ export const KfcStaffDashboard = () => {
                               onClick={() => toggleKfcItemAvailability(item.id)}
                               className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 cursor-pointer shrink-0 shadow-2xs ${
                                 item.isAvailable && (item.stock || 0) > 0
-                                  ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300'
+                                  ? 'bg-[#D5E4F8] hover:bg-[#D5E4F8] text-[#2B4F80] border border-[#A9C3E4]'
                                   : 'bg-red-100 hover:bg-red-200 text-red-800 border border-red-300'
                               }`}
                             >
                               {item.isAvailable && (item.stock || 0) > 0 ? (
                                 <>
-                                  <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                                  <CheckCircle className="w-3.5 h-3.5 text-[#355F97]" />
                                   <span>In Stock</span>
                                 </>
                               ) : (
@@ -1320,20 +1334,20 @@ export const KfcStaffDashboard = () => {
                 {/* Add Item Modal */}
                 {showAddModal && (
                   <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-                    <div className="bg-white rounded-2xl border border-slate-200 w-full max-w-md p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+                    <div className="bg-white rounded-2xl border border-[#DCE4EF] w-full max-w-md p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
                       <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-lg bg-emerald-50 text-[#1b4d3e] border border-emerald-200/70 flex items-center justify-center font-bold">
+                          <div className="w-8 h-8 rounded-lg bg-[#EDF2F9] text-[#355F97] border border-[#D5E4F8]/70 flex items-center justify-center font-bold">
                             <Plus className="w-4 h-4" />
                           </div>
                           <div>
-                            <h3 className="font-bold text-slate-900 text-base">Add New Menu Item</h3>
+                            <h3 className="font-bold text-[#293749] text-base">Add New Menu Item</h3>
                             <p className="text-xs text-slate-400">Configure item name, price, category, and initial inventory</p>
                           </div>
                         </div>
                         <button
                           onClick={() => setShowAddModal(false)}
-                          className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-all cursor-pointer"
+                          className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-[#EDF2F9] transition-all cursor-pointer"
                         >
                           <X className="w-5 h-5" />
                         </button>
@@ -1351,7 +1365,7 @@ export const KfcStaffDashboard = () => {
                             placeholder="e.g. Crispy Chicken Tenders (3 Pcs)"
                             value={newItem.name}
                             onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                            className="w-full text-sm px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent font-medium"
+                            className="w-full text-sm px-3 py-2 rounded-xl border border-[#DCE4EF] focus:outline-none focus:ring-2 focus:ring-[#355F97] focus:border-transparent font-medium"
                           />
                         </div>
 
@@ -1369,7 +1383,7 @@ export const KfcStaffDashboard = () => {
                               placeholder="199"
                               value={newItem.price}
                               onChange={(e) => setNewItem({ ...newItem, price: e.target.value })}
-                              className="w-full text-sm px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent font-medium font-mono"
+                              className="w-full text-sm px-3 py-2 rounded-xl border border-[#DCE4EF] focus:outline-none focus:ring-2 focus:ring-[#355F97] focus:border-transparent font-medium font-mono"
                             />
                           </div>
 
@@ -1380,7 +1394,7 @@ export const KfcStaffDashboard = () => {
                             <select
                               value={newItem.category}
                               onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-                              className="w-full text-sm px-2 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent bg-white cursor-pointer font-medium text-xs"
+                              className="w-full text-sm px-2 py-2 rounded-xl border border-[#DCE4EF] focus:outline-none focus:ring-2 focus:ring-[#355F97] focus:border-transparent bg-white cursor-pointer font-medium text-xs"
                             >
                               {categories.map((c) => (
                                 <option key={c} value={c}>
@@ -1402,7 +1416,7 @@ export const KfcStaffDashboard = () => {
                               placeholder="20"
                               value={newItem.stock}
                               onChange={(e) => setNewItem({ ...newItem, stock: e.target.value })}
-                              className="w-full text-sm px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent font-medium font-mono"
+                              className="w-full text-sm px-3 py-2 rounded-xl border border-[#DCE4EF] focus:outline-none focus:ring-2 focus:ring-[#355F97] focus:border-transparent font-medium font-mono"
                             />
                           </div>
                         </div>
@@ -1420,8 +1434,8 @@ export const KfcStaffDashboard = () => {
                                 onClick={() => setNewItem({ ...newItem, image: emoji })}
                                 className={`w-9 h-9 rounded-xl text-lg flex items-center justify-center transition-all cursor-pointer ${
                                   newItem.image === emoji
-                                    ? 'bg-emerald-50 border-2 border-[#1b4d3e] shadow-xs scale-105'
-                                    : 'bg-slate-100 hover:bg-slate-200 border border-slate-200'
+                                    ? 'bg-[#EDF2F9] border-2 border-[#355F97] shadow-xs scale-105'
+                                    : 'bg-[#EDF2F9] hover:bg-slate-200 border border-[#DCE4EF]'
                                 }`}
                               >
                                 {emoji}
@@ -1431,24 +1445,24 @@ export const KfcStaffDashboard = () => {
                         </div>
 
                         {/* Preview Banner */}
-                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                        <div className="p-3 rounded-xl bg-[#F5F7FA] border border-[#DCE4EF] flex items-center justify-between">
                           <div className="flex items-center gap-2.5">
                             <span className="text-2xl">{newItem.image}</span>
                             <div>
                               <div className="flex items-center gap-1.5">
-                                <span className="text-[10px] font-mono font-bold text-[#1b4d3e] bg-emerald-50 border border-emerald-200/60 px-1.5 py-0.2 rounded">
+                                <span className="text-[10px] font-mono font-bold text-[#355F97] bg-[#EDF2F9] border border-[#D5E4F8]/60 px-1.5 py-0.2 rounded">
                                   {newItem.category}
                                 </span>
-                                <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded">
+                                <span className="text-[10px] font-mono font-bold text-[#65748A] bg-[#EDF2F9] px-1.5 py-0.2 rounded">
                                   Stock: {newItem.stock || 0}
                                 </span>
                               </div>
-                              <p className="text-xs font-bold text-slate-900 mt-0.5">
+                              <p className="text-xs font-bold text-[#293749] mt-0.5">
                                 {newItem.name.trim() || 'Item Preview Name'}
                               </p>
                             </div>
                           </div>
-                          <span className="text-sm font-extrabold text-[#1b4d3e] font-mono">
+                          <span className="text-sm font-extrabold text-[#355F97] font-mono">
                             ₹{newItem.price || 0}
                           </span>
                         </div>
@@ -1458,13 +1472,13 @@ export const KfcStaffDashboard = () => {
                           <button
                             type="button"
                             onClick={() => setShowAddModal(false)}
-                            className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+                            className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-[#EDF2F9] rounded-xl transition-all cursor-pointer"
                           >
                             Cancel
                           </button>
                           <button
                             type="submit"
-                            className="px-5 py-2 text-xs font-bold bg-[#1b4d3e] hover:bg-[#143d31] text-white rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                            className="px-5 py-2 text-xs font-bold bg-[#355F97] hover:bg-[#2B4F80] text-white rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
                           >
                             <Plus className="w-4 h-4" />
                             Add to Menu
@@ -1478,20 +1492,20 @@ export const KfcStaffDashboard = () => {
                 {/* Checklist #9: Edit Menu Item Modal */}
                 {editingMenuItem && (
                   <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-                    <div className="bg-white rounded-2xl border border-slate-200 w-full max-w-md p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+                    <div className="bg-white rounded-2xl border border-[#DCE4EF] w-full max-w-md p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
                       <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-lg bg-emerald-50 text-[#1b4d3e] border border-emerald-200/70 flex items-center justify-center font-bold">
+                          <div className="w-8 h-8 rounded-lg bg-[#EDF2F9] text-[#355F97] border border-[#D5E4F8]/70 flex items-center justify-center font-bold">
                             <Edit className="w-4 h-4" />
                           </div>
                           <div>
-                            <h3 className="font-bold text-slate-900 text-base">Edit Menu Item</h3>
+                            <h3 className="font-bold text-[#293749] text-base">Edit Menu Item</h3>
                             <p className="text-xs text-slate-400">Modify title, price, category, icon, or inventory</p>
                           </div>
                         </div>
                         <button
                           onClick={() => setEditingMenuItem(null)}
-                          className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-all cursor-pointer"
+                          className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-[#EDF2F9] transition-all cursor-pointer"
                         >
                           <X className="w-5 h-5" />
                         </button>
@@ -1509,7 +1523,7 @@ export const KfcStaffDashboard = () => {
                             placeholder="e.g. Crispy Chicken Tenders"
                             value={editingMenuItem.name || ''}
                             onChange={(e) => setEditingMenuItem({ ...editingMenuItem, name: e.target.value })}
-                            className="w-full text-sm px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1b4d3e] focus:border-transparent font-medium"
+                            className="w-full text-sm px-3 py-2 rounded-xl border border-[#DCE4EF] focus:outline-none focus:ring-2 focus:ring-[#355F97] focus:border-transparent font-medium"
                           />
                         </div>
 
@@ -1526,7 +1540,7 @@ export const KfcStaffDashboard = () => {
                               required
                               value={editingMenuItem.price ?? ''}
                               onChange={(e) => setEditingMenuItem({ ...editingMenuItem, price: e.target.value })}
-                              className="w-full text-sm px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1b4d3e] focus:border-transparent font-medium font-mono"
+                              className="w-full text-sm px-3 py-2 rounded-xl border border-[#DCE4EF] focus:outline-none focus:ring-2 focus:ring-[#355F97] focus:border-transparent font-medium font-mono"
                             />
                           </div>
 
@@ -1537,7 +1551,7 @@ export const KfcStaffDashboard = () => {
                             <select
                               value={editingMenuItem.category || 'Snacks'}
                               onChange={(e) => setEditingMenuItem({ ...editingMenuItem, category: e.target.value })}
-                              className="w-full text-sm px-2 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1b4d3e] focus:border-transparent bg-white cursor-pointer font-medium text-xs"
+                              className="w-full text-sm px-2 py-2 rounded-xl border border-[#DCE4EF] focus:outline-none focus:ring-2 focus:ring-[#355F97] focus:border-transparent bg-white cursor-pointer font-medium text-xs"
                             >
                               {categories.map((c) => (
                                 <option key={c} value={c}>
@@ -1557,7 +1571,7 @@ export const KfcStaffDashboard = () => {
                               step="1"
                               value={editingMenuItem.stock ?? 0}
                               onChange={(e) => setEditingMenuItem({ ...editingMenuItem, stock: e.target.value })}
-                              className="w-full text-sm px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1b4d3e] focus:border-transparent font-medium font-mono"
+                              className="w-full text-sm px-3 py-2 rounded-xl border border-[#DCE4EF] focus:outline-none focus:ring-2 focus:ring-[#355F97] focus:border-transparent font-medium font-mono"
                             />
                           </div>
                         </div>
@@ -1575,8 +1589,8 @@ export const KfcStaffDashboard = () => {
                                 onClick={() => setEditingMenuItem({ ...editingMenuItem, image: emoji })}
                                 className={`w-9 h-9 rounded-xl text-lg flex items-center justify-center transition-all cursor-pointer ${
                                   editingMenuItem.image === emoji
-                                    ? 'bg-emerald-50 border-2 border-[#1b4d3e] shadow-xs scale-105'
-                                    : 'bg-slate-100 hover:bg-slate-200 border border-slate-200'
+                                    ? 'bg-[#EDF2F9] border-2 border-[#355F97] shadow-xs scale-105'
+                                    : 'bg-[#EDF2F9] hover:bg-slate-200 border border-[#DCE4EF]'
                                 }`}
                               >
                                 {emoji}
@@ -1590,13 +1604,13 @@ export const KfcStaffDashboard = () => {
                           <button
                             type="button"
                             onClick={() => setEditingMenuItem(null)}
-                            className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+                            className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-[#EDF2F9] rounded-xl transition-all cursor-pointer"
                           >
                             Cancel
                           </button>
                           <button
                             type="submit"
-                            className="px-5 py-2 text-xs font-bold bg-[#1b4d3e] hover:bg-[#143d31] text-white rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                            className="px-5 py-2 text-xs font-bold bg-[#355F97] hover:bg-[#2B4F80] text-white rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
                           >
                             <Check className="w-4 h-4" />
                             Save Changes
@@ -1617,16 +1631,16 @@ export const KfcStaffDashboard = () => {
               <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 border border-emerald-200/70 px-2.5 py-0.5 rounded-md flex items-center gap-1">
-                      <Receipt className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#2B4F80] bg-[#D5E4F8] border border-[#D5E4F8]/70 px-2.5 py-0.5 rounded-md flex items-center gap-1">
+                      <Receipt className="w-3.5 h-3.5 text-[#355F97]" />
                       Financial Auditing
                     </span>
-                    <span className="text-xs font-mono font-bold text-slate-500">Counter 01 Daily Reconciliation</span>
+                    <span className="text-xs font-mono font-bold text-[#65748A]">Counter 01 Daily Reconciliation</span>
                   </div>
-                  <h1 className="text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
+                  <h1 className="text-2xl lg:text-3xl font-extrabold text-[#293749] tracking-tight mt-1">
                     Sales Summary
                   </h1>
-                  <p className="text-xs sm:text-sm text-slate-500 mt-0.5 font-medium">
+                  <p className="text-xs sm:text-sm text-[#65748A] mt-0.5 font-medium">
                     Auditing cash collections, drawer reconciliation, and live product sales breakdown based on real student orders.
                   </p>
                 </div>
@@ -1645,7 +1659,7 @@ export const KfcStaffDashboard = () => {
                   </button>
                   <button
                     onClick={() => addToast('Shift financial reconciliation report exported successfully.', 'success')}
-                    className="bg-[#1b4d3e] hover:bg-[#143d31] text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+                    className="bg-[#355F97] hover:bg-[#2B4F80] text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
                   >
                     <Receipt className="w-4 h-4" />
                     Print Shift Report
@@ -1655,15 +1669,15 @@ export const KfcStaffDashboard = () => {
 
               {/* 3 Main Reconciliation KPI Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-5 rounded-2xl bg-white border border-emerald-200/90 bg-emerald-50/20 shadow-xs">
+                <div className="p-5 rounded-2xl bg-white border border-[#D5E4F8]/90 bg-[#EDF2F9]/20 shadow-xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono font-bold text-emerald-800 uppercase tracking-wider block">
+                    <span className="text-[10px] font-mono font-bold text-[#2B4F80] uppercase tracking-wider block">
                       Cash in Drawer (Settled)
                     </span>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <CheckCircle2 className="w-4 h-4 text-[#355F97]" />
                   </div>
-                  <p className="text-3xl font-black text-emerald-700 mt-2 font-mono">₹{collectedCashTotal}</p>
-                  <p className="text-xs text-slate-500 mt-1 font-medium">
+                  <p className="text-3xl font-black text-[#2F5488] mt-2 font-mono">₹{collectedCashTotal}</p>
+                  <p className="text-xs text-[#65748A] mt-1 font-medium">
                     {collectedOrders.length} settled & paid orders collected at counter
                   </p>
                 </div>
@@ -1676,45 +1690,45 @@ export const KfcStaffDashboard = () => {
                     <Clock className="w-4 h-4 text-amber-600" />
                   </div>
                   <p className="text-3xl font-black text-amber-700 mt-2 font-mono">₹{pendingCashTotal}</p>
-                  <p className="text-xs text-slate-500 mt-1 font-medium">
+                  <p className="text-xs text-[#65748A] mt-1 font-medium">
                     {activeStaffOrders.length} active orders pending pickup/payment
                   </p>
                 </div>
 
-                <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs">
+                <div className="p-5 rounded-2xl bg-white border border-[#DCE4EF]/90 shadow-xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono font-bold text-[#1b4d3e] uppercase tracking-wider block">
+                    <span className="text-[10px] font-mono font-bold text-[#355F97] uppercase tracking-wider block">
                       Total Shift Turnout
                     </span>
-                    <TrendingUp className="w-4 h-4 text-[#1b4d3e]" />
+                    <TrendingUp className="w-4 h-4 text-[#355F97]" />
                   </div>
-                  <p className="text-3xl font-black text-[#1b4d3e] mt-2 font-mono">₹{totalOrderValue}</p>
-                  <p className="text-xs text-slate-500 mt-1 font-medium">
+                  <p className="text-3xl font-black text-[#355F97] mt-2 font-mono">₹{totalOrderValue}</p>
+                  <p className="text-xs text-[#65748A] mt-1 font-medium">
                     {collectedOrders.length + activeStaffOrders.length} total student orders placed today
                   </p>
                 </div>
               </div>
 
               {/* Product-wise Sales Breakdown */}
-              <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs">
+              <div className="bg-white rounded-2xl border border-[#DCE4EF]/90 p-5 sm:p-6 shadow-xs">
                 <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
                   <div>
-                    <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                      <Tag className="w-4 h-4 text-[#1b4d3e]" />
+                    <h3 className="font-bold text-[#293749] text-base flex items-center gap-2">
+                      <Tag className="w-4 h-4 text-[#355F97]" />
                       Items Sold Breakdown Today
                     </h3>
                     <p className="text-xs text-slate-400 mt-0.5">
                       Live volume and revenue breakdown based strictly on delivered orders
                     </p>
                   </div>
-                  <span className="text-xs font-mono font-bold text-[#1b4d3e] bg-emerald-50 border border-emerald-200/70 px-2.5 py-1 rounded-lg">
+                  <span className="text-xs font-mono font-bold text-[#355F97] bg-[#EDF2F9] border border-[#D5E4F8]/70 px-2.5 py-1 rounded-lg">
                     {itemSalesList.reduce((acc, curr) => acc + curr.qty, 0)} Units Sold
                   </span>
                 </div>
 
                 {itemSalesList.length === 0 ? (
-                  <div className="p-8 text-center text-slate-400 bg-slate-50/60 rounded-xl border border-slate-100">
-                    <ShoppingBag className="w-10 h-10 mx-auto mb-2 opacity-30 text-slate-500" />
+                  <div className="p-8 text-center text-slate-400 bg-[#F5F7FA]/60 rounded-xl border border-slate-100">
+                    <ShoppingBag className="w-10 h-10 mx-auto mb-2 opacity-30 text-[#65748A]" />
                     <p className="text-xs font-semibold text-slate-600">No items delivered yet for this shift</p>
                     <p className="text-[11px] text-slate-400 mt-0.5">
                       When student orders are marked "Paid & Delivered", item metrics will automatically populate here.
@@ -1725,19 +1739,19 @@ export const KfcStaffDashboard = () => {
                     {itemSalesList.map((item) => (
                       <div
                         key={item.name}
-                        className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 flex items-center justify-between gap-3"
+                        className="p-3.5 rounded-xl border border-[#DCE4EF] bg-[#F5F7FA]/50 flex items-center justify-between gap-3"
                       >
                         <div>
-                          <span className="text-[9px] font-mono font-bold text-[#1b4d3e] bg-emerald-50 border border-emerald-200/60 px-1.5 py-0.5 rounded">
+                          <span className="text-[9px] font-mono font-bold text-[#355F97] bg-[#EDF2F9] border border-[#D5E4F8]/60 px-1.5 py-0.5 rounded">
                             {item.category}
                           </span>
-                          <h5 className="font-bold text-slate-900 text-xs mt-1">{item.name}</h5>
-                          <span className="text-[11px] text-slate-500 font-medium">
+                          <h5 className="font-bold text-[#293749] text-xs mt-1">{item.name}</h5>
+                          <span className="text-[11px] text-[#65748A] font-medium">
                             {item.qty} {item.qty === 1 ? 'unit' : 'units'} sold
                           </span>
                         </div>
                         <div className="text-right">
-                          <span className="font-black text-emerald-700 text-sm font-mono block">
+                          <span className="font-black text-[#2F5488] text-sm font-mono block">
                             ₹{item.revenue}
                           </span>
                           <span className="text-[10px] text-slate-400 font-mono">revenue</span>
@@ -1749,25 +1763,25 @@ export const KfcStaffDashboard = () => {
               </div>
 
               {/* Settled Cash Collections Log */}
-              <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs">
+              <div className="bg-white rounded-2xl border border-[#DCE4EF]/90 p-5 sm:p-6 shadow-xs">
                 <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
                   <div>
-                    <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                      <Receipt className="w-4 h-4 text-[#1b4d3e]" />
+                    <h3 className="font-bold text-[#293749] text-base flex items-center gap-2">
+                      <Receipt className="w-4 h-4 text-[#355F97]" />
                       Settled Cash Collections Log
                     </h3>
                     <p className="text-xs text-slate-400 mt-0.5">
                       Audit trail of cash collected and delivered to students
                     </p>
                   </div>
-                  <span className="text-xs font-mono font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/70 px-2.5 py-1 rounded-lg">
+                  <span className="text-xs font-mono font-bold text-[#2B4F80] bg-[#EDF2F9] border border-[#D5E4F8]/70 px-2.5 py-1 rounded-lg">
                     {collectedOrders.length} Settled Orders
                   </span>
                 </div>
 
                 {collectedOrders.length === 0 ? (
-                  <div className="p-8 text-center text-slate-400 bg-slate-50/60 rounded-xl border border-slate-100">
-                    <Receipt className="w-10 h-10 mx-auto mb-2 opacity-30 text-slate-500" />
+                  <div className="p-8 text-center text-slate-400 bg-[#F5F7FA]/60 rounded-xl border border-slate-100">
+                    <Receipt className="w-10 h-10 mx-auto mb-2 opacity-30 text-[#65748A]" />
                     <p className="text-xs font-semibold text-slate-600">No settled orders yet</p>
                     <p className="text-[11px] text-slate-400 mt-0.5">
                       As soon as an order is marked "Paid & Delivered", it will appear here in the cash log.
@@ -1778,15 +1792,15 @@ export const KfcStaffDashboard = () => {
                     {collectedOrders.map((ord) => (
                       <div
                         key={ord.id}
-                        className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs hover:bg-slate-100/70 transition-colors"
+                        className="p-3.5 rounded-xl border border-[#DCE4EF] bg-[#F5F7FA]/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs hover:bg-[#EDF2F9]/70 transition-colors"
                       >
                         <div className="flex items-center gap-3">
-                          <span className="font-mono font-extrabold text-[#1b4d3e] bg-emerald-50 border border-emerald-200/70 px-2.5 py-1 rounded-lg text-xs">
+                          <span className="font-mono font-extrabold text-[#355F97] bg-[#EDF2F9] border border-[#D5E4F8]/70 px-2.5 py-1 rounded-lg text-xs">
                             #{ord.token}
                           </span>
                           <div>
-                            <span className="font-bold text-slate-900 block text-xs">{ord.studentName}</span>
-                            <span className="text-[11px] text-slate-500">
+                            <span className="font-bold text-[#293749] block text-xs">{ord.studentName}</span>
+                            <span className="text-[11px] text-[#65748A]">
                               {ord.room} • {ord.items.map((i) => `${i.qty}x ${i.name}`).join(', ')}
                             </span>
                           </div>
@@ -1795,7 +1809,7 @@ export const KfcStaffDashboard = () => {
                           <span className="text-[10px] font-semibold text-slate-400 font-mono">
                             Delivered at {ord.orderTime}
                           </span>
-                          <span className="font-black text-emerald-700 text-sm font-mono bg-emerald-50 border border-emerald-200/70 px-2.5 py-0.5 rounded-lg">
+                          <span className="font-black text-[#2F5488] text-sm font-mono bg-[#EDF2F9] border border-[#D5E4F8]/70 px-2.5 py-0.5 rounded-lg">
                             ₹{ord.totalAmount}
                           </span>
                         </div>

@@ -28,7 +28,8 @@ export const BlockCoordinatorDashboard = () => {
     sendBlockConsolidatedCount,
     nudgeFloorIncharge,
     nudgeRoomLead,
-    floorRooms = []
+    floorRooms = [],
+    aiAnomalies = []
   } = useApp();
 
   // Active Block Tab: 'Block D' | 'Block E' | 'All'
@@ -118,7 +119,7 @@ export const BlockCoordinatorDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/80 text-slate-900 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F5F7FA]/80 text-[#293749] flex flex-col font-sans">
       <Navbar
         currentRole="Block Coordinator"
         activeTab={selectedBlock}
@@ -136,14 +137,29 @@ export const BlockCoordinatorDashboard = () => {
         />
 
         <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+          {(aiAnomalies || []).length > 0 && (
+            <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+              <span className="text-lg leading-none">⚠️</span>
+              <div>
+                <p className="text-sm font-bold text-amber-900">
+                  {aiAnomalies.length} AI anomaly alert{aiAnomalies.length !== 1 ? 's' : ''} detected
+                </p>
+                <p className="text-xs text-amber-800 mt-0.5">
+                  {aiAnomalies[0].title}
+                  {aiAnomalies[0].description || aiAnomalies[0].desc ? ` — ${aiAnomalies[0].description || aiAnomalies[0].desc}` : ''}
+                </p>
+              </div>
+            </div>
+          )}
         {/* Header with Block Subtitle */}
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#1b4d3e] bg-emerald-50 border border-emerald-200/70 px-2.5 py-0.5 rounded-md">
+              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#355F97] bg-[#EDF2F9] border border-[#D5E4F8]/70 px-2.5 py-0.5 rounded-md">
                 {isBlockD ? 'Block D Coordinator' : isBlockE ? 'Block E Coordinator' : 'Hostel Multi-Block Consolidation'}
               </span>
-              <span className="text-xs font-mono font-bold text-slate-500">
+              <span className="text-xs font-mono font-bold text-[#65748A]">
                 {isBlockD
                   ? 'Hostel Block D • B.Tech Residency'
                   : isBlockE
@@ -151,14 +167,14 @@ export const BlockCoordinatorDashboard = () => {
                   : 'Hostel Blocks D & E Combined'}
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#293749] tracking-tight mt-1">
               {isBlockD
                 ? 'Hostel Block D Coordinator Dashboard'
                 : isBlockE
                 ? 'Hostel Block E Coordinator Dashboard'
                 : 'Consolidated Blocks D & E Dashboard'}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-0.5 font-medium">
+            <p className="text-xs sm:text-sm text-[#65748A] mt-0.5 font-medium">
               {isBlockD
                 ? 'Dedicated management for Floors D-1 & D-2 (Rooms D-101, D-102, D-201, D-202).'
                 : isBlockE
@@ -172,8 +188,8 @@ export const BlockCoordinatorDashboard = () => {
             onClick={() => sendBlockConsolidatedCount(selectedBlock)}
             className={`font-bold px-6 py-3 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 self-start sm:self-auto cursor-pointer ${
               isCurrentBlockSent
-                ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
-                : 'bg-[#1b4d3e] hover:bg-[#143d31] text-white shadow-[#1b4d3e]/20 hover:shadow-md'
+                ? 'bg-[#355F97] hover:bg-[#2F5488] text-white shadow-[#355F97]/20'
+                : 'bg-[#355F97] hover:bg-[#2B4F80] text-white shadow-[#355F97]/20 hover:shadow-md'
             }`}
           >
             {isCurrentBlockSent ? (
@@ -203,15 +219,15 @@ export const BlockCoordinatorDashboard = () => {
         </div>
 
         {/* BLOCK SEPARATION SELECTOR TABS */}
-        <div className="bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200/90 mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 shadow-2xs">
+        <div className="bg-[#EDF2F9]/90 p-1.5 rounded-2xl border border-[#DCE4EF]/90 mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 shadow-2xs">
           <div className="flex flex-wrap items-center gap-1.5">
             {/* Block D Tab */}
             <button
               onClick={() => setSelectedBlock('Block D')}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 selectedBlock === 'Block D'
-                  ? 'bg-[#1b4d3e] text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                  ? 'bg-[#355F97] text-white shadow-sm'
+                  : 'text-slate-600 hover:text-[#293749] hover:bg-white/80'
               }`}
             >
               <Building className="w-4 h-4" />
@@ -219,7 +235,7 @@ export const BlockCoordinatorDashboard = () => {
               <span
                 className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
                   selectedBlock === 'Block D'
-                    ? 'bg-emerald-900/60 text-emerald-100'
+                    ? 'bg-[#243F66]/60 text-[#D5E4F8]'
                     : 'bg-slate-200 text-slate-700'
                 }`}
               >
@@ -233,7 +249,7 @@ export const BlockCoordinatorDashboard = () => {
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 selectedBlock === 'Block E'
                   ? 'bg-blue-700 text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                  : 'text-slate-600 hover:text-[#293749] hover:bg-white/80'
               }`}
             >
               <Building className="w-4 h-4" />
@@ -255,7 +271,7 @@ export const BlockCoordinatorDashboard = () => {
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 selectedBlock === 'All'
                   ? 'bg-slate-800 text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                  : 'text-slate-600 hover:text-[#293749] hover:bg-white/80'
               }`}
             >
               <Layers className="w-4 h-4" />
@@ -272,7 +288,7 @@ export const BlockCoordinatorDashboard = () => {
             </button>
           </div>
 
-          <div className="flex items-center gap-2 px-3 text-xs text-slate-500 font-mono hidden md:flex">
+          <div className="flex items-center gap-2 px-3 text-xs text-[#65748A] font-mono hidden md:flex">
             <Clock className="w-3.5 h-3.5 text-slate-400" />
             <span>Cutoff: 10:00 PM Tonight</span>
           </div>
@@ -280,38 +296,38 @@ export const BlockCoordinatorDashboard = () => {
 
         {/* 4 Stat Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-xs">
+          <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#DCE4EF]/90 shadow-xs">
             <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
               TOTAL FLOORS
             </span>
-            <p className="text-2xl font-extrabold text-slate-900 mt-1">{activeTotalFloors}</p>
-            <p className="text-xs text-slate-500 mt-1 font-medium flex items-center gap-1">
+            <p className="text-2xl font-extrabold text-[#293749] mt-1">{activeTotalFloors}</p>
+            <p className="text-xs text-[#65748A] mt-1 font-medium flex items-center gap-1">
               <Layers className="w-3 h-3 text-slate-400" />
               {isBlockD ? 'Floors D-1 & D-2' : isBlockE ? 'Floors E-1 & E-2' : 'Floors 1 - 4 Across Blocks'}
             </p>
           </div>
 
-          <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-xs">
+          <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#DCE4EF]/90 shadow-xs">
             <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
               TOTAL ROOMS
             </span>
-            <p className="text-2xl font-extrabold text-slate-900 mt-1">{activeTotalRooms}</p>
-            <p className="text-xs text-slate-500 mt-1 font-medium flex items-center gap-1">
+            <p className="text-2xl font-extrabold text-[#293749] mt-1">{activeTotalRooms}</p>
+            <p className="text-xs text-[#65748A] mt-1 font-medium flex items-center gap-1">
               <Building className="w-3 h-3 text-slate-400" /> {activeStudents} Students Allocated
             </p>
           </div>
 
-          <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-xs">
+          <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#DCE4EF]/90 shadow-xs">
             <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
               TOTAL SUBMISSIONS
             </span>
-            <p className="text-2xl font-extrabold text-[#1b4d3e] mt-1">{activeSubmissions}</p>
-            <p className="text-xs text-emerald-600 mt-1 font-semibold flex items-center gap-1">
+            <p className="text-2xl font-extrabold text-[#355F97] mt-1">{activeSubmissions}</p>
+            <p className="text-xs text-[#355F97] mt-1 font-semibold flex items-center gap-1">
               <TrendingUp className="w-3.5 h-3.5" /> {activeRate}% Compliance Rate
             </p>
           </div>
 
-          <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-xs">
+          <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#DCE4EF]/90 shadow-xs">
             <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
               PENDING STUDENTS
             </span>
@@ -326,28 +342,28 @@ export const BlockCoordinatorDashboard = () => {
         {isAll && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             {/* Block D Card */}
-            <div className="bg-white rounded-2xl p-5 border border-emerald-200/80 shadow-xs flex flex-col justify-between">
+            <div className="bg-white rounded-2xl p-5 border border-[#D5E4F8]/80 shadow-xs flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-[#1b4d3e]"></span>
-                    <h3 className="font-bold text-slate-900 text-base">Hostel Block D (Senior Wing)</h3>
+                    <span className="w-3 h-3 rounded-full bg-[#355F97]"></span>
+                    <h3 className="font-bold text-[#293749] text-base">Hostel Block D (Senior Wing)</h3>
                   </div>
-                  <span className="text-[11px] font-mono font-bold bg-emerald-50 text-[#1b4d3e] px-2 py-0.5 rounded border border-emerald-200">
+                  <span className="text-[11px] font-mono font-bold bg-[#EDF2F9] text-[#355F97] px-2 py-0.5 rounded border border-[#D5E4F8]">
                     {blockDRate}% Verified
                   </span>
                 </div>
                 <p className="text-xs text-slate-600 mb-4">
                   Floors D-1 & D-2 • Rooms D-101, D-102, D-201, D-202
                 </p>
-                <div className="grid grid-cols-3 gap-2 text-center bg-slate-50 p-3 rounded-xl border border-slate-100">
+                <div className="grid grid-cols-3 gap-2 text-center bg-[#F5F7FA] p-3 rounded-xl border border-slate-100">
                   <div>
                     <span className="text-[10px] font-mono text-slate-400 uppercase block">Total</span>
-                    <span className="text-base font-bold text-slate-900">{blockDStudents}</span>
+                    <span className="text-base font-bold text-[#293749]">{blockDStudents}</span>
                   </div>
                   <div>
                     <span className="text-[10px] font-mono text-slate-400 uppercase block">Submitted</span>
-                    <span className="text-base font-bold text-[#1b4d3e]">{blockDSubmissions}</span>
+                    <span className="text-base font-bold text-[#355F97]">{blockDSubmissions}</span>
                   </div>
                   <div>
                     <span className="text-[10px] font-mono text-slate-400 uppercase block">Pending</span>
@@ -357,7 +373,7 @@ export const BlockCoordinatorDashboard = () => {
               </div>
               <button
                 onClick={() => setSelectedBlock('Block D')}
-                className="mt-4 w-full py-2 bg-emerald-50 hover:bg-[#1b4d3e] text-[#1b4d3e] hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                className="mt-4 w-full py-2 bg-[#EDF2F9] hover:bg-[#355F97] text-[#355F97] hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <span>View Dedicated Block D Dashboard</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -370,7 +386,7 @@ export const BlockCoordinatorDashboard = () => {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full bg-blue-600"></span>
-                    <h3 className="font-bold text-slate-900 text-base">Hostel Block E (International & PG)</h3>
+                    <h3 className="font-bold text-[#293749] text-base">Hostel Block E (International & PG)</h3>
                   </div>
                   <span className="text-[11px] font-mono font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200">
                     {blockERate}% Verified
@@ -379,10 +395,10 @@ export const BlockCoordinatorDashboard = () => {
                 <p className="text-xs text-slate-600 mb-4">
                   Floors E-1 & E-2 • Rooms E-101, E-102, E-201, E-202
                 </p>
-                <div className="grid grid-cols-3 gap-2 text-center bg-slate-50 p-3 rounded-xl border border-slate-100">
+                <div className="grid grid-cols-3 gap-2 text-center bg-[#F5F7FA] p-3 rounded-xl border border-slate-100">
                   <div>
                     <span className="text-[10px] font-mono text-slate-400 uppercase block">Total</span>
-                    <span className="text-base font-bold text-slate-900">{blockEStudents}</span>
+                    <span className="text-base font-bold text-[#293749]">{blockEStudents}</span>
                   </div>
                   <div>
                     <span className="text-[10px] font-mono text-slate-400 uppercase block">Submitted</span>
@@ -406,18 +422,18 @@ export const BlockCoordinatorDashboard = () => {
         )}
 
         {/* Meal Count Chart */}
-        <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs mb-8">
+        <div className="bg-white rounded-2xl border border-[#DCE4EF]/90 p-5 sm:p-6 shadow-xs mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-5">
             <div>
-              <h3 className="font-bold text-slate-900 text-base sm:text-lg flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-[#1b4d3e]" />
+              <h3 className="font-bold text-[#293749] text-base sm:text-lg flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-[#355F97]" />
                 {isBlockD
                   ? 'Block D Meal Headcount (Submitted vs Expected)'
                   : isBlockE
                   ? 'Block E Meal Headcount (Submitted vs Expected)'
                   : 'Consolidated Meal Headcount (Blocks D & E Combined)'}
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-[#65748A]">
                 {isBlockD
                   ? 'Meal requisitions for Senior Residency residents ready for kitchen preparation'
                   : isBlockE
@@ -425,7 +441,7 @@ export const BlockCoordinatorDashboard = () => {
                   : 'Combined campus meal counts ready to be transferred to kitchen preparation'}
               </p>
             </div>
-            <span className="text-xs font-mono text-emerald-800 bg-[#e6f4ea] px-2.5 py-1 rounded-full font-semibold self-start sm:self-auto border border-emerald-200/60">
+            <span className="text-xs font-mono text-[#2B4F80] bg-[#D5E4F8] px-2.5 py-1 rounded-full font-semibold self-start sm:self-auto border border-[#D5E4F8]/60">
               Kitchen Sync Ready
             </span>
           </div>
@@ -450,7 +466,7 @@ export const BlockCoordinatorDashboard = () => {
                 <Bar
                   dataKey="submitted"
                   name="Submitted Count"
-                  fill={isBlockE ? '#2563eb' : '#1b4d3e'}
+                  fill={isBlockE ? '#2563eb' : '#355F97'}
                   radius={[6, 6, 0, 0]}
                 />
                 <Bar dataKey="expected" name="Expected Max Count" fill="#cbd5e1" radius={[6, 6, 0, 0]} />
@@ -460,17 +476,17 @@ export const BlockCoordinatorDashboard = () => {
         </div>
 
         {/* Floor Summary Table */}
-        <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs mb-8">
+        <div className="bg-white rounded-2xl border border-[#DCE4EF]/90 p-5 sm:p-6 shadow-xs mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-5">
             <div>
-              <h3 className="font-bold text-slate-900 text-base sm:text-lg">
+              <h3 className="font-bold text-[#293749] text-base sm:text-lg">
                 {isBlockD
                   ? 'Block D Floor-wise Submission Breakdown'
                   : isBlockE
                   ? 'Block E Floor-wise Submission Breakdown'
                   : 'Multi-Block Floor Submission Breakdown'}
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-[#65748A]">
                 {isBlockD
                   ? 'Floors D-1 & D-2 participation and compliance tracking'
                   : isBlockE
@@ -478,7 +494,7 @@ export const BlockCoordinatorDashboard = () => {
                   : 'Overview of all 4 hostel floors across Block D and Block E'}
               </p>
             </div>
-            <div className="flex items-center gap-2 text-xs font-mono text-slate-500">
+            <div className="flex items-center gap-2 text-xs font-mono text-[#65748A]">
               <Clock className="w-3.5 h-3.5 text-slate-400" />
               <span>Cutoff: 10:00 PM Tonight</span>
             </div>
@@ -487,7 +503,7 @@ export const BlockCoordinatorDashboard = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs sm:text-sm">
               <thead>
-                <tr className="border-b border-slate-200/80 text-slate-400 font-mono font-bold uppercase text-[10px] tracking-wider">
+                <tr className="border-b border-[#DCE4EF]/80 text-slate-400 font-mono font-bold uppercase text-[10px] tracking-wider">
                   <th className="pb-3">Floor</th>
                   <th className="pb-3">Total Rooms</th>
                   <th className="pb-3">Submissions</th>
@@ -498,11 +514,11 @@ export const BlockCoordinatorDashboard = () => {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {activeFloors.map((fl) => (
-                  <tr key={fl.floor} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-3.5 font-bold text-slate-900 flex items-center gap-2">
+                  <tr key={fl.floor} className="hover:bg-[#F5F7FA]/80 transition-colors">
+                    <td className="py-3.5 font-bold text-[#293749] flex items-center gap-2">
                       <span
                         className={`w-2 h-2 rounded-full ${
-                          fl.floor.includes('Block D') ? 'bg-[#1b4d3e]' : 'bg-blue-600'
+                          fl.floor.includes('Block D') ? 'bg-[#355F97]' : 'bg-blue-600'
                         }`}
                       ></span>
                       <span>{fl.floor}</span>
@@ -513,11 +529,11 @@ export const BlockCoordinatorDashboard = () => {
                     </td>
                     <td className="py-3.5">
                       <div className="flex items-center gap-2.5">
-                        <span className="font-bold text-slate-900 min-w-10">{fl.rate}%</span>
-                        <div className="w-24 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                        <span className="font-bold text-[#293749] min-w-10">{fl.rate}%</span>
+                        <div className="w-24 bg-[#EDF2F9] rounded-full h-1.5 overflow-hidden">
                           <div
                             className={`h-full rounded-full transition-all duration-500 ${
-                              fl.floor.includes('Block D') ? 'bg-[#1b4d3e]' : 'bg-blue-600'
+                              fl.floor.includes('Block D') ? 'bg-[#355F97]' : 'bg-blue-600'
                             }`}
                             style={{ width: `${fl.rate}%` }}
                           ></div>
@@ -528,12 +544,12 @@ export const BlockCoordinatorDashboard = () => {
                       <span
                         className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
                           fl.rate >= 85
-                            ? 'bg-emerald-50 text-[#1b4d3e] border-emerald-200/70'
+                            ? 'bg-[#EDF2F9] text-[#355F97] border-[#D5E4F8]/70'
                             : 'bg-amber-50 text-amber-800 border-amber-200/70'
                         }`}
                       >
                         {fl.rate >= 85 ? (
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          <CheckCircle2 className="w-3 h-3 text-[#355F97]" />
                         ) : (
                           <AlertCircle className="w-3 h-3 text-amber-600" />
                         )}
@@ -551,8 +567,8 @@ export const BlockCoordinatorDashboard = () => {
                           <span>Nudge Incharge ({fl.pending} pending)</span>
                         </button>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold text-xs ml-auto">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <span className="inline-flex items-center gap-1 text-[#2F5488] font-semibold text-xs ml-auto">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-[#355F97]" />
                           <span>100% Incharge Verified</span>
                         </span>
                       )}
@@ -565,22 +581,22 @@ export const BlockCoordinatorDashboard = () => {
         </div>
 
         {/* Room Leads Coordination Table */}
-        <div id="room-leads-coordination-section" className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs scroll-mt-20">
+        <div id="room-leads-coordination-section" className="bg-white rounded-2xl border border-[#DCE4EF]/90 p-5 sm:p-6 shadow-xs scroll-mt-20">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-slate-900 text-base sm:text-lg">
+                <h3 className="font-bold text-[#293749] text-base sm:text-lg">
                   {isBlockD
                     ? 'Block D Room Leads Coordination'
                     : isBlockE
                     ? 'Block E Room Leads Coordination'
                     : 'Block D & Block E Room Leads Coordination'}
                 </h3>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#2B4F80] bg-[#EDF2F9] border border-[#D5E4F8]/80 px-2 py-0.5 rounded">
                   Live Sync
                 </span>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-[#65748A] mt-0.5">
                 {isBlockD
                   ? 'Direct oversight of Room Leads across Floor D-1 and Floor D-2.'
                   : isBlockE
@@ -589,7 +605,7 @@ export const BlockCoordinatorDashboard = () => {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 font-mono font-medium">
+              <span className="text-xs text-[#65748A] font-mono font-medium">
                 Total {activeTotalRooms} Rooms Managed
               </span>
             </div>
@@ -598,7 +614,7 @@ export const BlockCoordinatorDashboard = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs sm:text-sm">
               <thead>
-                <tr className="border-b border-slate-200/80 text-slate-400 font-mono font-bold uppercase text-[10px] tracking-wider">
+                <tr className="border-b border-[#DCE4EF]/80 text-slate-400 font-mono font-bold uppercase text-[10px] tracking-wider">
                   <th className="pb-3">Room</th>
                   <th className="pb-3">Room Lead</th>
                   <th className="pb-3">Floor / Block</th>
@@ -617,17 +633,17 @@ export const BlockCoordinatorDashboard = () => {
                   const isComplete = (room?.pending || 0) === 0;
 
                   return (
-                    <tr key={roomNoStr || Math.random()} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3.5 font-bold text-slate-900 flex items-center gap-2">
+                    <tr key={roomNoStr || Math.random()} className="hover:bg-[#F5F7FA]/80 transition-colors">
+                      <td className="py-3.5 font-bold text-[#293749] flex items-center gap-2">
                         <span
                           className={`w-2 h-2 rounded-full ${
-                            isBlockDItem ? 'bg-[#1b4d3e]' : 'bg-blue-600'
+                            isBlockDItem ? 'bg-[#355F97]' : 'bg-blue-600'
                           }`}
                         ></span>
                         <span className="font-mono">{roomNoStr}</span>
                       </td>
                       <td className="py-3.5 text-slate-800 font-medium">{leadName}</td>
-                      <td className="py-3.5 text-slate-500 text-xs font-mono">
+                      <td className="py-3.5 text-[#65748A] text-xs font-mono">
                         {floorNum} • {isBlockDItem ? 'Block D' : 'Block E'}
                       </td>
                       <td className="py-3.5 text-slate-700 font-semibold font-mono text-xs">
@@ -635,16 +651,16 @@ export const BlockCoordinatorDashboard = () => {
                       </td>
                       <td className="py-3.5 min-w-[130px]">
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-900 min-w-8 text-xs">{room?.rate || 0}%</span>
-                          <div className="w-20 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                          <span className="font-bold text-[#293749] min-w-8 text-xs">{room?.rate || 0}%</span>
+                          <div className="w-20 bg-[#EDF2F9] rounded-full h-1.5 overflow-hidden">
                             <div
                               className={`h-full rounded-full transition-all duration-500 ${
                                 room?.rate === 100
                                   ? isBlockDItem
-                                    ? 'bg-[#1b4d3e]'
+                                    ? 'bg-[#355F97]'
                                     : 'bg-blue-600'
                                   : (room?.rate || 0) >= 75
-                                  ? 'bg-emerald-600'
+                                  ? 'bg-[#355F97]'
                                   : 'bg-amber-500'
                               }`}
                               style={{ width: `${room?.rate || 0}%` }}
@@ -656,12 +672,12 @@ export const BlockCoordinatorDashboard = () => {
                         <span
                           className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
                             isComplete
-                              ? 'bg-emerald-50 text-[#1b4d3e] border-emerald-200/70'
+                              ? 'bg-[#EDF2F9] text-[#355F97] border-[#D5E4F8]/70'
                               : 'bg-amber-50 text-amber-800 border-amber-200/70'
                           }`}
                         >
                           {isComplete ? (
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <CheckCircle2 className="w-3 h-3 text-[#355F97]" />
                           ) : (
                             <AlertCircle className="w-3 h-3 text-amber-600" />
                           )}
@@ -693,10 +709,10 @@ export const BlockCoordinatorDashboard = () => {
                                 'Nithin (Block Coordinator)'
                               )
                             }
-                            className="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-800 font-semibold text-xs ml-auto border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 px-2.5 py-1 rounded-md transition-colors"
+                            className="inline-flex items-center gap-1 text-[#2F5488] hover:text-[#2B4F80] font-semibold text-xs ml-auto border border-[#D5E4F8] bg-[#EDF2F9]/50 hover:bg-[#EDF2F9] px-2.5 py-1 rounded-md transition-colors"
                             title={`Send acknowledgement to ${leadName}`}
                           >
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <CheckCircle2 className="w-3.5 h-3.5 text-[#355F97]" />
                             <span>Verified ✓</span>
                           </button>
                         )}
