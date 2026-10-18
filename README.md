@@ -210,14 +210,3 @@ smart-mess-kfc/
 
 ---
 
-## 👨‍💻 Team Roles & Technical Contributions
-
-| Team Member | Project Role | Core Architectural & Engineering Contributions |
-| :--- | :--- | :--- |
-| **Lead Full-Stack Architect** | Project Lead & System Architecture | Overall system design, multi-tier RBAC routing, Socket.IO + `BroadcastChannel` synchronization strategy, and repository governance. |
-| **Frontend Engineer — Resident Experience** | UI/UX & Student / Room Lead Portals | Student Dining Portal with dietary opt-ins and KFC token tracking, Room Lead Hub with roster toggles and editing windows. |
-| **AI & Predictive Analytics Engineer** | Data Science & Forecasting Engine | 7-day WMA regression, day-of-week seasonality weighting, scenario simulator, kitchen batch sizing, and wastage minimization. |
-| **Backend & Kitchen Systems Engineer** | API Development & Canteen Terminals | Express REST APIs, Mongoose schemas, JWT/RBAC middleware, KFC Staff POS terminal, and mess requisition batch calculator. |
-| **AI Assistant & QA Specialist** | Mess Guide, Governance & Quality Assurance | RAG + LLM Mess Guide (tools/scopes), fine-tuning pipeline, Principal portal, audit trails, and end-to-end testing. |
-
----
