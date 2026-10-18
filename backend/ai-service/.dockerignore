@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+training/.venv/
+training/data/
+training/outputs/
+training/unsloth_compiled_cache/
+models/.cache/
+index/
+*.log
+.git/

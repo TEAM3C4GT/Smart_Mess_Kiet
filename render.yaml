@@ -1,0 +1,59 @@
+# Render Blueprint for Smart Mess & KFC.
+# Optional shortcut: commit this, then Render Dashboard -> New -> Blueprint.
+# Values marked `sync: false` are filled in from the dashboard (they are secrets
+# or environment-specific URLs). You can also skip this file and create each
+# service by hand following the deployment guide.
+
+services:
+  # 1) Express API + Socket.IO realtime gateway
+  - type: web
+    name: smart-mess-backend
+    runtime: node
+    rootDir: backend
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI          # MongoDB Atlas connection string
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: ALLOWED_ORIGINS      # e.g. https://smart-mess-frontend.onrender.com
+        sync: false
+      - key: AI_SERVICE_URL       # e.g. https://smart-mess-ai.onrender.com
+        sync: false
+
+  # 2) FastAPI Mess Guide chat (RAG + LLM). Docker because of the ML deps.
+  - type: web
+    name: smart-mess-ai
+    runtime: docker
+    dockerfilePath: ./backend/ai-service/Dockerfile
+    dockerContext: ./backend/ai-service
+    plan: standard              # needs ~2 GB RAM for torch + the GGUF model
+    envVars:
+      - key: LLM_BACKEND
+        value: llamacpp
+      - key: MODEL_PATH
+        value: /app/models/qwen2.5-1.5b-instruct-q4_k_m.gguf
+      - key: BACKEND_API_URL      # e.g. https://smart-mess-backend.onrender.com/api
+        sync: false
+
+  # 3) Vite/React static site
+  - type: web
+    name: smart-mess-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL         # e.g. https://smart-mess-backend.onrender.com
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

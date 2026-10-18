@@ -1,9 +1,16 @@
 import express from 'express';
 import cors from 'cors';
+import dns from 'node:dns';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cron from 'node-cron';
 dotenv.config();
+
+// Some networks (campus/office) refuse SRV lookups, which breaks mongodb+srv://
+// URIs. Allow overriding the resolvers, e.g. DNS_SERVERS=8.8.8.8,1.1.1.1
+if (process.env.DNS_SERVERS) {
+  dns.setServers(process.env.DNS_SERVERS.split(',').map((s) => s.trim()).filter(Boolean));
+}
 
 import apiRoutes from './routes/apiRoutes.js';
 import { initRealtime } from './realtime.js';
