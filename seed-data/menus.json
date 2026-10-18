@@ -1,0 +1,23 @@
+[
+  {
+    "date": "2026-09-30",
+    "breakfast": "Idli & Sambar, Medu Vada, Filter Coffee",
+    "lunch": "Chole Bhature, Steamed Rice, Dal Tadka, Boondi Raita",
+    "snacks": "Veg Cutlet, Masala Chai",
+    "dinner": "Paneer Butter Masala, Phulka, Jeera Rice, Gulab Jamun"
+  },
+  {
+    "date": "2026-10-01",
+    "breakfast": "Masala Dosa & Sambar, Poha with Chai",
+    "lunch": "Rajma Chawal Thali, Paneer Butter Masala",
+    "snacks": "Samosa & Chai",
+    "dinner": "Roti, Dal, Sabzi, Chicken Curry & Rice"
+  },
+  {
+    "date": "Tomorrow (Sept 17)",
+    "breakfast": "Masala Dosa & Sambar, Poha with Chai",
+    "lunch": "Rajma Chawal Thali, Paneer Butter Masala",
+    "snacks": "Samosa & Chai",
+    "dinner": "Roti, Dal, Sabzi, Chicken Curry & Rice"
+  }
+]

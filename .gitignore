@@ -55,8 +55,7 @@ backend/ai-service/training/data/
 frontend/.env
 backend/.env
 
-# Local Database Backups & Seed Datasets
-seed-data/
+# Local Database Backups
 db_backup_*/
 
 # Generated build caches & audit artifacts (not source)

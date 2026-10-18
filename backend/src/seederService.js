@@ -20,7 +20,15 @@ import {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const seedDir = path.resolve(__dirname, '../../seed-data');
+
+const candidateSeedDirs = [
+  path.resolve(__dirname, '../../seed-data'),
+  path.resolve(__dirname, '../seed-data'),
+  path.resolve(process.cwd(), 'seed-data'),
+  path.resolve(process.cwd(), '../seed-data'),
+  path.resolve('/opt/render/project/src/seed-data')
+];
+const seedDir = candidateSeedDirs.find((dir) => fs.existsSync(dir)) || candidateSeedDirs[0];
 
 function readSeedJson(fileName) {
   const filePath = path.join(seedDir, fileName);

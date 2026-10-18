@@ -1,0 +1,46 @@
+[
+  {
+    "id": "NOTIF-01",
+    "title": "Daily Cutoff Notice from Block D Incharge",
+    "message": "Er. R. Rao: Please verify all 5 Room D-101 members have selected their meals before tonight's 10:00 PM cutoff.",
+    "sender": "Er. R. Rao (Block D Coordinator)",
+    "roomNo": "Room D-101",
+    "time": "10:15 AM",
+    "timestamp": 1791655120367,
+    "read": false,
+    "type": "reminder"
+  },
+  {
+    "id": "NOTIF-02",
+    "title": "KFC Canteen Order Ready",
+    "message": "Token KFC-D101-14 is hot and ready for collection at the counter.",
+    "sender": "KFC Kitchen Express",
+    "roomNo": "Room D-101",
+    "time": "06:21 PM",
+    "timestamp": 1791656920367,
+    "read": false,
+    "type": "order"
+  },
+  {
+    "id": "NOTIF-03",
+    "title": "Block D Consolidated Roster Sent",
+    "message": "104 student headcounts successfully consolidated and transmitted to Main Mess Kitchen.",
+    "sender": "Er. R. Rao (Block D Coordinator)",
+    "roomNo": "Hostel Block D",
+    "time": "07:00 PM",
+    "timestamp": 1791657820367,
+    "read": true,
+    "type": "status"
+  },
+  {
+    "id": "NOTIF-04",
+    "title": "Block E International Hostel Update",
+    "message": "Dr. P. Sen: Block E headcount verified. 89 students eating.",
+    "sender": "Dr. P. Sen (Block E Coordinator)",
+    "roomNo": "Hostel Block E",
+    "time": "08:45 PM",
+    "timestamp": 1791658520367,
+    "read": false,
+    "type": "status"
+  }
+]

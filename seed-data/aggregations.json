@@ -1,0 +1,72 @@
+[
+  {
+    "scope": "floor",
+    "scopeId": "floor-d1",
+    "date": "2026-10-01",
+    "breakfastCount": 10,
+    "lunchCount": 10,
+    "snacksCount": 8,
+    "dinnerCount": 10,
+    "participationRate": 100
+  },
+  {
+    "scope": "floor",
+    "scopeId": "floor-d2",
+    "date": "2026-10-01",
+    "breakfastCount": 7,
+    "lunchCount": 8,
+    "snacksCount": 6,
+    "dinnerCount": 7,
+    "participationRate": 70
+  },
+  {
+    "scope": "floor",
+    "scopeId": "floor-e1",
+    "date": "2026-10-01",
+    "breakfastCount": 9,
+    "lunchCount": 10,
+    "snacksCount": 7,
+    "dinnerCount": 9,
+    "participationRate": 90
+  },
+  {
+    "scope": "floor",
+    "scopeId": "floor-e2",
+    "date": "2026-10-01",
+    "breakfastCount": 8,
+    "lunchCount": 8,
+    "snacksCount": 6,
+    "dinnerCount": 8,
+    "participationRate": 80
+  },
+  {
+    "scope": "block",
+    "scopeId": "block-d",
+    "date": "2026-10-01",
+    "breakfastCount": 104,
+    "lunchCount": 110,
+    "snacksCount": 88,
+    "dinnerCount": 106,
+    "participationRate": 94.5
+  },
+  {
+    "scope": "block",
+    "scopeId": "block-e",
+    "date": "2026-10-01",
+    "breakfastCount": 89,
+    "lunchCount": 95,
+    "snacksCount": 78,
+    "dinnerCount": 92,
+    "participationRate": 93.7
+  },
+  {
+    "scope": "mess",
+    "scopeId": "main-kitchen",
+    "date": "2026-10-01",
+    "breakfastCount": 193,
+    "lunchCount": 205,
+    "snacksCount": 166,
+    "dinnerCount": 198,
+    "participationRate": 94.1
+  }
+]

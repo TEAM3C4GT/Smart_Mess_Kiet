@@ -1,49 +1,38 @@
-# Render Blueprint for Smart Mess & KFC.
-# Optional shortcut: commit this, then Render Dashboard -> New -> Blueprint.
-# Values marked `sync: false` are filled in from the dashboard (they are secrets
-# or environment-specific URLs). You can also skip this file and create each
-# service by hand following the deployment guide.
+# Render Blueprint for Smart Mess & KFC Management System
+# To deploy: Go to Render Dashboard -> New -> Blueprint -> Connect your repo.
+#
+# Free Tier Notice:
+# - Backend (Express + Socket.IO) uses `plan: free`
+# - Frontend (Vite/React) uses `runtime: static` (Free)
+# - Database: Use a free MongoDB Atlas M0 cluster (mongodb+srv://...)
 
 services:
-  # 1) Express API + Socket.IO realtime gateway
+  # 1) Express REST API + Socket.IO Realtime Gateway
   - type: web
     name: smart-mess-backend
     runtime: node
     rootDir: backend
-    plan: starter
+    plan: free
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: MONGODB_URI          # MongoDB Atlas connection string
+      - key: MONGODB_URI          # Your MongoDB Atlas URI (mongodb+srv://<user>:<pass>@cluster0.../smart-mess-kfc)
         sync: false
-      - key: JWT_SECRET
-        sync: false
+      - key: JWT_SECRET           # Render automatically generates a cryptographically secure key
+        generateValue: true
       - key: JWT_EXPIRES_IN
         value: 7d
-      - key: ALLOWED_ORIGINS      # e.g. https://smart-mess-frontend.onrender.com
+      - key: DNS_SERVERS          # Ensures reliable Atlas mongodb+srv:// SRV resolution
+        value: 8.8.8.8,1.1.1.1
+      - key: ALLOWED_ORIGINS      # Your frontend URL (e.g. https://smart-mess-frontend.onrender.com)
         sync: false
-      - key: AI_SERVICE_URL       # e.g. https://smart-mess-ai.onrender.com
-        sync: false
-
-  # 2) FastAPI Mess Guide chat (RAG + LLM). Docker because of the ML deps.
-  - type: web
-    name: smart-mess-ai
-    runtime: docker
-    dockerfilePath: ./backend/ai-service/Dockerfile
-    dockerContext: ./backend/ai-service
-    plan: standard              # needs ~2 GB RAM for torch + the GGUF model
-    envVars:
-      - key: LLM_BACKEND
-        value: llamacpp
-      - key: MODEL_PATH
-        value: /app/models/qwen2.5-1.5b-instruct-q4_k_m.gguf
-      - key: BACKEND_API_URL      # e.g. https://smart-mess-backend.onrender.com/api
+      - key: AI_SERVICE_URL       # Optional: URL of FastAPI AI service if deployed, or leave blank
         sync: false
 
-  # 3) Vite/React static site
+  # 2) Vite / React Single Page Application (Static Site)
   - type: web
     name: smart-mess-frontend
     runtime: static
@@ -51,9 +40,27 @@ services:
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     envVars:
-      - key: VITE_API_URL         # e.g. https://smart-mess-backend.onrender.com
+      - key: VITE_API_URL         # Your backend URL (e.g. https://smart-mess-backend.onrender.com)
         sync: false
     routes:
       - type: rewrite
         source: /*
         destination: /index.html
+
+  # 3) Optional: FastAPI Mess Guide AI Microservice (Docker)
+  # Uncomment this service if you wish to run the RAG + LLM chat service on Render.
+  # Note: Requires a paid plan (standard with >= 2GB RAM) for PyTorch + GGUF execution.
+  # - type: web
+  #   name: smart-mess-ai
+  #   runtime: docker
+  #   dockerfilePath: ./backend/ai-service/Dockerfile
+  #   dockerContext: ./backend/ai-service
+  #   plan: standard
+  #   envVars:
+  #     - key: LLM_BACKEND
+  #       value: llamacpp
+  #     - key: MODEL_PATH
+  #       value: /app/models/qwen2.5-1.5b-instruct-q4_k_m.gguf
+  #     - key: BACKEND_API_URL
+  #       sync: false
+

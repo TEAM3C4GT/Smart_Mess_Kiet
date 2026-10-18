@@ -16,18 +16,21 @@ import apiRoutes from './routes/apiRoutes.js';
 import { initRealtime } from './realtime.js';
 import { realtimeAndAudit } from './middleware/auditMiddleware.js';
 import { sendWeeklyDigest } from './services/digestService.js';
+import { User } from './models/Schemas.js';
+import { runIdempotentSeed } from './seederService.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Security: Whitelist CORS origins
 const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+  ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim().replace(/\/+$/, ''))
   : ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:3000', 'http://127.0.0.1:5173'];
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+    const cleanOrigin = origin ? origin.replace(/\/+$/, '') : null;
+    if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(cleanOrigin) || process.env.NODE_ENV !== 'production') {
       callback(null, true);
     } else {
       callback(new Error(`Origin '${origin}' not permitted by CORS policy`));
@@ -82,7 +85,19 @@ app.use((err, req, res, next) => {
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/smart-mess-kfc';
 mongoose
   .connect(MONGODB_URI, { serverSelectionTimeoutMS: 5000 })
-  .then(() => console.log('✅ Connected to MongoDB database'))
+  .then(async () => {
+    console.log('✅ Connected to MongoDB database');
+    try {
+      const userCount = await User.countDocuments();
+      if (userCount === 0) {
+        console.log('🌱 Database is empty. Running initial idempotent seed...');
+        await runIdempotentSeed(MONGODB_URI);
+        console.log('✅ Initial database seed completed successfully!');
+      }
+    } catch (seedErr) {
+      console.warn('⚠️ Auto-seed check failed or skipped:', seedErr.message);
+    }
+  })
   .catch((err) => {
     console.error('❌ Failed to connect to MongoDB database:', err.message);
   });

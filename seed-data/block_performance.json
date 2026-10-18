@@ -1,0 +1,20 @@
+[
+  {
+    "block": "Block D (Senior Wing)",
+    "total": 110,
+    "submitted": 104,
+    "pending": 6,
+    "rate": 94.5,
+    "status": "Optimal",
+    "incharge": "Er. R. Rao"
+  },
+  {
+    "block": "Block E (International/PG Wing)",
+    "total": 95,
+    "submitted": 89,
+    "pending": 6,
+    "rate": 93.7,
+    "status": "Good",
+    "incharge": "Dr. P. Sen"
+  }
+]

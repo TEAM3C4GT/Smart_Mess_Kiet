@@ -1,0 +1,51 @@
+[
+  {
+    "day": "Mon",
+    "date": "2026-09-24",
+    "actualKg": 18.2,
+    "targetKg": 10,
+    "savedKg": 1.8
+  },
+  {
+    "day": "Tue",
+    "date": "2026-09-25",
+    "actualKg": 14.5,
+    "targetKg": 10,
+    "savedKg": 3.5
+  },
+  {
+    "day": "Wed",
+    "date": "2026-09-26",
+    "actualKg": 11.2,
+    "targetKg": 10,
+    "savedKg": 5.8
+  },
+  {
+    "day": "Thu",
+    "date": "2026-09-27",
+    "actualKg": 9.1,
+    "targetKg": 10,
+    "savedKg": 8.9
+  },
+  {
+    "day": "Fri",
+    "date": "2026-09-28",
+    "actualKg": 8,
+    "targetKg": 10,
+    "savedKg": 10
+  },
+  {
+    "day": "Sat",
+    "date": "2026-09-29",
+    "actualKg": 6.2,
+    "targetKg": 10,
+    "savedKg": 11.8
+  },
+  {
+    "day": "Sun",
+    "date": "2026-09-30",
+    "actualKg": 5.4,
+    "targetKg": 10,
+    "savedKg": 12.6
+  }
+]

@@ -1,0 +1,26 @@
+[
+  {
+    "title": "Block D Floor 2 Submission Alert",
+    "type": "low_participation",
+    "scope": "floor",
+    "scopeId": "Block D • Floor 2 (Room D-202)",
+    "description": "Room D-202 submission rate is 60% (3/5 students). Automated reminder sent to room members.",
+    "severity": "medium"
+  },
+  {
+    "title": "High KFC Demand Forecast",
+    "type": "variance_alert",
+    "scope": "kfc",
+    "scopeId": "Snacks Shift (04:30 PM - 06:00 PM)",
+    "description": "Zinger Burger Duo & Chicken Popcorn orders predicted to surge by 45% based on exam week patterns.",
+    "severity": "medium"
+  },
+  {
+    "title": "Block E Waste Reduction Milestone",
+    "type": "high_wastage",
+    "scope": "mess",
+    "scopeId": "Block E International Kitchen Wing",
+    "description": "Daily unconsumed plate wastage dropped by 32% (from 18.2kg Mon down to 5.4kg Sun).",
+    "severity": "low"
+  }
+]
