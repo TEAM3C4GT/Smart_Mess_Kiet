@@ -1,0 +1,9 @@
+# Ignore large binary weights & model files
+models/*.gguf
+models/**
+training/**
+index/embeddings.npy
+.cache/**
+__pycache__/**
+.venv/**
+*.pyc

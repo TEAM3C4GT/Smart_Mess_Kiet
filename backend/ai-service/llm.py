@@ -210,10 +210,52 @@ def _chat_llamacpp(messages: list[dict[str, str]]) -> dict[str, Any]:
     return _normalise(_extract_json(raw), raw)
 
 
+def _chat_gemini(messages: list[dict[str, str]], api_key: str) -> dict[str, Any]:
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    contents = []
+    for m in messages:
+        contents.append({
+            "role": "user" if m.get("role") in ("user", "system") else "model",
+            "parts": [{"text": m.get("content", "")}]
+        })
+    payload = {
+        "contents": contents,
+        "systemInstruction": {
+            "parts": [{"text": "You are Mess Guide, the AI campus dining assistant for KIET Smart Mess & KFC. Answer concisely, helpfully, and accurately."}]
+        }
+    }
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST"
+    )
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+        text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+        return _normalise(_extract_json(text), text)
+
+
+def _chat_fallback(messages: list[dict[str, str]]) -> dict[str, Any]:
+    last_msg = messages[-1].get("content", "").lower() if messages else ""
+    if any(k in last_msg for k in ("menu", "breakfast", "lunch", "dinner", "food")):
+        return {"type": "action", "tool": "get_menu", "args": {}}
+    if any(k in last_msg for k in ("kfc", "burger", "order")):
+        return {"type": "action", "tool": "get_kfc_menu", "args": {}}
+    if any(k in last_msg for k in ("forecast", "predict", "headcount")):
+        return {"type": "action", "tool": "get_forecast", "args": {}}
+    return {
+        "type": "answer",
+        "text": "Hello! I am Mess Guide, your KIET dining assistant. I can help with dining schedules, menus, KFC Express orders, and campus dining info."
+    }
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 def is_available() -> bool:
+    if os.getenv("GEMINI_API_KEY"):
+        return True
     if BACKEND == "llamacpp":
         return model_path() is not None
     ok, _ = _ollama_ready()
@@ -221,6 +263,8 @@ def is_available() -> bool:
 
 
 def load_error() -> str | None:
+    if os.getenv("GEMINI_API_KEY"):
+        return None
     if BACKEND == "llamacpp":
         return _load_error if _model is None else None
     ok, err = _ollama_ready()
@@ -228,6 +272,8 @@ def load_error() -> str | None:
 
 
 def backend_name() -> str:
+    if os.getenv("GEMINI_API_KEY"):
+        return "gemini-cloud"
     return BACKEND
 
 
@@ -237,6 +283,25 @@ def chat(messages: list[dict[str, str]], tools: list[dict[str, Any]] | None = No
     `tools` (OpenAI-style function defs) is only used by the Ollama backend; the
     llama.cpp backend relies on the fine-tuned JSON contract instead.
     """
-    if BACKEND == "llamacpp":
-        return _chat_llamacpp(messages)
-    return _chat_ollama(messages, tools)
+    gemini_key = os.getenv("GEMINI_API_KEY")
+    if gemini_key:
+        try:
+            return _chat_gemini(messages, gemini_key)
+        except Exception:
+            pass
+
+    if BACKEND == "llamacpp" and _load_llamacpp():
+        try:
+            return _chat_llamacpp(messages)
+        except Exception:
+            pass
+
+    if BACKEND == "ollama":
+        ok, _ = _ollama_ready()
+        if ok:
+            try:
+                return _chat_ollama(messages, tools)
+            except Exception:
+                pass
+
+    return _chat_fallback(messages)

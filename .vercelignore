@@ -1,0 +1,16 @@
+# Large ML models & checkpoints
+backend/ai-service/models/*.gguf
+backend/ai-service/models/**
+backend/ai-service/training/**
+backend/ai-service/index/embeddings.npy
+backend/ai-service/.cache/**
+backend/ai-service/__pycache__/**
+backend/ai-service/.venv/**
+
+# Database backups & local dumps
+db_backup*/**
+
+# Git & Logs
+.git
+.github
+*.log
