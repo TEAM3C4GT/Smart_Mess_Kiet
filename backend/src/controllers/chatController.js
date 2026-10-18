@@ -144,7 +144,10 @@ export const postChat = async (req, res) => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 4000);
 
-    const response = await fetch(`${AI_SERVICE_URL}/chat`, {
+    const aiBase = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+    const chatUrl = new URL('chat', aiBase.endsWith('/') ? aiBase : `${aiBase}/`);
+
+    const response = await fetch(chatUrl, {
       method: 'POST',
       headers,
       body: JSON.stringify(payload),
@@ -258,7 +261,9 @@ export const postChatExecute = async (req, res) => {
     urlPath = urlPath.replace(`{${param}}`, encodeURIComponent(body[param]));
   }
 
-  const base = `http://127.0.0.1:${process.env.PORT || 5000}/api`;
+  const host = req.get('host');
+  const protocol = req.protocol || 'http';
+  const base = host ? `${protocol}://${host}/api` : `http://127.0.0.1:${process.env.PORT || 5000}/api`;
 
   try {
     const response = await fetch(base + urlPath, {

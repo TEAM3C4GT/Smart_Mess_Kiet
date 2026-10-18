@@ -1,32 +1,55 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "version": 2,
-  "buildCommand": "npm run build --workspace=frontend",
-  "outputDirectory": "frontend/dist",
-  "functions": {
-    "api/index.js": {
-      "includeFiles": "{seed-data/**,backend/ai-service/training/**}",
-      "maxDuration": 30
+  "services": {
+    "smart-mess-backend": {
+      "root": "backend",
+      "framework": "express",
+      "buildCommand": "npm install",
+      "bindings": [
+        {
+          "type": "service",
+          "service": "ai-service",
+          "format": "url",
+          "env": "AI_SERVICE_URL"
+        }
+      ]
+    },
+    "ai-service": {
+      "root": "backend/ai-service",
+      "framework": "fastapi",
+      "bindings": [
+        {
+          "type": "service",
+          "service": "smart-mess-backend",
+          "format": "url",
+          "env": "BACKEND_SERVICE_URL"
+        }
+      ]
+    },
+    "smart-mess-frontend": {
+      "root": "frontend",
+      "framework": "vite",
+      "buildCommand": "npm install && npm run build"
     }
   },
-  "crons": [
-    {
-      "path": "/api/system/weekly-digest",
-      "schedule": "0 8 * * 1"
-    }
-  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/index.js"
+      "destination": {
+        "service": "smart-mess-backend"
+      }
     },
     {
       "source": "/health",
-      "destination": "/api/index.js"
+      "destination": {
+        "service": "smart-mess-backend"
+      }
     },
     {
-      "source": "/((?!api/).*)",
-      "destination": "/index.html"
+      "source": "/(.*)",
+      "destination": {
+        "service": "smart-mess-frontend"
+      }
     }
   ]
 }
