@@ -107,6 +107,23 @@ npm run build
 
 ---
 
+## ☁️ Cloud Deployment Options
+
+### ⚡ Option A: Everything on Vercel (Recommended)
+You can deploy the entire platform — frontend, serverless REST API, AI guide assistant, and automated cron jobs — **100% on Vercel**:
+- Unified repository setup (single Vercel project)
+- Auto-routing: `/api/*` to Express serverless function, all other routes to React SPA
+- Automatic MongoDB database seeding on first boot
+- No CORS configuration or domain mismatch
+
+👉 **Read the complete guide in [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md)**.
+
+### 🐳 Option B: Render Blueprint Deployment
+Deploy via Docker and persistent web services on Render.
+👉 **Read the guide in [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md)**.
+
+---
+
 ## 👥 Demo Accounts & Default Credentials
 
 **Students** log in with their **roll number** (as both identifier and password). **Staff/Admin** use the default password `123456789`.

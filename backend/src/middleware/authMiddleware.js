@@ -147,8 +147,9 @@ export const enforceStudentOwnership = (identifierField = 'studentId') => {
 export const devOrAdminOnly = (req, res, next) => {
   const isDev = process.env.NODE_ENV !== 'production';
   const isAdmin = req.user?.role === 'Admin';
+  const isVercelCron = Boolean(req.headers['x-vercel-cron']);
 
-  if (isAdmin || isDev) {
+  if (isAdmin || isDev || isVercelCron) {
     return next();
   }
 

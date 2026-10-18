@@ -202,5 +202,8 @@ router.get('/seeder/status', authenticateToken, requireRole(['Admin', 'Principal
    ========================================================================== */
 router.get('/audit-logs', authenticateToken, requireRole(['Admin', 'Principal']), getAuditLogs);
 router.post('/digest/run', authenticateToken, requireRole(['Admin']), runWeeklyDigest);
+router.get('/digest/run', devOrAdminOnly, runWeeklyDigest);
+router.get('/system/weekly-digest', devOrAdminOnly, runWeeklyDigest);
+router.post('/system/weekly-digest', devOrAdminOnly, runWeeklyDigest);
 
 export default router;

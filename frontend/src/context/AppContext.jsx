@@ -1967,8 +1967,17 @@ export const AppProvider = ({ children }) => {
       }, 1000);
     };
     try {
-      socket = io(API_BASE_URL || undefined, { path: '/socket.io', transports: ['websocket', 'polling'] });
+      socket = io(API_BASE_URL || undefined, {
+        path: '/socket.io',
+        transports: ['websocket', 'polling'],
+        reconnectionAttempts: 2,
+        timeout: 3000
+      });
       socket.on('data:changed', scheduleRefresh);
+      socket.on('connect_error', () => {
+        // Socket.IO is optional in serverless/Vercel; polling fallback takes over cleanly.
+        if (socket) socket.disconnect();
+      });
     } catch (e) {}
     return () => {
       if (pending) clearTimeout(pending);
