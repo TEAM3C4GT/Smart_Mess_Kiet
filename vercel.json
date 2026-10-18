@@ -16,15 +16,7 @@
     },
     "ai-service": {
       "root": "backend/ai-service",
-      "framework": "fastapi",
-      "bindings": [
-        {
-          "type": "service",
-          "service": "smart-mess-backend",
-          "format": "url",
-          "env": "BACKEND_SERVICE_URL"
-        }
-      ]
+      "framework": "fastapi"
     },
     "smart-mess-frontend": {
       "root": "frontend",

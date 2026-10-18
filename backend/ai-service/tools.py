@@ -18,8 +18,11 @@ from pathlib import Path
 from typing import Any
 
 SCHEMA_PATH = Path(__file__).resolve().parent / "training" / "tools_schema.json"
-BACKEND_SERVICE_URL = os.getenv("BACKEND_SERVICE_URL") or os.getenv("BACKEND_API_URL", "http://localhost:5000/api")
-BACKEND_API_URL = BACKEND_SERVICE_URL if BACKEND_SERVICE_URL.endswith("/api") else f"{BACKEND_SERVICE_URL.rstrip('/')}/api"
+BACKEND_BASE_URL = os.getenv("BACKEND_SERVICE_URL") or os.getenv("BACKEND_API_URL")
+if not BACKEND_BASE_URL:
+    vercel_url = os.getenv("VERCEL_URL")
+    BACKEND_BASE_URL = f"https://{vercel_url}/api" if vercel_url else "http://localhost:5000/api"
+BACKEND_API_URL = BACKEND_BASE_URL if BACKEND_BASE_URL.endswith("/api") else f"{BACKEND_BASE_URL.rstrip('/')}/api"
 
 with SCHEMA_PATH.open(encoding="utf-8") as _fh:
     SCHEMA: dict[str, Any] = json.load(_fh)

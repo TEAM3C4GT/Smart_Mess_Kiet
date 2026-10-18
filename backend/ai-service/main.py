@@ -23,8 +23,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-BACKEND_SERVICE_URL = os.getenv("BACKEND_SERVICE_URL") or os.getenv("BACKEND_API_URL", "http://localhost:5000/api")
-BACKEND_API_URL = BACKEND_SERVICE_URL if BACKEND_SERVICE_URL.endswith("/api") else f"{BACKEND_SERVICE_URL.rstrip('/')}/api"
+BACKEND_BASE_URL = os.getenv("BACKEND_SERVICE_URL") or os.getenv("BACKEND_API_URL")
+if not BACKEND_BASE_URL:
+    vercel_url = os.getenv("VERCEL_URL")
+    BACKEND_BASE_URL = f"https://{vercel_url}/api" if vercel_url else "http://localhost:5000/api"
+BACKEND_API_URL = BACKEND_BASE_URL if BACKEND_BASE_URL.endswith("/api") else f"{BACKEND_BASE_URL.rstrip('/')}/api"
 
 # Mess Guide chat endpoints (guide + agentic tools)
 app.include_router(chat_router)
