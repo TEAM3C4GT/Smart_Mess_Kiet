@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
-import { useApp } from '../context/AppContext';
+import { useApp, STAFF_ACCOUNTS } from '../context/AppContext';
 import {
   GraduationCap,
   BedDouble,
