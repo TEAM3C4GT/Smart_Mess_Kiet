@@ -49,7 +49,12 @@ async function generateOllamaResponse(payload) {
   try {
     const res = await fetch(`${base.replace(/\/+$/, '')}/api/chat`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        // ngrok's free tier serves an interstitial to browser-like requests;
+        // this header keeps API traffic clean. Harmless for other hosts.
+        'ngrok-skip-browser-warning': 'true'
+      },
       body: JSON.stringify({
         model,
         messages: [{ role: 'system', content: buildSystemPrompt(payload) }, ...payload.messages],
