@@ -17,34 +17,109 @@ const candidateSchemaPaths = [
 ];
 const SCHEMA_PATH = candidateSchemaPaths.find((p) => fs.existsSync(p)) || candidateSchemaPaths[0];
 
-/**
- * Intelligent serverless fallback when external Python AI microservice is not reachable.
- * Allows 100% standalone execution on Vercel Serverless without requiring external GPU/container.
- */
-async function generateFallbackChatResponse(payload, req) {
-  const lastMsg = payload.messages[payload.messages.length - 1]?.content || '';
-  const lower = lastMsg.toLowerCase();
+const AI_SERVICE_TIMEOUT_MS = Number(process.env.AI_SERVICE_TIMEOUT_MS) || 5000;
+const GEMINI_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) || 4000;
+const OLLAMA_TIMEOUT_MS = Number(process.env.OLLAMA_TIMEOUT_MS) || 45000;
 
-  // If GEMINI_API_KEY is configured in Vercel environment variables, use Google Gemini:
-  if (process.env.GEMINI_API_KEY) {
-    try {
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
-      const geminiRes = await fetch(geminiUrl, {
+/**
+ * Shared system prompt for the direct LLM backends (Ollama / Gemini). Includes
+ * the caller's scope and role so replies stay relevant to the open dashboard.
+ */
+function buildSystemPrompt(payload) {
+  const roleHint = payload.role ? ` The signed-in user's role is "${payload.role}".` : '';
+  const scopeHint = payload.scope ? ` They are currently on the "${payload.scope}" dashboard.` : '';
+  return (
+    'You are "Mess Guide", the AI campus dining assistant for KIET Smart Mess & KFC ' +
+    '(a hostel mess plus a KFC Express canteen).' + roleHint + scopeHint +
+    ' Answer concisely and helpfully in plain text, using the conversation so far. ' +
+    'Never invent live figures, menus, or order statuses you have not been given.'
+  );
+}
+
+/**
+ * Direct Ollama backend. Lets a self-hosted Ollama server, reachable over a
+ * public URL, power the assistant from a serverless host (e.g. Vercel) without
+ * the Python AI microservice hop. Enabled by setting OLLAMA_URL.
+ */
+async function generateOllamaResponse(payload) {
+  const base = process.env.OLLAMA_URL;
+  if (!base) return null;
+  const model = process.env.OLLAMA_MODEL || 'llama3.2:latest';
+
+  try {
+    const res = await fetch(`${base.replace(/\/+$/, '')}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'system', content: buildSystemPrompt(payload) }, ...payload.messages],
+        stream: false,
+        options: { temperature: Number(process.env.TEMPERATURE) || 0.3 }
+      }),
+      signal: AbortSignal.timeout(OLLAMA_TIMEOUT_MS)
+    });
+    const data = await res.json().catch(() => ({}));
+    const reply = data?.message?.content;
+    if (res.ok && typeof reply === 'string' && reply.trim()) {
+      return { reply: reply.trim(), sources: [{ title: `Ollama (${model})` }] };
+    }
+    if (!res.ok) console.warn('Ollama error:', data?.error || res.status);
+  } catch (err) {
+    console.warn('Ollama request failed:', err.message);
+  }
+  return null;
+}
+
+/**
+ * Google Gemini cloud backend. Enabled by setting GEMINI_API_KEY; a fallback
+ * for hosts where no Ollama/GGUF model is reachable.
+ */
+async function generateGeminiResponse(payload) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return null;
+
+  // Gemini expects alternating user/model turns and must start on a user turn.
+  const contents = [];
+  for (const m of payload.messages) {
+    const role = m.role === 'assistant' ? 'model' : 'user';
+    if (contents.length === 0 && role === 'model') continue;
+    contents.push({ role, parts: [{ text: m.content }] });
+  }
+  if (contents.length === 0) return null;
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: `You are Mess Guide, the AI campus dining assistant for KIET Smart Mess & KFC. User says: "${lastMsg}". Answer concisely and helpfully.` }] }]
-        })
-      });
-      const geminiData = await geminiRes.json();
-      const replyText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (replyText) {
-        return { reply: replyText, sources: [{ title: 'Gemini Cloud LLM' }] };
+          systemInstruction: { parts: [{ text: buildSystemPrompt(payload) }] },
+          contents
+        }),
+        signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS)
       }
-    } catch (e) {
-      console.warn('Gemini cloud fallback warning:', e.message);
+    );
+    const data = await res.json().catch(() => ({}));
+    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (res.ok && typeof reply === 'string' && reply.trim()) {
+      return { reply: reply.trim(), sources: [{ title: 'Gemini Cloud LLM' }] };
     }
+    if (!res.ok) console.warn('Gemini error:', data?.error?.message || res.status);
+  } catch (err) {
+    console.warn('Gemini request failed:', err.message);
   }
+  return null;
+}
+
+/**
+ * Built-in rule & database responder. The final fallback when no LLM backend is
+ * reachable: answers menu/KFC/forecast questions from MongoDB and returns guidance
+ * otherwise (100% offline & serverless ready).
+ */
+async function generateFallbackChatResponse(payload) {
+  const lastMsg = payload.messages[payload.messages.length - 1]?.content || '';
+  const lower = lastMsg.toLowerCase();
 
   // Built-in intelligent rule & database responder (100% offline & serverless ready)
   if (lower.includes('menu') || lower.includes('breakfast') || lower.includes('lunch') || lower.includes('dinner') || lower.includes('snack') || lower.includes('food')) {
@@ -107,9 +182,9 @@ async function generateFallbackChatResponse(payload, req) {
 
 /* ==========================================================================
    MESS GUIDE AI CHAT CONTROLLER
-   Proxies chat requests to the Python AI microservice (FastAPI, port 8000),
-   forwarding the caller's JWT so tool executions run under the real RBAC.
-   Gracefully falls back to built-in serverless assistant if AI service is offline.
+   Answer flow: self-hosted Ollama -> Gemini cloud -> Python AI microservice
+   (FastAPI; the caller's JWT is forwarded so tool execution runs under the real
+   RBAC) -> built-in rule & database responder.
    ========================================================================== */
 export const postChat = async (req, res) => {
   const { messages } = req.body || {};
@@ -140,9 +215,17 @@ export const postChat = async (req, res) => {
     headers.Authorization = req.headers.authorization;
   }
 
+  // 1) Direct LLM backends. Prefer a self-hosted Ollama server (OLLAMA_URL),
+  //    then Gemini cloud (GEMINI_API_KEY) - the usable paths on serverless hosts.
+  const direct = (await generateOllamaResponse(payload)) || (await generateGeminiResponse(payload));
+  if (direct) {
+    return res.json({ success: true, ...direct });
+  }
+
+  // 2) Python AI microservice (local / Render with a hosted model + tool calling).
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 4000);
+    const timeout = setTimeout(() => controller.abort(), AI_SERVICE_TIMEOUT_MS);
 
     const aiBase = process.env.AI_SERVICE_URL || 'http://localhost:8000';
     const chatUrl = new URL('chat', aiBase.endsWith('/') ? aiBase : `${aiBase}/`);
@@ -158,15 +241,15 @@ export const postChat = async (req, res) => {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      // Microservice returned error, use intelligent serverless fallback
-      const fallback = await generateFallbackChatResponse(payload, req);
+      // Microservice returned error: use the built-in rule & DB responder.
+      const fallback = await generateFallbackChatResponse(payload);
       return res.json({ success: true, ...fallback });
     }
 
     return res.json({ success: true, ...data });
   } catch (err) {
-    // Microservice offline or timeout: use intelligent serverless fallback
-    const fallback = await generateFallbackChatResponse(payload, req);
+    // Microservice offline or timeout: use the built-in rule & DB responder.
+    const fallback = await generateFallbackChatResponse(payload);
     return res.json({ success: true, ...fallback });
   }
 };

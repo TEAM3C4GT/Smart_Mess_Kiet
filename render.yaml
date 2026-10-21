@@ -31,6 +31,12 @@ services:
         sync: false
       - key: AI_SERVICE_URL       # Optional: URL of FastAPI AI service if deployed, or leave blank
         sync: false
+      - key: GEMINI_API_KEY       # Optional: Google AI Studio key for live Mess Guide AI replies
+        sync: false
+      - key: OLLAMA_URL           # Optional: public URL of a self-hosted Ollama server for Mess Guide AI
+        sync: false
+      - key: OLLAMA_MODEL         # Optional: Ollama model name (default llama3.2:latest)
+        sync: false
 
   # 2) Vite / React Single Page Application (Static Site)
   - type: web

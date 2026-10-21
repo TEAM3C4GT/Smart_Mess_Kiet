@@ -259,7 +259,11 @@ export const ChatWidget = () => {
                   {m.content}
                   {m.sources && m.sources.length > 0 && (
                     <div className="mt-2 pt-2 border-t border-stone-100 text-[10px] text-stone-400">
-                      Sources: {m.sources.join(', ')}
+                      Sources:{' '}
+                      {m.sources
+                        .map((s) => (typeof s === 'string' ? s : s?.title || ''))
+                        .filter(Boolean)
+                        .join(', ')}
                     </div>
                   )}
                   {m.action?.type === 'pending_action' && (
